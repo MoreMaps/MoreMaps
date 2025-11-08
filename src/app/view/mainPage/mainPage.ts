@@ -17,7 +17,7 @@ export class MainPageComponent {
   constructor(private router: Router) {}
 
   /**
-   * Navega a la página de inicio de sesión
+   * Navega a la página de inic de sesión
    */
   onLogin(): void {
     console.log('Navegando a inicio de sesión');

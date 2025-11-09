@@ -1,142 +1,223 @@
-import {TestBed} from '@angular/core/testing';
+import {TestBed} from '@angular/core/testing'
 import {MOCK_USERS} from './test-data';
+import {UserModel} from '../data/UserModel';
+import {UserService} from '../services/User/user.service';
+import {UserNotFoundError} from '../errors/UserNotFoundError';
+import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
+import {SessionNotActiveError} from '../errors/DBAccessError';
+import {USER_REPOSITORY} from '../services/User/UserRepository';
+import {UserDB} from '../services/User/UserDB';
 
-const dbAccessStable: boolean = false;
-const requiredTestCount = 6;
-let passedTestCount : number;
-
-beforeAll(() => {passedTestCount=0;})
+let userService: UserService;
+let ramon: UserModel;
+let maria: UserModel;
+let usuarios: UserModel[];
 
 // it01: HU101, HU102, HU105, HU603
+
 describe('HU101: Registrar Usuario', () => {
     beforeEach(() => {
         TestBed.configureTestingModule({
-            // imports: [...],
+            providers: [UserService,
+                {provide: USER_REPOSITORY, useClass: UserDB}]
         }).compileComponents();
-        // hacer comprobación de acceso estable a la BBDD
+
+        userService = TestBed.inject(UserService);
+
+        // usuario "ramon"
+        usuarios = [...MOCK_USERS]
+        ramon = usuarios[0];
+        // lista de usuarios que no contenga a ramón
+        usuarios.splice(0,1);
     });
 
-    it('HU101-EV1: Registrar nuevo usuario válido', () => {
-        if (!dbAccessStable) {
-            pending("El acceso a la BD no es estable.");
-        }
+    it('HU101-EV01: Registrar nuevo usuario válido', async() => {
         // GIVEN
-        //  lista de usuarios registrados vacía (así que el usuario no existe)
-        //  un atributo session null
-        //  datos del usuario
+        //  lista de usuarios registrados en la que el usuario "ramon" no existe (hecho en beforeEach)
+        expect(usuarios).not.toContain(ramon);
+        //  session es null
+        const nullCurrentUserPromise = await userService.currentUser();
+        expect(nullCurrentUserPromise).toBeNull();
+        //  datos del usuario válidos (hecho en beforeEach)
 
         // WHEN
         //  el usuario intenta darse de alta
+        await userService.signUp(ramon);
 
         // THEN
-        //  no se lanza ningún error
-        //  el sistema avisa de que se ha registrado correctamente <- INTERFAZ, no se prueba
+        //  el usuario se registra correctamente
         //  lista de usuarios registrados ahora incluye al usuario
-        passedTestCount++;
+        const exists = await userService.userExists(ramon);
+        expect(exists).toBe(true);
     });
 
-    it('HU101-EI1: Registrar nuevo usuario con contraseña inválida', () => {
-        if (!dbAccessStable) {
-            pending("El acceso a la BD no es estable.");
-        }
+    it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
         // GIVEN
-        //  lista de usuarios registrados vacía (así que el usuario no existe)
-        //  un atributo session null
-        /*  para esta prueba, duplicar el mock_users con la función map y editar la
-            contraseña del clon de juan para que no cumpla reglas de dominio     */
+        //  lista de usuarios registrados no incluye a 'ramón' (hecho en beforeEach)
+        expect(usuarios).not.toContain(ramon);
+        //  sesión null
+        const nullCurrentUserPromise = await userService.currentUser();
+        expect(nullCurrentUserPromise).toBeNull();
+        //  datos del usuario NO válidos
+        ramon.password = "password"; // no tiene mayúscula, ni número, ni símbolo especial
+        expect(usuarios).not.toContain(ramon); // comprobación extra después de editar el objeto ramon
+
         // WHEN
         //  ramon intenta darse de alta con una contraseña que no sigue la regla
-        //  creo que FirebaseAuth permite comprobarlo por su cuenta, mirad el enlace que mandé
+        const res = userService.signUp(ramon);
+
         // THEN
-        //  se lanza el error WrongPasswordFormatError
+        //  el usuario no se registra y se lanza el error WrongPasswordFormatError
+        await expectAsync(res).toBeRejectedWith(WrongPasswordFormatError);
+
         //  lista de usuarios registrados no incluye al usuario
-        passedTestCount++;
+        const exists = await userService.userExists(ramon);
+        expect(exists).toBe(false);
     });
 });
 
 describe('HU102: Iniciar sesión', () => {
-    it('HU102-EV01: Iniciar sesión con una cuenta registrada', () => {
-        if (!dbAccessStable) {
-            pending("El acceso a la BD no es estable.");
-        }
-        // GIVEN
-        //  lista de usuarios registrados incluye a maría y ramón
-        //  un atributo session null
-        // WHEN
-        //  ramon intenta iniciar sesión con su usuario/email y contraseña
-        //  no sé si es con email o con usuario... creo que con email
-        // THEN
-        //  se lanza el error WrongPasswordFormatError
-        //  session ya no es null
-        passedTestCount++;
+    beforeEach(() => {
+        TestBed.configureTestingModule({
+            providers: [UserService,
+                {provide: USER_REPOSITORY, useClass: UserDB}]
+        }).compileComponents();
+
+        userService = TestBed.inject(UserService);
+
+        usuarios = [...MOCK_USERS];
+        ramon = usuarios[0];
+        maria = usuarios[1];
     });
-    it('HU102-EI01: Iniciar sesión con una cuenta que no existe', () => {
-        if (!dbAccessStable) {
-            pending("El acceso a la BD no es estable.");
-        }
+    it('HU102-EV01: Iniciar sesión con una cuenta registrada', async () => {
         // GIVEN
-        //  lista de usuarios registrados incluye a maría
-        //  el atributo session es null
+        //  lista de usuarios registrados incluye a maría y ramón (hecho en BeforeEach)
+        expect(usuarios).toContain(ramon);
+        expect(usuarios).toContain(maria);
+
+        //  un atributo session null
+        const nullCurrentUserPromise = await userService.currentUser();
+        expect(nullCurrentUserPromise).toBeNull();
+
+        // WHEN
+        // ramon intenta iniciar sesión con su usuario/email y contraseña
+        await userService.login(ramon);
+
+        // THEN
+        //  el usuario existe en la lista de usuarios
+        const exists = await userService.userExists(ramon);
+        expect(exists).toBe(true);
+    });
+
+    it('HU102-EI01: Iniciar sesión con una cuenta que no existe', async () => {
+        // GIVEN
+        // session es null
+        const nullCurrentUserPromise = await userService.currentUser();
+        expect(nullCurrentUserPromise).toBeNull();
+
+        //  lista de usuarios registrados no incluye a ramón
+        usuarios.splice(0,1);
+        expect(usuarios).not.toContain(ramon);
+        let priorState = [...usuarios];
+
         // WHEN
         //  ramón intenta iniciar sesión sin figurar en la lista
+        const login = userService.login(ramon);
+
         // THEN
         //  se lanza el error UserNotFoundError
+        await expectAsync(login).toBeRejectedWith(UserNotFoundError);
+
         //  no se modifica el estado
-        passedTestCount++;
+        expect(priorState).toEqual(usuarios);
     });
 })
 
 describe('HU105: Cerrar sesión', () => {
-    it('HU105-EV01: Cerrar una sesión activa', () => {
-        if (!dbAccessStable) {
-            pending("El acceso a la BD no es estable.");
-        }
+    beforeEach(() => {
+        TestBed.configureTestingModule({
+            providers: [UserService,
+                {provide: USER_REPOSITORY, useClass: UserDB}]
+        }).compileComponents();
+
+        userService = TestBed.inject(UserService);
+    });
+
+    it('HU105-EV01: Cerrar una sesión activa', async () => {
         // GIVEN
-        //  sesión activa con el usuario “ramon”
+        //  sesión activa con el usuario "ramon" (hecho BeforeEach)
+        await expectAsync(userService.currentUser()).toBeResolvedTo(ramon);
 
         // WHEN
         //  el usuario “ramon” intenta cerrar sesión
+        const login = userService.logout();
 
         // THEN
         //  no se lanza ningún error
+        await expectAsync(login).toBeResolved();
+
         //  se invalida la sesión
-        passedTestCount++;
+        const nullCurrentUserPromise = await userService.currentUser();
+        expect(nullCurrentUserPromise).toBeNull();
     });
-    it('HU105-EI01: Cerrar una sesión cuando la sesión ya está cerrada', () => {
-        if (!dbAccessStable) {
-            pending("El acceso a la BD no es estable.");
-        }
+
+    it('HU105-EI01: Cerrar una sesión cuando la sesión ya está cerrada', async () => {
         // GIVEN
-        //  el atributo session es null
-        //  el usuario “ramon” tiene una segunda ventana con una página en la que el atributo session seguía activo
+        /*  el usuario “ramon” tiene una segunda ventana de cuando tenía sesión válida
+            (asumimos que el test se llama desde esta), pero el atributo session ya es null */
+        const nullCurrentUserPromise = await userService.currentUser();
+        expect(nullCurrentUserPromise).toBeNull();
 
         // WHEN
         //  el usuario “ramon” intenta cerrar sesión
+        const login = userService.logout();
 
         // THEN
         //  se lanza el error SessionNotActiveError
+        await expectAsync(login).toBeRejectedWith(SessionNotActiveError);
+
         //  no se modifica el estado
-        passedTestCount++;
+        const nullSecondCurrentUserPromise = await userService.currentUser();
+        expect(nullSecondCurrentUserPromise).toBeNull();
     });
 });
 
 
-describe('HU603: Guardar datos de usuarios', () => {
-    it('HU603-EV01: Protección ante cierre involuntario cuando se pueden volcar los datos', () => {
-        if (!dbAccessStable) {
-            pending("El acceso a la BD no es estable.");
-        }
-        // Importante, para proceder a esta prueba tiene que pasar todas las pruebas anteriores
-        if (passedTestCount!=requiredTestCount) {
-            pending("Ha fallado algún test relevante a esta historia.");
-        }
+describe('HU603: Guardar datos de usuarios', async () => {
+    beforeEach(() => {
+        TestBed.configureTestingModule({
+            providers: [UserService,
+                {provide: USER_REPOSITORY, useClass: UserDB}]
+        }).compileComponents();
 
+        userService = TestBed.inject(UserService);
+
+        usuarios = [...MOCK_USERS];
+        ramon = usuarios[0];
+    })
+
+    it('HU603-EV01: Protección ante cierre involuntario cuando se pueden volcar los datos', async () => {
         // GIVEN
         //  conexión con la BD estable
-        //  el atributo session pasa a ser null
+        //  el atributo session pasa a ser null habiendo iniciado sesión
+        await userService.login(ramon);
+        await expectAsync(userService.currentUser()).toBeResolvedTo(ramon);
+
+        const currentRamon = await userService.currentUser();
+
+        await userService.logout();
+
+        const nullUserPromise = await userService.currentUser();
+        expect(nullUserPromise).toBeNull();
+
         // WHEN
         //  ramón vuelve a iniciar sesión
+        const logInPromise = userService.login(ramon);
+        await expectAsync(logInPromise).toBeResolved();
+
         // THEN
-        //  los datos de la BD son los mismos que los introducidos previamente
+        //  los datos de usuario de la BD son los mismos que los introducidos previamente
+        const currentUserPromise = userService.currentUser();
+        await expectAsync(currentUserPromise).toBeResolvedTo(currentRamon);
     });
 })

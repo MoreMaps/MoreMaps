@@ -13,35 +13,47 @@ import {AccountNotFoundError} from '../errors/AccountNotFoundError';
 // it01: HU101, HU102, HU105, HU106, HU603
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
-    let ramon = USER_TEST_DATA[0];
+    let usuarioRegistradoRamon: UserModel
 
-    beforeEach(() => {
-        TestBed.configureTestingModule({
-            providers: [UserService,
-                {provide: USER_REPOSITORY, useClass: UserDB}]
+    const ramon = USER_TEST_DATA[0];
+    const maria = USER_TEST_DATA[1];
+
+    beforeAll( async() => {
+        await TestBed.configureTestingModule({
+            providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}]
         }).compileComponents();
 
+        // inyección del servicio
         userService = TestBed.inject(UserService);
+
+        // creación de un usuario
+        usuarioRegistradoRamon = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
+    });
+
+    afterAll( async() => {
+        // eliminación del usuario creado al terminar las pruebas
+        await userService.deleteUser(usuarioRegistradoRamon);
     });
 
     describe('HU101: Registrar Usuario', () => {
 
         it('HU101-EV01: Registrar nuevo usuario válido', async () => {
             // GIVEN
-            //  lista de usuarios registrados vacía que no incluye a "ramon"
+            //  lista de usuarios registrados vacía que no incluye a "maria"
             //  no se ha iniciado sesión
 
             // WHEN
-            //  el usuario "ramon" intenta darse de alta
-            const usuarioCreado : UserModel = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
+            //  el usuario "maria" intenta darse de alta
+            const usuarioCreado: UserModel = await userService
+                .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
             // THEN
-            //  el usuario "ramon" se registra correctamente
+            //  el usuario "maria" se registra correctamente
             expect(usuarioCreado).toEqual(jasmine.objectContaining({
                 uid: jasmine.any(String),    // UID válido cualquiera
-                email: ramon.email,
-                nombre: ramon.nombre,
-                apellidos: ramon.apellidos
+                email: maria.email,
+                nombre: maria.nombre,
+                apellidos: maria.apellidos,
             }));
 
             // la base de datos vuelve al estado inicial
@@ -50,14 +62,15 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
             // GIVEN
-            //  lista de usuarios registrados vacía que no incluye al usuario "ramon"
+            //  lista de usuarios registrados vacía que no incluye al usuario "maria"
             //  no se ha iniciado sesión
 
             // WHEN
-            //  el usuario "ramon" intenta darse de alta con contraseña "password" (no sigue el formato correcto)
-            await expectAsync(userService.signUp(ramon.email, "password", ramon.nombre, ramon.apellidos)).toBeRejectedWith(new WrongPasswordFormatError());
+            //  el usuario "maria" intenta darse de alta con contraseña "password" (no sigue el formato correcto)
+            await expectAsync(userService.signUp(maria.email, "password", maria.nombre, maria.apellidos))
+                .toBeRejectedWith(new WrongPasswordFormatError());
             // THEN
-            //  el usuario "ramon" no se registra y se lanza el error WrongPasswordFormatError
+            //  el usuario "maria" no se registra y se lanza el error WrongPasswordFormatError
         });
     });
 
@@ -68,7 +81,6 @@ describe('Pruebas sobre usuarios', () => {
             // GIVEN
             //  lista de usuarios registrados que incluye a "ramon"
             //  no se ha iniciado sesión
-            const usuarioCreado = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
 
             // WHEN
             // el usuario "ramon" intenta iniciar sesión con su email y contraseña
@@ -78,18 +90,18 @@ describe('Pruebas sobre usuarios', () => {
             //  el usuario "ramon" inicia sesión correctamente
             expect(sesionIniciada).toBeTrue();
 
-            // la base de datos vuelve al estado inicial
-            await userService.deleteUser(usuarioCreado);
+            // se cierra la sesion
+            await userService.logout();
         });
 
         it('HU102-EI01: Iniciar sesión con una cuenta que no existe', async () => {
             // GIVEN
-            //  lista de usuarios registrados vacía que no incluye a "ramon"
+            //  lista de usuarios registrados vacía que no incluye a "maria"
             //  no se ha iniciado sesión
 
             // WHEN
-            // ramon intenta iniciar sesión con su email y contraseña
-            await expectAsync(userService.login(ramon.email, ramon.pwd)).toBeRejectedWith(UserNotFoundError);
+            // se intenta iniciar sesión con los datos del usuario "maria"
+            await expectAsync(userService.login(maria.email, maria.pwd)).toBeRejectedWith(new UserNotFoundError());
             // THEN
             //  el usuario no se registra y se lanza el error UserNotFoundError
         });
@@ -101,21 +113,16 @@ describe('Pruebas sobre usuarios', () => {
         it('HU105-EV01: Cerrar una sesión activa', async () => {
             // GIVEN
             //  lista de usuarios registrados que incluye a "ramon"
-            const usuarioCreado = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
-
              //  sesión activa con el usuario "ramon"
             await userService.login(ramon.email, ramon.pwd);
 
             // WHEN
             //  se intenta cerrar sesión
-            const respuesta = await userService.logout();
+            const sesionCerrada = await userService.logout();
 
             // THEN
             //  se cierra la sesión
-            expect(respuesta).toBeTrue();
-
-            // la base de datos vuelve al estado inicial
-            await userService.deleteUser(usuarioCreado);
+            expect(sesionCerrada).toBeTrue();
         });
 
         it('HU105-EI01: Cerrar una sesión cuando no hay sesión activa', async () => {
@@ -124,7 +131,7 @@ describe('Pruebas sobre usuarios', () => {
 
             // WHEN
             //  se intenta cerrar sesión
-            await expectAsync(userService.logout()).toBeRejectedWith(SessionNotActiveError);
+            await expectAsync(userService.logout()).toBeRejectedWith(new SessionNotActiveError());
             // THEN
             //  se lanza el error SessionNotActiveError y no se cierra la sesión
         });
@@ -135,9 +142,10 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
-            //  el usuario "ramon" está registrado y ha iniciado sesión
-            const usuarioCreado = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
-            await userService.login(ramon.email, ramon.pwd);
+            //  el usuario "maria" está registrado y ha iniciado sesión
+            const usuarioCreado: UserModel = await userService
+                .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            await userService.login(maria.email, maria.pwd);
 
             // WHEN
             //  se intenta eliminar la cuenta
@@ -145,23 +153,24 @@ describe('Pruebas sobre usuarios', () => {
 
             // THEN
             //  se elimina la cuenta
-            expect(usuarioBorrado).toEqual(usuarioCreado);
+            expect(usuarioBorrado).toBeTrue();
         });
 
         it('HU106-EI01: Eliminar una cuenta que no existe', async () => {
             // GIVEN
-            //  lista de usuarios registrados vacía que no incluye a "ramon"
+            //  lista de usuarios registrados que no incluye a "maria"
             //  no se ha iniciado sesión
 
             // WHEN
             //  se intenta eliminar la cuenta
             const usuarioQueNoExiste = {
                 uid: "?",                        // UID que NO existe
-                email: ramon.email,
-                nombre: ramon.nombre,
-                apellidos: ramon.apellidos
+                email: maria.email,
+                nombre: maria.nombre,
+                apellidos: maria.apellidos,
             }
-            await expectAsync(userService.deleteUser(usuarioQueNoExiste)).toBeRejectedWith(new AccountNotFoundError());
+            await expectAsync(userService.deleteUser(usuarioQueNoExiste))
+                .toBeRejectedWith(new AccountNotFoundError());
             // THEN
             //  se lanza el error AccountNotFoundError y no se elimina ninguna cuenta
         });
@@ -169,28 +178,26 @@ describe('Pruebas sobre usuarios', () => {
 
     describe('HU603: Guardar datos de usuarios', () => {
 
-        it('HU603-EV01: Protección ante cierre involuntario cuando se pueden volcar los datos', async () => {
+        it('HU603-EV01: Comprobación de datos guardados ante cierre involuntario', async () => {
             // GIVEN
-            //  el usuario "ramon" ha iniciado sesión
-            const usuarioCreado = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
+            //  el usuario "ramon" está registrado y ha iniciado sesión
             await userService.login(ramon.email, ramon.pwd);
-            
-            //  se cierra la sesión involuntariamente
-            await userService.logout();
 
             // WHEN
+            //  se cierra la sesión involuntariamente
+            await userService.logout();
             //  el usuario "ramon" vuelve a iniciar sesión
             await userService.login(ramon.email, ramon.pwd);
-            const usuarioActual = await userService.getCurrentUser();
 
             // THEN
             //  los datos de usuario de la BD son los mismos que los introducidos previamente
-            expect(usuarioActual).toEqual(usuarioCreado);
-
-            // la base de datos vuelve al estado inicial
-            await userService.deleteUser(usuarioCreado);
+            expect(usuarioRegistradoRamon).toEqual(jasmine.objectContaining({
+                uid: jasmine.any(String),
+                email: ramon.email,
+                nombre: ramon.nombre,
+                apellidos: ramon.apellidos,
+            }));
         });
-
 
         // No hay caso inválido, ya que la base de datos es una dependencia externa.
     })

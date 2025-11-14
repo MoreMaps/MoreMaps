@@ -1,4 +1,4 @@
-import {gender, UserModel} from '../../data/UserModel';
+import {UserModel} from '../../data/UserModel';
 import {UserRepository} from './UserRepository';
 
 /* PARA AT
@@ -7,9 +7,8 @@ import {inject} from '@angular/core';*/
 
 export class UserDB implements UserRepository {
     //private firestore = inject(Firestore);
-    async createUser(user: UserModel) : Promise<UserModel> {
-        return {email: "",password:"",nombre:"",apellidos:"",genero:gender.OTHER};
+    async createUser(uid: string, email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel> {
+        return {uid:"", email: "", nombre:"", apellidos:""};
     }
     async validateCredentials(email: string, password: string): Promise<Boolean> {return false;}
-    async exists(email: string): Promise<Boolean> {return false;}
 }

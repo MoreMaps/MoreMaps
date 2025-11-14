@@ -1,22 +1,13 @@
-export interface UserModel {
-    email: string,
-    password?: string,
-    nombre: string,
-    apellidos: string,
-    genero: gender;
-}
+export class UserModel {
+    uid: string;
+    email: string;
+    nombre: string;
+    apellidos: string;
 
-// Constructor
-export function createUser(email: string, password: string, nombre: string, apellidos: string, genero: gender): UserModel {
-    return {
-        email: email,
-        password: password,
-        nombre: nombre,
-        apellidos: apellidos,
-        genero: genero,
+    constructor(uid: string, email: string, nombre: string, apellidos: string) {
+        this.uid = uid;
+        this.email = email;
+        this.nombre = nombre;
+        this.apellidos = apellidos;
     }
-}
-
-export enum gender {
-    MALE = "Masculino", FEMALE = "Femenino", OTHER = "Otro"
 }

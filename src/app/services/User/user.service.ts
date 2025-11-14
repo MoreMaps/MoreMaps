@@ -1,5 +1,5 @@
 import {inject, Injectable} from '@angular/core';
-import {gender, UserModel} from '../../data/UserModel';
+import {UserModel} from '../../data/UserModel';
 import {USER_REPOSITORY, UserRepository} from './UserRepository';
 
 
@@ -8,17 +8,17 @@ export class UserService {
     private userDb : UserRepository = inject(USER_REPOSITORY);
 
     // HU101 Crear usuario
-    async signUp(u: UserModel): Promise<UserModel> {
+    async signUp(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
         return {
+            uid: "",
             email: "",
             nombre: "",
             apellidos: "",
-            genero: gender.OTHER
         };
     }
 
     // HU102 Iniciar sesión
-    async login(u: UserModel): Promise<boolean> {
+    async login(email: string, pwd: string): Promise<boolean> {
         return false;
     }
 
@@ -28,18 +28,23 @@ export class UserService {
     }
 
     // HU105 Cerrar sesión (auxiliar: usuario actual)
-    async currentUser(): Promise<UserModel> {
+    async getCurrentUser(): Promise<UserModel> {
         return {
+            uid: "",
             email: "",
             nombre: "",
             apellidos: "",
-            genero: gender.OTHER
         };
     }
 
-    // Función auxiliar: el usuario existe?
-    async userExists(u: UserModel): Promise<boolean> {
-        return false;
+    // HU106 Eliminar cuenta
+    async deleteUser(u: UserModel): Promise<UserModel> {
+        return {
+            uid: "",
+            email: "",
+            nombre: "",
+            apellidos: "",
+        };
     }
 
 }

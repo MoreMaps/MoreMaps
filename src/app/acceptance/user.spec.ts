@@ -108,7 +108,7 @@ describe('Pruebas sobre usuarios', () => {
 
             // WHEN
             //  se intenta cerrar sesión
-            const respuesta = userService.logout();
+            const respuesta = await userService.logout();
 
             // THEN
             //  se cierra la sesión
@@ -141,7 +141,7 @@ describe('Pruebas sobre usuarios', () => {
 
             // WHEN
             //  se intenta eliminar la cuenta
-            const usuarioBorrado = userService.deleteUser(usuarioCreado);
+            const usuarioBorrado = await userService.deleteUser(usuarioCreado);
 
             // THEN
             //  se elimina la cuenta
@@ -181,7 +181,7 @@ describe('Pruebas sobre usuarios', () => {
             // WHEN
             //  el usuario "ramon" vuelve a iniciar sesión
             await userService.login(ramon.email, ramon.pwd);
-            const usuarioActual = userService.getCurrentUser();
+            const usuarioActual = await userService.getCurrentUser();
 
             // THEN
             //  los datos de usuario de la BD son los mismos que los introducidos previamente

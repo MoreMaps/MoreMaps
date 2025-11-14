@@ -190,5 +190,8 @@ describe('Pruebas sobre usuarios', () => {
             // la base de datos vuelve al estado inicial
             await userService.deleteUser(usuarioCreado);
         });
+
+
+        // No hay caso inválido, ya que la base de datos es una dependencia externa.
     })
 })

@@ -3,9 +3,10 @@ import {UserRepository} from './UserRepository';
 import {FirebaseApp, initializeApp} from '@angular/fire/app';
 import {deleteUser, Auth, initializeAuth} from "@angular/fire/auth";
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {environment} from '../../../environments/environment.development';
 
 export class UserDB implements UserRepository {
-    private db: FirebaseApp = initializeApp();
+    private db: FirebaseApp = initializeApp(environment.firebase);
     private auth: Auth = initializeAuth(this.db);
 
     async createUser(email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel> {

@@ -6,7 +6,7 @@ import {UserService} from '../services/User/user.service';
 import {UserDB} from '../services/User/UserDB';
 import {UserNotFoundError} from '../errors/UserNotFoundError';
 import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
-import {DBAccessError} from '../errors/DBAccessError';
+import {SessionNotActiveError} from '../errors/SessionNotActiveError';
 import {AccountNotFoundError} from '../errors/AccountNotFoundError';
 
 

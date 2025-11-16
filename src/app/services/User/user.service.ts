@@ -38,7 +38,7 @@ export class UserService {
     }
 
     // HU106 Eliminar cuenta
-    async deleteUser(u: UserModel): Promise<Boolean> {
+    async deleteUser(u: UserModel): Promise<boolean> {
         return false;
     }
 }

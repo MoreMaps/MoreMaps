@@ -1,10 +1,12 @@
 import {UserModel} from '../../data/UserModel';
 import {UserRepository} from './UserRepository';
-import {getAuth, deleteUser, Auth} from "@angular/fire/auth";
+import {FirebaseApp, initializeApp} from '@angular/fire/app';
+import {deleteUser, Auth, initializeAuth} from "@angular/fire/auth";
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
 
 export class UserDB implements UserRepository {
-    private auth: Auth = getAuth();
+    private db: FirebaseApp = initializeApp();
+    private auth: Auth = initializeAuth(this.db);
 
     async createUser(email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel> {
         return {uid:"", email: "", nombre:"", apellidos:""};

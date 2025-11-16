@@ -5,5 +5,6 @@ export const USER_REPOSITORY = new InjectionToken<UserRepository>('UserRepositor
 
 export interface UserRepository{
     createUser(uid: string, email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel>
+    deleteUser(uid: string, email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel>
     validateCredentials(email: string, password: string): Promise<Boolean>
 }

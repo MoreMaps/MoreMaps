@@ -41,5 +41,4 @@ export class UserService {
     async deleteUser(u: UserModel): Promise<Boolean> {
         return false;
     }
-
 }

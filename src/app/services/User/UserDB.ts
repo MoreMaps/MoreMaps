@@ -10,5 +10,8 @@ export class UserDB implements UserRepository {
     async createUser(email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel> {
         return {uid:"", email: "", nombre:"", apellidos:""};
     }
+    async deleteUser(email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel> {
+        return {uid:"", email: "", nombre:"", apellidos:""};
+    }
     async validateCredentials(email: string, password: string): Promise<Boolean> {return false;}
 }

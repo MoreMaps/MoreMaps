@@ -141,9 +141,8 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
-            //  el usuario "maria" está registrado y ha iniciado sesión
-            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-            await userService.login(maria.email, maria.pwd);
+            //  el usuario "ramon" está registrado y ha iniciado sesión
+            await userService.login(ramon.email, ramon.pwd);
 
             // WHEN
             //  se intenta eliminar la cuenta
@@ -156,8 +155,7 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
-            //  lista de usuarios registrados incluye a "maria"
-            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            //  lista de usuarios registrados incluye a "ramon"
 
             // no se ha iniciado sesión
 

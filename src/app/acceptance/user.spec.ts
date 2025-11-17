@@ -158,10 +158,8 @@ describe('Pruebas sobre usuarios', () => {
             // GIVEN
             //  lista de usuarios registrados incluye a "maria"
             await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-            await userService.login(maria.email, maria.pwd);
 
-            // se ha cerrado la sesión
-            await userService.logout();
+            // no se ha iniciado sesión
 
             // WHEN
             //  se intenta eliminar la cuenta
@@ -179,9 +177,10 @@ describe('Pruebas sobre usuarios', () => {
             //  el usuario "ramon" está registrado y ha iniciado sesión
             await userService.login(ramon.email, ramon.pwd);
 
-            // WHEN
             //  se cierra la sesión involuntariamente
             await userService.logout();
+
+            // WHEN
             //  el usuario "ramon" vuelve a iniciar sesión
             await userService.login(ramon.email, ramon.pwd);
 

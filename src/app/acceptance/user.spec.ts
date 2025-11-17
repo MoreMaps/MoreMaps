@@ -143,36 +143,31 @@ describe('Pruebas sobre usuarios', () => {
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
             //  el usuario "maria" está registrado y ha iniciado sesión
-            const usuarioCreado: UserModel = await userService
-                .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
             await userService.login(maria.email, maria.pwd);
 
             // WHEN
             //  se intenta eliminar la cuenta
-            const usuarioBorrado = await userService.deleteUser(usuarioCreado);
+            const usuarioBorrado = await userService.deleteUser();
 
             // THEN
             //  se elimina la cuenta
             expect(usuarioBorrado).toBeTrue();
         });
 
-        it('HU106-EI01: Eliminar una cuenta que no existe', async () => {
+       it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
-            //  lista de usuarios registrados que no incluye a "maria"
-            //  no se ha iniciado sesión
+            //  lista de usuarios registrados incluye a "maria"
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+
+           //   no ha iniciado la sesión
 
             // WHEN
             //  se intenta eliminar la cuenta
-            const usuarioQueNoExiste = {
-                uid: "?",                        // UID que NO existe
-                email: maria.email,
-                nombre: maria.nombre,
-                apellidos: maria.apellidos,
-            }
-            await expectAsync(userService.deleteUser(usuarioQueNoExiste))
-                .toBeRejectedWith(new AccountNotFoundError());
+            await expectAsync(userService.deleteUser())
+                .toBeRejectedWith(new SessionNotActiveError());
             // THEN
-            //  se lanza el error AccountNotFoundError y no se elimina ninguna cuenta
+            //  se lanza el error SessionNotActiveError y no se elimina ninguna cuenta
         });
     });
 

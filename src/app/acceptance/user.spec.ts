@@ -160,7 +160,7 @@ describe('Pruebas sobre usuarios', () => {
             //  lista de usuarios registrados incluye a "maria"
             await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
-           //   no ha iniciado la sesión
+           //   no se ha iniciado sesión
 
             // WHEN
             //  se intenta eliminar la cuenta

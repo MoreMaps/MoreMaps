@@ -7,7 +7,6 @@ import {UserDB} from '../services/User/UserDB';
 import {UserNotFoundError} from '../errors/UserNotFoundError';
 import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../errors/SessionNotActiveError';
-import {AccountNotFoundError} from '../errors/AccountNotFoundError';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
@@ -143,8 +142,7 @@ describe('Pruebas sobre usuarios', () => {
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
             //  el usuario "maria" está registrado y ha iniciado sesión
-            const usuarioCreado: UserModel = await userService
-                .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
             await userService.login(maria.email, maria.pwd);
 
             // WHEN
@@ -156,17 +154,21 @@ describe('Pruebas sobre usuarios', () => {
             expect(usuarioBorrado).toBeTrue();
         });
 
-        it('HU106-EI01: Eliminar una cuenta que no existe', async () => {
+        it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
-            //  lista de usuarios registrados que no incluye a "maria"
-            //  no se ha iniciado sesión
+            //  lista de usuarios registrados incluye a "maria"
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            await userService.login(maria.email, maria.pwd);
+
+            // se ha cerrado la sesión
+            await userService.logout();
 
             // WHEN
             //  se intenta eliminar la cuenta
             await expectAsync(userService.deleteUser())
-                .toBeRejectedWith(new AccountNotFoundError());
+                .toBeRejectedWith(new SessionNotActiveError());
             // THEN
-            //  se lanza el error AccountNotFoundError y no se elimina ninguna cuenta
+            //  se lanza el error SessionNotActiveError y no se elimina ninguna cuenta
         });
     });
 

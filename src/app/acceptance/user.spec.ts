@@ -178,9 +178,10 @@ describe('Pruebas sobre usuarios', () => {
             //  el usuario "ramon" está registrado y ha iniciado sesión
             await userService.login(ramon.email, ramon.pwd);
 
-            // WHEN
             //  se cierra la sesión involuntariamente
             await userService.logout();
+
+            // WHEN
             //  el usuario "ramon" vuelve a iniciar sesión
             await userService.login(ramon.email, ramon.pwd);
 

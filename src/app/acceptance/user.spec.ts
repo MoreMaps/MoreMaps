@@ -32,7 +32,7 @@ describe('Pruebas sobre usuarios', () => {
 
     afterAll( async() => {
         // eliminación del usuario creado al terminar las pruebas
-        await userService.deleteUser(usuarioRegistradoRamon);
+        await userService.deleteUser();
     });
 
     describe('HU101: Registrar Usuario', () => {
@@ -57,7 +57,7 @@ describe('Pruebas sobre usuarios', () => {
             }));
 
             // la base de datos vuelve al estado inicial
-            await userService.deleteUser(usuarioCreado);
+            await userService.deleteUser();
         });
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
@@ -149,7 +149,7 @@ describe('Pruebas sobre usuarios', () => {
 
             // WHEN
             //  se intenta eliminar la cuenta
-            const usuarioBorrado = await userService.deleteUser(usuarioCreado);
+            const usuarioBorrado = await userService.deleteUser();
 
             // THEN
             //  se elimina la cuenta
@@ -163,13 +163,7 @@ describe('Pruebas sobre usuarios', () => {
 
             // WHEN
             //  se intenta eliminar la cuenta
-            const usuarioQueNoExiste = {
-                uid: "?",                        // UID que NO existe
-                email: maria.email,
-                nombre: maria.nombre,
-                apellidos: maria.apellidos,
-            }
-            await expectAsync(userService.deleteUser(usuarioQueNoExiste))
+            await expectAsync(userService.deleteUser())
                 .toBeRejectedWith(new AccountNotFoundError());
             // THEN
             //  se lanza el error AccountNotFoundError y no se elimina ninguna cuenta

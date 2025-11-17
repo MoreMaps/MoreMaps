@@ -17,11 +17,11 @@ export class UserDB implements UserRepository {
         const user = this.auth.currentUser;
         if (!user) throw new SessionNotActiveError();
 
-        // Borra al usuario de la BD
+        // Borra al usuario de la BD, y cierra la sesión
         deleteUser(user).then(() => {
             console.log('Usuario borrado con éxito.');
         }).catch((error) => {
-            console.error(error);
+            console.error('ERROR al borrar usuario: ' + error);
             return false;
         });
         return true;

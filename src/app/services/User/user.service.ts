@@ -37,7 +37,7 @@ export class UserService {
     }
 
     // HU106 Eliminar cuenta
-    async deleteUser(u: UserModel): Promise<boolean> {
-        return this.userDb.deleteUser(u);
+    async deleteUser(): Promise<boolean> {
+        return this.userDb.deleteUser();
     }
 }

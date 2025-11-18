@@ -50,6 +50,10 @@ $dark-theme: mat.define-theme((
     --color-white: #FFFFFF;
     --color-black: #000000;
 
+    // Variables para Snackbars que cambian según el tema
+    --snackbar-success-bg: #000000; // Negro en modo claro
+    --snackbar-success-text: #FFFFFF; // Texto blanco
+
     // Sombras
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -93,38 +97,102 @@ body {
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+
+    // Cambiar colores de snackbar success en modo oscuro
+    --snackbar-success-bg: #504E74; // Morado oscuro en modo oscuro
+    --snackbar-success-text: #FFFFFF; // Texto blanco
+
 }
 
 // ===== CLASES UTILITARIAS DE COLOR =====
 
 // Fondos usando el sistema de Material
-.bg-primary { background-color: var(--mat-sys-primary) !important; }
-.bg-secondary { background-color: var(--mat-sys-secondary) !important; }
-.bg-tertiary { background-color: var(--mat-sys-tertiary) !important; }
-.bg-surface { background-color: var(--mat-sys-surface) !important; }
-.bg-surface-container { background-color: var(--mat-sys-surface-container) !important; }
-.bg-surface-variant { background-color: var(--mat-sys-surface-variant) !important; }
-.bg-error { background-color: var(--mat-sys-error) !important; }
+.bg-primary {
+    background-color: var(--mat-sys-primary) !important;
+}
+
+.bg-secondary {
+    background-color: var(--mat-sys-secondary) !important;
+}
+
+.bg-tertiary {
+    background-color: var(--mat-sys-tertiary) !important;
+}
+
+.bg-surface {
+    background-color: var(--mat-sys-surface) !important;
+}
+
+.bg-surface-container {
+    background-color: var(--mat-sys-surface-container) !important;
+}
+
+.bg-surface-variant {
+    background-color: var(--mat-sys-surface-variant) !important;
+}
+
+.bg-error {
+    background-color: var(--mat-sys-error) !important;
+}
 
 // Fondos usando colores personalizados de Figma
-.bg-mint { background-color: var(--color-mint-green) !important; }
-.bg-purple { background-color: var(--color-purple) !important; }
-.bg-orange { background-color: var(--color-orange) !important; }
-.bg-teal-dark { background-color: var(--color-teal-dark) !important; }
-.bg-lavender { background-color: var(--color-lavender) !important; }
+.bg-mint {
+    background-color: var(--color-mint-green) !important;
+}
+
+.bg-purple {
+    background-color: var(--color-purple) !important;
+}
+
+.bg-orange {
+    background-color: var(--color-orange) !important;
+}
+
+.bg-teal-dark {
+    background-color: var(--color-teal-dark) !important;
+}
+
+.bg-lavender {
+    background-color: var(--color-lavender) !important;
+}
 
 // Colores de texto usando el sistema de Material
-.text-primary { color: var(--mat-sys-primary) !important; }
-.text-secondary { color: var(--mat-sys-secondary) !important; }
-.text-tertiary { color: var(--mat-sys-tertiary) !important; }
-.text-on-surface { color: var(--mat-sys-on-surface) !important; }
-.text-on-surface-variant { color: var(--mat-sys-on-surface-variant) !important; }
-.text-error { color: var(--mat-sys-error) !important; }
+.text-primary {
+    color: var(--mat-sys-primary) !important;
+}
+
+.text-secondary {
+    color: var(--mat-sys-secondary) !important;
+}
+
+.text-tertiary {
+    color: var(--mat-sys-tertiary) !important;
+}
+
+.text-on-surface {
+    color: var(--mat-sys-on-surface) !important;
+}
+
+.text-on-surface-variant {
+    color: var(--mat-sys-on-surface-variant) !important;
+}
+
+.text-error {
+    color: var(--mat-sys-error) !important;
+}
 
 // Colores de texto personalizados
-.text-mint { color: var(--color-mint-green) !important; }
-.text-purple { color: var(--color-purple) !important; }
-.text-orange { color: var(--color-orange) !important; }
+.text-mint {
+    color: var(--color-mint-green) !important;
+}
+
+.text-purple {
+    color: var(--color-purple) !important;
+}
+
+.text-orange {
+    color: var(--color-orange) !important;
+}
 
 // ===== COMPONENTES PERSONALIZADOS =====
 
@@ -297,25 +365,398 @@ body {
     }
 }
 
-// ===== UTILIDADES DE ESPACIADO =====
-.p-0 { padding: 0 !important; }
-.p-1 { padding: 0.25rem !important; }
-.p-2 { padding: 0.5rem !important; }
-.p-3 { padding: 0.75rem !important; }
-.p-4 { padding: 1rem !important; }
-.p-5 { padding: 1.5rem !important; }
-.p-6 { padding: 2rem !important; }
+// ===== SNACKBARS =====
 
-.m-0 { margin: 0 !important; }
-.m-1 { margin: 0.25rem !important; }
-.m-2 { margin: 0.5rem !important; }
-.m-3 { margin: 0.75rem !important; }
-.m-4 { margin: 1rem !important; }
-.m-5 { margin: 1.5rem !important; }
-.m-6 { margin: 2rem !important; }
+.success-snackbar {
+    .mdc-snackbar__surface {
+        // Usa variable CSS que cambia según el tema
+        background-color: var(--snackbar-success-bg) !important;
+        color: var(--snackbar-success-text) !important;
+    }
+
+    .mat-mdc-snack-bar-label {
+        color: var(--snackbar-success-text) !important;
+    }
+
+    .mat-mdc-button {
+        color: var(--color-mint-green) !important;
+        font-weight: 600;
+    }
+}
+
+.error-snackbar {
+    .mdc-snackbar__surface {
+        background-color: var(--mat-sys-error) !important;
+        color: var(--mat-sys-on-error) !important;
+    }
+
+    .mat-mdc-snack-bar-label {
+        color: var(--mat-sys-on-error) !important;
+    }
+
+    .mat-mdc-button {
+        color: var(--mat-sys-on-error) !important;
+        font-weight: 600;
+    }
+}
+
+.warning-snackbar {
+    .mdc-snackbar__surface {
+        background-color: var(--color-orange) !important;
+        color: var(--color-white) !important;
+    }
+
+    .mat-mdc-snack-bar-label {
+        color: var(--color-white) !important;
+    }
+
+    .mat-mdc-button {
+        color: var(--color-white) !important;
+        font-weight: 600;
+    }
+}
+
+.mat-mdc-snack-bar-container {
+    .mdc-snackbar__surface {
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        min-width: 300px;
+        max-width: 500px;
+    }
+
+    .mat-mdc-snack-bar-label {
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
+    .mat-mdc-button {
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+}
+
+// ===== DIALOGOS =====
+
+.dialog-container {
+    padding: 2rem;
+    background-color: var(--mat-sys-surface);
+    position: relative;
+    border-radius: var(--radius-lg);
+    max-height: 90vh;
+    overflow-y: auto;
+
+    // Scroll suave
+    scrollbar-width: thin;
+    scrollbar-color: var(--mat-sys-outline) var(--mat-sys-surface-variant);
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: var(--mat-sys-surface-variant);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--mat-sys-outline);
+        border-radius: var(--radius-full);
+
+        &:hover {
+            background: var(--mat-sys-on-surface-variant);
+        }
+    }
+
+    // Responsive para móvil
+    @media (max-width: 768px) {
+        padding: 1.5rem;
+        border-radius: var(--radius-md);
+    }
+
+    @media (max-width: 480px) {
+        padding: 1rem;
+    }
+
+    .close-button {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        color: var(--mat-sys-on-surface-variant);
+
+        &:hover {
+            background-color: var(--mat-sys-surface-variant);
+        }
+    }
+
+    .dialog-title {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface);
+        text-align: center;
+        margin: 0 0 2rem 0;
+
+        @media (max-width: 768px) {
+            font-size: 1.25rem;
+            margin: 0 0 1.5rem 0;
+        }
+    }
+
+    .error-banner {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background-color: var(--mat-sys-error-container);
+        color: var(--mat-sys-on-error-container);
+        border-radius: var(--radius-md);
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+
+        mat-icon {
+            font-size: 1.25rem;
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+    }
+}
+
+// Estilos para formularios
+.login-form,
+.register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .full-width {
+        width: 100%;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+        width: 100%;
+
+        @media (max-width: 600px) {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .half-width {
+            flex: 1;
+            min-width: 0;
+
+            @media (max-width: 600px) {
+                width: 100%;
+            }
+        }
+    }
+
+    .submit-button {
+        width: 100%;
+        height: 48px;
+        margin-top: 1rem;
+        background-color: var(--color-mint-green) !important;
+        color: var(--color-teal-dark) !important;
+        font-weight: 600;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        &:hover:not(:disabled) {
+            background-color: var(--color-mint-green-light) !important;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        mat-spinner {
+            display: inline-block;
+
+            ::ng-deep circle {
+                stroke: var(--color-teal-dark);
+            }
+        }
+    }
+
+    .link-container {
+        text-align: center;
+        margin-top: 0.5rem;
+
+        .text-link {
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity var(--transition-fast);
+
+            &:hover {
+                opacity: 0.8;
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .password-hint {
+        font-size: 0.7rem;
+        color: var(--mat-sys-on-surface-variant);
+        margin-top: 0.25rem;
+    }
+}
+
+// Personalización de Material Form Fields
+::ng-deep {
+    .mat-mdc-form-field {
+        .mat-mdc-text-field-wrapper {
+            background-color: var(--color-lavender);
+            border-radius: var(--radius-md);
+
+            .mat-mdc-form-field-flex {
+                background-color: transparent;
+            }
+        }
+
+        .mat-mdc-form-field-focus-overlay {
+            background-color: transparent;
+        }
+
+        &.mat-focused {
+            .mat-mdc-text-field-wrapper {
+                background-color: var(--color-lavender);
+            }
+        }
+
+        .mat-mdc-form-field-icon-suffix {
+            color: var(--mat-sys-on-surface-variant);
+        }
+    }
+
+    // Estilos del contenedor del diálogo
+    .custom-dialog-container {
+        .mat-mdc-dialog-container {
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 0;
+
+            // En móvil, diálogo de pantalla completa o casi completa
+            @media (max-width: 768px) {
+                border-radius: var(--radius-md);
+                max-height: 95vh !important;
+            }
+
+            @media (max-width: 480px) {
+                border-radius: 0;
+                max-height: 100vh !important;
+            }
+        }
+    }
+}
+
+// Tema oscuro
+.dark-theme {
+    .dialog-container {
+        .mat-mdc-form-field {
+            .mat-mdc-text-field-wrapper {
+                background-color: var(--mat-sys-surface-variant);
+            }
+            .mat-mdc-text-field-input {
+                padding-right: 2.5rem; // deja espacio para iconos
+            }
+        }
+    }
+}
+
+// Animaciones
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.dialog-container {
+    animation: fadeIn 0.3s ease-out;
+}
+
+// ===== UTILIDADES DE ESPACIADO =====
+.p-0 {
+    padding: 0 !important;
+}
+
+.p-1 {
+    padding: 0.25rem !important;
+}
+
+.p-2 {
+    padding: 0.5rem !important;
+}
+
+.p-3 {
+    padding: 0.75rem !important;
+}
+
+.p-4 {
+    padding: 1rem !important;
+}
+
+.p-5 {
+    padding: 1.5rem !important;
+}
+
+.p-6 {
+    padding: 2rem !important;
+}
+
+.m-0 {
+    margin: 0 !important;
+}
+
+.m-1 {
+    margin: 0.25rem !important;
+}
+
+.m-2 {
+    margin: 0.5rem !important;
+}
+
+.m-3 {
+    margin: 0.75rem !important;
+}
+
+.m-4 {
+    margin: 1rem !important;
+}
+
+.m-5 {
+    margin: 1.5rem !important;
+}
+
+.m-6 {
+    margin: 2rem !important;
+}
 
 // ===== UTILIDADES DE SOMBRA =====
-.shadow { box-shadow: var(--shadow-sm) !important; }
-.shadow-md { box-shadow: var(--shadow-md) !important; }
-.shadow-lg { box-shadow: var(--shadow-lg) !important; }
-.shadow-none { box-shadow: none !important; }
+.shadow {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.shadow-md {
+    box-shadow: var(--shadow-md) !important;
+}
+
+.shadow-lg {
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.shadow-none {
+    box-shadow: none !important;
+}

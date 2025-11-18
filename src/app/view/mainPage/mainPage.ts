@@ -4,7 +4,7 @@ import {MatButton} from '@angular/material/button';
 import {NgOptimizedImage} from '@angular/common';
 
 @Component({
-  selector: 'main-page',
+  selector: 'mainPage',
   templateUrl: './mainPage.html',
   imports: [
     MatButton,

@@ -142,7 +142,6 @@ describe('Pruebas sobre usuarios', () => {
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
             //  el usuario "ramon" está registrado y ha iniciado sesión
-            await userService.login(ramon.email, ramon.pwd);
 
             // WHEN
             //  se intenta eliminar la cuenta
@@ -155,9 +154,10 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
-            //  lista de usuarios registrados incluye a "ramon"
+            //  el usuario "ramon" está registrado
 
             // no se ha iniciado sesión
+            await userService.logout();
 
             // WHEN
             //  se intenta eliminar la cuenta
@@ -173,7 +173,6 @@ describe('Pruebas sobre usuarios', () => {
         it('HU603-EV01: Comprobación de datos guardados ante cierre involuntario', async () => {
             // GIVEN
             //  el usuario "ramon" está registrado y ha iniciado sesión
-            await userService.login(ramon.email, ramon.pwd);
 
             //  se cierra la sesión involuntariamente
             await userService.logout();

@@ -7,31 +7,57 @@ import {UserDB} from '../services/User/UserDB';
 import {UserNotFoundError} from '../errors/UserNotFoundError';
 import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../errors/SessionNotActiveError';
+import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {Auth} from '@angular/fire/auth';
+import {appConfig} from '../app.config';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
+    let uid = 'gwe0WfRyPScPFXhK3sOsFIBVvyC3';
+    let firestore: Firestore;
+    let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
     const maria = USER_TEST_DATA[1];
 
     beforeAll( async() => {
         await TestBed.configureTestingModule({
-            providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}]
+            providers: [
+                UserService,
+                {provide: USER_REPOSITORY, useClass: UserDB},
+                appConfig.providers]
         }).compileComponents();
 
         // inyección del servicio
         userService = TestBed.inject(UserService);
 
-        // creación de un usuario
-        usuarioRegistradoRamon = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
-    });
+        // inyección de Firestore, Auth
+        firestore = TestBed.inject(Firestore);
+        auth = TestBed.inject(Auth);
 
-    afterAll( async() => {
-        // eliminación del usuario creado al terminar las pruebas
-        await userService.deleteUser();
+        // get datos de ramon
+        try {
+            const userDocRef = doc(firestore, `users/${uid}`);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                usuarioRegistradoRamon = new UserModel(
+                    data['uid'],
+                    data['email'],
+                    data['nombre'],
+                    data['apellidos']
+                );
+            }
+        }
+        catch(error) {
+            console.error(error);
+        }
+
+        // Fallo al obtener datos
+        if (!usuarioRegistradoRamon) { throw new UserNotFoundError(); }
     });
 
     describe('HU101: Registrar Usuario', () => {
@@ -54,9 +80,6 @@ describe('Pruebas sobre usuarios', () => {
                 nombre: maria.nombre,
                 apellidos: maria.apellidos,
             }));
-
-            // la base de datos vuelve al estado inicial
-            await userService.deleteUser();
         });
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
@@ -136,12 +159,12 @@ describe('Pruebas sobre usuarios', () => {
         });
     });
 
-
     describe('HU106: Eliminar cuenta', () => {
 
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
-            //  el usuario "ramon" está registrado y ha iniciado sesión
+            //  lista de usuarios registrados incluye a "maria"
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
             // WHEN
             //  se intenta eliminar la cuenta
@@ -154,9 +177,10 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
-            //  el usuario "ramon" está registrado
+            //  lista de usuarios registrados incluye a "maria"
+            const usuarioCreado = await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
-            // no se ha iniciado sesión
+            //   no se ha iniciado sesión
             await userService.logout();
 
             // WHEN
@@ -165,6 +189,14 @@ describe('Pruebas sobre usuarios', () => {
                 .toBeRejectedWith(new SessionNotActiveError());
             // THEN
             //  se lanza el error SessionNotActiveError y no se elimina ninguna cuenta
+
+            // LIMPIEZA: la base de datos vuelve al estado inicial
+            const userDocRef = doc(firestore, `users/${usuarioCreado.uid}`);
+            await deleteDoc(userDocRef);
+            const currentUser  = auth.currentUser;
+            if (currentUser) {
+                await currentUser.delete();
+            }
         });
     });
 
@@ -173,6 +205,7 @@ describe('Pruebas sobre usuarios', () => {
         it('HU603-EV01: Comprobación de datos guardados ante cierre involuntario', async () => {
             // GIVEN
             //  el usuario "ramon" está registrado y ha iniciado sesión
+            await userService.login(ramon.email, ramon.pwd);
 
             //  se cierra la sesión involuntariamente
             await userService.logout();
@@ -190,7 +223,5 @@ describe('Pruebas sobre usuarios', () => {
                 apellidos: ramon.apellidos,
             }));
         });
-
-        // No hay caso inválido, ya que la base de datos es una dependencia externa.
     })
 })

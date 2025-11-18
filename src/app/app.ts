@@ -3,7 +3,9 @@ import {MainPageComponent} from './view/mainPage/mainPage';
 
 @Component({
   selector: 'app-root',
-  imports: [MainPageComponent],
+  imports: [MainPageComponent,
+
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

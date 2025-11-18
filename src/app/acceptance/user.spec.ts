@@ -7,32 +7,51 @@ import {UserDB} from '../services/User/UserDB';
 import {UserNotFoundError} from '../errors/UserNotFoundError';
 import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../errors/DBAccessError';
-import {AccountNotFoundError} from '../errors/AccountNotFoundError';
+import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {appConfig} from '../app.config';
+import firebase from 'firebase/compat/app';
+import {Auth} from '@angular/fire/auth';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
+    let uid = 'gwe0WfRyPScPFXhK3sOsFIBVvyC3';
+    let firestore: Firestore;
+    let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
     const maria = USER_TEST_DATA[1];
 
     beforeAll( async() => {
         await TestBed.configureTestingModule({
-            providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}]
+            providers: [
+                UserService,
+                {provide: USER_REPOSITORY, useClass: UserDB},
+                appConfig.providers]
         }).compileComponents();
 
         // inyección del servicio
         userService = TestBed.inject(UserService);
+        firestore = TestBed.inject(Firestore);
+        auth = TestBed.inject(Auth);
 
-        // creación de un usuario
-        usuarioRegistradoRamon = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
-    });
-
-    afterAll( async() => {
-        // eliminación del usuario creado al terminar las pruebas
-        await userService.deleteUser(usuarioRegistradoRamon);
+        // get datos de ramon
+        try{
+            const userDocRef = doc(firestore, `users/${uid}`);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                usuarioRegistradoRamon = new UserModel(
+                    data['uid'],
+                    data['email'],
+                    data['nombre'],
+                    data['apellidos']
+                );
+            } else throw new UserNotFoundError();
+        }catch(error){
+            console.error(error);}
     });
 
     describe('HU101: Registrar Usuario', () => {
@@ -55,9 +74,17 @@ describe('Pruebas sobre usuarios', () => {
                 nombre: maria.nombre,
                 apellidos: maria.apellidos,
             }));
+            // y el documento se crea
+            const userDocRef = doc(firestore, `users/${usuarioCreado.uid}`);
+            const docSnap = await getDoc(userDocRef);
+            expect(docSnap.exists()).toEqual(true);
 
-            // la base de datos vuelve al estado inicial
-            await userService.deleteUser(usuarioCreado);
+            // LIMPIEZA: la base de datos vuelve al estado inicial
+            await deleteDoc(userDocRef);
+            const currentUser  = auth.currentUser;
+            if (currentUser) {
+                await currentUser.delete();
+            }
         });
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {

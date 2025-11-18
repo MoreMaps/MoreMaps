@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import {MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {UserService} from '../../../services/User/user.service';
-import {MatSnackBarModule} from '@angular/material/snack-bar';
+import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import {RegisterModel} from '../../../data/RegisterModel';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
@@ -89,9 +89,12 @@ export class RegisterDialogComponent {
         return null;
     }
 
+    private snackbar = inject(MatSnackBar);
+
     async onSubmit(): Promise<void> {
-        if (this.registerForm.valid && !this.loading) {
+        if (this.registerForm.valid) {
             this.errorMessage = '';
+            this.loading = true;
 
             const registerData: RegisterModel = {
                 email: this.registerForm.value.email,
@@ -104,11 +107,19 @@ export class RegisterDialogComponent {
                 // Registrar usuario en Firebase
                 const userModel = await this.userService.signUp(registerData.email,
                     registerData.pwd, registerData.nombre, registerData.apellidos);
-                // Si llego aquí, el proceso se ha completado. Comprobar que userModel es correcto
-                if (userModel && userModel.uid !== '') {
-                } else throw Error('Returned UserModel shouldn\'t be empty!'); // TODO: Implement service method
+                this.loading = false;
                 this.dialogRef.close();
+                if (userModel && userModel.uid !== ''){
+                    // TODO: Redirigir (mediante router, supongo que llamando al mainPage) al mapa
+                    this.snackbar.open(`El usuario se ha creado correctamente. uid: ${userModel.uid}`, 'Cerrar', {
+                        duration: 3000,             // tiempo en milisegundos que dura el snackbar
+                        horizontalPosition: 'right', // 'start' | 'center' | 'end' | 'left' | 'right'
+                        verticalPosition: 'bottom',  // 'top' | 'bottom'
+                        panelClass: ['success-snackbar'] // opcional, para estilos personalizados
+                    });
+                } else {console.log(userModel);}
             } catch (error: any) {
+                this.loading = false;
                 this.errorMessage = error.message;
             }
         }
@@ -120,19 +131,5 @@ export class RegisterDialogComponent {
 
     close(): void {
         this.dialogRef.close();
-    }
-
-    getPasswordError(): string {
-        const passwordControl = this.registerForm.get('password');
-        if (passwordControl?.hasError('required')) {
-            return 'La contraseña es requerida';
-        }
-        if (passwordControl?.hasError('minlength')) {
-            return 'Mínimo 8 caracteres';
-        }
-        if (passwordControl?.hasError('pattern')) {
-            return 'Debe incluir mayúscula, minúscula, número y carácter especial';
-        }
-        return '';
     }
 }

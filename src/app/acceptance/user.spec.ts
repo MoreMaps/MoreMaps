@@ -8,6 +8,7 @@ import {UserNotFoundError} from '../errors/UserNotFoundError';
 import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../errors/DBAccessError';
 import {AccountNotFoundError} from '../errors/AccountNotFoundError';
+import {appConfig} from '../app.config';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
@@ -20,7 +21,7 @@ describe('Pruebas sobre usuarios', () => {
 
     beforeAll( async() => {
         await TestBed.configureTestingModule({
-            providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}]
+            providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}, appConfig.providers]
         }).compileComponents();
 
         // inyección del servicio

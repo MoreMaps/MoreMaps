@@ -2,7 +2,6 @@ import {inject, Injectable} from '@angular/core';
 import {UserModel} from '../../data/UserModel';
 import {USER_REPOSITORY, UserRepository} from './UserRepository';
 
-
 @Injectable({ providedIn: 'root' })
 export class UserService {
     private userDb : UserRepository = inject(USER_REPOSITORY);
@@ -38,7 +37,7 @@ export class UserService {
     }
 
     // HU106 Eliminar cuenta
-    async deleteUser(u: UserModel): Promise<boolean> {
-        return false;
+    async deleteUser(): Promise<boolean> {
+        return this.userDb.deleteUser();
     }
 }

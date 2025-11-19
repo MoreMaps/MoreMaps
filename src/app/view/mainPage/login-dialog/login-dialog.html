@@ -1,0 +1,85 @@
+<div class="dialog-container">
+    <button mat-icon-button class="close-button" (click)="close()">
+        <mat-icon>close</mat-icon>
+    </button>
+
+    <h2 class="dialog-title">Iniciar sesión</h2>
+
+    <!-- Mensaje de error general -->
+    @if (errorMessage) {
+        <div class="error-banner">
+            <mat-icon>error</mat-icon>
+            <span>{{ errorMessage }}</span>
+        </div>
+    }
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <div class="form-row">
+            <!-- Email -->
+            <mat-form-field appearance="fill" class="half-width">
+                <mat-label>Email</mat-label>
+                <input
+                    matInput
+                    type="email"
+                    formControlName="email"
+                    placeholder="email@ejemplo.com"
+                    autocomplete="email">
+                @if (loginForm.get('email')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+                @if (loginForm.get('email')?.hasError('email')) {
+                    <mat-error>Email inválido</mat-error>
+                }
+            </mat-form-field>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 20px;">
+            <!-- Password -->
+            <mat-form-field appearance="fill" class="half-width" style="margin-bottom: 20px;">
+                <mat-label>Contraseña</mat-label>
+                <input
+                    matInput
+                    [type]="hidePassword ? 'password' : 'text'"
+                    formControlName="password"
+                    placeholder="********"
+                    autocomplete="password">
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="hidePassword = !hidePassword">
+                    <mat-icon>visibility</mat-icon>
+                </button>
+                @if (loginForm.get('password')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+                @if (loginForm.get('password')?.hasError('minlength')) {
+                    <mat-error>Mínimo 8 caracteres</mat-error>
+                }
+            </mat-form-field>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+            mat-raised-button
+            type="submit"
+            class="submit-button bg-mint"
+            [disabled]="!loginForm.valid || loading">
+            @if (loading) {
+                <mat-spinner diameter="20"></mat-spinner>
+            }
+            @if (!loading) {
+                <span>Continuar</span>
+            }
+        </button>
+
+        <!-- Switch to Register -->
+        <div class="link-container">
+            <a
+                class="text-link text-orange"
+                (click)="onSwitchToRegister()">
+                CREAR CUENTA
+            </a>
+        </div>
+    </form>
+</div>

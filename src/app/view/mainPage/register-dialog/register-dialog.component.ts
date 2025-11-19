@@ -63,6 +63,15 @@ export class RegisterDialogComponent {
                     (c) => this.emailMatchValidator(c)
                 ]
             });
+
+        // Add value change listeners to trigger re-validation
+        this.registerForm.get('email')?.valueChanges.subscribe(() => {
+            this.registerForm.get('confirmEmail')?.updateValueAndValidity({ onlySelf: true });
+        });
+
+        this.registerForm.get('password')?.valueChanges.subscribe(() => {
+            this.registerForm.get('confirmPassword')?.updateValueAndValidity({ onlySelf: true });
+        });
     }
 
     emailMatchValidator(control: AbstractControl): ValidationErrors | null {

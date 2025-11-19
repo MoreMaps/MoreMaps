@@ -18,41 +18,58 @@ export class UserDB implements UserRepository {
         return {uid:"", email: "", nombre:"", apellidos:""};
     }
 
+    /**
+     * Recibe un email y una contraseña e intenta iniciar sesión en Firebase.
+     * @param email correo del usuario
+     * @param password contraseña del usuario
+     * @returns Promise con true si se ha podido iniciar sesión; excepción en caso contrario.
+     */
     async validateCredentials(email: string, password: string): Promise<boolean> {
         // Intento de inicio de sesión
-        // todo: eliminar logs
         try {
             // Inicio de sesión en Firebase
-            const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
-            console.log(userCredential);
+            await signInWithEmailAndPassword(this.auth, email, password);
             // Devuelve true si no ha habido errores
             return true;
         } catch (error: any) {
-            console.log(error);
-            if (error.code === 'auth/invalid-credential') {
-                if (await this.userExists(email)) throw new InvalidCredentialError();
-                throw new UserNotFoundError();
+            // Gestión del error de Firebase
+            switch (error.code) {
+                // email o contraseña inválidos
+                case 'auth/invalid-credential': {
+                    if (await this.userExists(email)) {
+                        throw new InvalidCredentialError();
+                    }
+                    throw new UserNotFoundError();
+                }
+                // usuario no encontrado
+                case 'auth/user-not-found': {
+                    throw new UserNotFoundError();
+                }
+                // contraseña incorrecta
+                case 'auth/wrong-password': {
+                    throw new InvalidCredentialError();
+                }
+                // cualquier otro caso lanza un error genérico
+                default: {
+                    throw new WrongLoginError();
+                }
             }
-            if (error.code === 'auth/user-not-found') {
-                throw new UserNotFoundError();
-            }
-            if (error.code === 'auth/wrong-password') {
-                throw new InvalidCredentialError();
-            }
-            throw new WrongLoginError();
-
         }
     }
 
+    /**
+     * Comprueba exista una cuenta registrada con un correo específico.
+     * @param email correo sobre el que comprobar si existe una centa registrada
+     * @private
+     * @returns Promise con true si existe; false si no existe.
+     */
     private async userExists (email: string): Promise<boolean> {
         try{
             const userRef = collection(this.firestore, 'users');
             const q = query(userRef, where('email', '==', email));
             const querySnapshot = await getDocs(q);
             return !querySnapshot.empty;
-
         } catch (error) {
-            console.error('Error checking user existence: ', error);
             return false;
         }
     }

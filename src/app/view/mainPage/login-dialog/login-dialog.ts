@@ -48,9 +48,9 @@ export class LoginDialogComponent {
             });
     }
 
-    async onSubmit(event?: Event): Promise<void> {
-        event?.preventDefault();
+    async onSubmit(): Promise<void> {
         if (this.loginForm.valid) {
+            this.loading = true;
             this.errorMessage = '';
 
             const loginData = {
@@ -58,13 +58,10 @@ export class LoginDialogComponent {
                 pwd: this.loginForm.value.password
             };
 
-            this.loading = true;
             try {
                 // Iniciar sesión en Firebase
                 const res = await this.userService.login(loginData.email, loginData.pwd);
                 // Si se llega hasta aquí, se ha iniciado sesión correctamente.
-                // todo: borrar log
-                console.log("Sesión iniciada correctamente.")
                 this.dialogRef.close();
             } catch (error: any) {
                 this.errorMessage = error.message;

@@ -4,7 +4,6 @@ import {USER_REPOSITORY, UserRepository} from './UserRepository';
 import {UserAlreadyExistsError} from '../../errors/UserAlreadyExistsError';
 import {WrongPasswordFormatError} from '../../errors/WrongPasswordFormatError';
 
-
 @Injectable({ providedIn: 'root' })
 export class UserService {
     private userDb : UserRepository = inject(USER_REPOSITORY);
@@ -43,6 +42,7 @@ export class UserService {
     // HU105 Cerrar sesión (auxiliar: usuario actual)
     async getCurrentUser(): Promise<UserModel> {
         return new UserModel("", "", "", "");
+        return this.userDb.logoutUser();
     }
 
     // HU106 Eliminar cuenta

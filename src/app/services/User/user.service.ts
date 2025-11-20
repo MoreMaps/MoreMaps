@@ -23,21 +23,11 @@ export class UserService {
 
     // HU105 Cerrar sesión
     async logout(): Promise<boolean> {
-        return false;
-    }
-
-    // HU105 Cerrar sesión (auxiliar: usuario actual)
-    async getCurrentUser(): Promise<UserModel> {
-        return {
-            uid: "",
-            email: "",
-            nombre: "",
-            apellidos: "",
-        };
+        return this.userDb.logoutUser();
     }
 
     // HU106 Eliminar cuenta
     async deleteUser(): Promise<boolean> {
-        return this.userDb.deleteUser();
+        return false;
     }
 }

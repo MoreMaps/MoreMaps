@@ -1,0 +1,66 @@
+<div>
+
+<!-- Botón de usuario en la esquina superior derecha -->
+<button class="user-button" (click)="toggleUserMenu()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+    </svg>
+</button>
+
+<!-- Menú desplegable del usuario -->
+<div class="user-menu" [class.show]="showUserMenu">
+    <div class="user-info">
+        <div class="user-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+            </svg>
+        </div>
+        <div class="user-details">
+            <div class="user-name">Nombre del usuario</div>
+            <div class="user-handle">&#64;user</div>
+        </div>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <button class="menu-option" (click)="onAccountSettings()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2"/>
+        </svg>
+        <span>AJUSTES DE CUENTA</span>
+    </button>
+
+    <button class="menu-option logout" (click)="openPopup()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>CERRAR SESIÓN</span>
+    </button>
+</div>
+
+<!-- Overlay oscuro -->
+<div class="overlay" [class.show]="showLogoutConfirmation" (click)="closePopup()"></div>
+
+<!-- Popup de confirmación de cierre de sesión -->
+<div class="logout-popup" [class.show]="showLogoutConfirmation">
+    <h3>¿Seguro que quieres<br>cerrar sesión?</h3>
+
+    <button class="popup-button confirm" (click)="confirmLogout()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>SÍ, CERRAR SESIÓN</span>
+    </button>
+
+    <button class="popup-button cancel" (click)="closePopup()">
+        <span>NO</span>
+    </button>
+</div>
+</div>

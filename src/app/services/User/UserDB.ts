@@ -2,11 +2,12 @@ import {UserModel} from '../../data/UserModel';
 import {UserRepository} from './UserRepository';
 import {inject, Injectable, signal} from '@angular/core';
 import {Observable} from 'rxjs';
-import {Auth, authState, updateProfile, User, signInWithEmailAndPassword, createUserWithEmailAndPassword, deleteUser} from '@angular/fire/auth';
-import {collection, Firestore, query, where, doc, getDocs, setDoc} from '@angular/fire/firestore';
+import {Auth, authState, updateProfile, User, signInWithEmailAndPassword, createUserWithEmailAndPassword} from '@angular/fire/auth';
+import {collection, Firestore, query, where, doc, getDocs, setDoc, deleteDoc, getDoc} from '@angular/fire/firestore';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
 import {UserNotFoundError} from '../../errors/UserNotFoundError';
 import {InvalidCredentialError} from '../../errors/InvalidCredentialError';
+import {DBAccessError} from '../../errors/DBAccessError';
 
 @Injectable({
     providedIn: 'root'
@@ -64,18 +65,50 @@ export class UserDB implements UserRepository {
     }
 
 
-    async deleteUser(): Promise<boolean> {
-        // Obtiene el usuario de la sesión; si no hay, no se puede borrar
+    async deleteAuthUser(): Promise<boolean> {
         const user = this.auth.currentUser;
         if (!user) throw new SessionNotActiveError();
 
-        // Borra al usuario de la BD, y cierra la sesión
-        // Si falla, se atrapa la excepción y no se borra el usuario
-        deleteUser(user).catch((error) => {
-            console.error('ERROR de Firebase al borrar usuario: ' + error);
-            return false;
-        });
-        return true;
+        try {
+            // 1. Primero intenta borrar de Firestore
+            const userDocRef = doc(this.firestore, `users/${user.uid}`);
+
+            // Verificar si el documento existe antes de borrarlo
+            const docSnap = await getDoc(userDocRef);
+            if (!docSnap.exists()) {
+                console.warn('El documento del usuario no existe en Firestore');
+                throw new UserNotFoundError();
+            }
+
+            await deleteDoc(userDocRef);
+
+            // 2. Luego borra de Firebase Auth (esto cierra la sesión automáticamente)
+            await user.delete();
+
+            return true;
+        } catch (error: any) {
+            console.error('ERROR al borrar usuario:', error);
+
+            // Re-lanzar errores customizados que ya hayamos lanzado
+            if (error instanceof UserNotFoundError ||
+                error instanceof SessionNotActiveError) {
+                throw error;
+            }
+
+            // Manejo de errores específicos de Firebase
+            switch (error.code) {
+                case 'auth/requires-recent-login':
+                    // El usuario necesita re-autenticarse antes de borrar
+                    throw new SessionNotActiveError();
+                case 'auth/user-not-found':
+                case 'auth/invalid-credential':
+                    // El usuario ya no existe en Auth
+                    throw new UserNotFoundError();
+                default:
+                    // Error desconocido
+                    throw new Error('Error desconocido: ' + error);
+            }
+        }
     }
 
     /**
@@ -141,18 +174,16 @@ export class UserDB implements UserRepository {
         const user = this.auth.currentUser;
         if (!user) throw new SessionNotActiveError();
 
-        // Cierra la sesión del usuario
-        this.auth.signOut().catch((error) => {
+        try {
+            await this.auth.signOut();
+            return true;
+        } catch (error: any) {
+            console.error('ERROR de Firebase al cerrar sesión:', error);
 
-            // El usuario ya no existe (eliminar y cerrar sesión en pestañas distintas)
-            if (error.code == 'auth/invalid-credential') {
+            if (error.code === 'auth/invalid-credential') {
                 throw new UserNotFoundError();
             }
-
-            // Error cualquiera
-            console.error('ERROR de Firebase al borrar usuario: ' + error);
-            return false;
-        });
-        return true;
+            throw new DBAccessError();
+        }
     }
 }

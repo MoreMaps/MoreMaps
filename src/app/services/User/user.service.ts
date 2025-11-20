@@ -50,6 +50,6 @@ export class UserService {
 
     // HU106 Eliminar cuenta
     async deleteUser(): Promise<boolean> {
-        return this.userDb.deleteUser();
+        return this.userDb.deleteAuthUser();
     }
 }

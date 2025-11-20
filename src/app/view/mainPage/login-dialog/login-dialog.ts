@@ -60,8 +60,9 @@ export class LoginDialogComponent {
 
             try {
                 // Iniciar sesión en Firebase
-                const res = await this.userService.login(loginData.email, loginData.pwd);
+                await this.userService.login(loginData.email, loginData.pwd);
                 // Si se llega hasta aquí, se ha iniciado sesión correctamente.
+                // TODO: Redirigir (mediante router, supongo que llamando al mainPage) al mapa
                 this.dialogRef.close();
             } catch (error: any) {
                 this.errorMessage = error.message;

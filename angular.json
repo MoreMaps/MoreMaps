@@ -22,13 +22,7 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              {
-                "glob": "**/*",
-                "input": "src/assets",
-                "output": "assets"
-              },
-              "src/favicon.ico"
+              }
             ],
             "styles": [
               "src/custom-theme.scss",
@@ -92,9 +86,7 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              "src/favicon.ico",
-              "src/assets"
+              }
             ],
             "styles": [
               "src/styles.css"
@@ -104,8 +96,5 @@
         }
       }
     }
-  },
-  "cli": {
-    "analytics": false
   }
 }

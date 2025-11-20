@@ -1,321 +1,35 @@
-// Importar las paletas generadas automáticamente
-@use './theme-colors' as theme;
+
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
-// Incluir estilos core de Material (necesario para M3)
-@include mat.core();
-
-// ===== CREAR TEMAS USANDO LAS PALETAS GENERADAS =====
-$light-theme: mat.define-theme((
-    color: (
-        theme-type: light,
-        primary: theme.$primary-palette,
-        tertiary: theme.$tertiary-palette,
-    ),
-    typography: (
-        brand-family: 'Roboto',
-        plain-family: 'Roboto',
-    ),
-    density: (
-        scale: 0,
-    )
-));
-
-$dark-theme: mat.define-theme((
-    color: (
-        theme-type: dark,
-        primary: theme.$primary-palette,
-        tertiary: theme.$tertiary-palette,
-    ),
-    typography: (
-        brand-family: 'Roboto',
-        plain-family: 'Roboto',
-    ),
-    density: (
-        scale: 0,
-    )
-));
-
-// ===== VARIABLES CSS PERSONALIZADAS ADICIONALES =====
-:root {
-    // Colores específicos de tu diseño de Figma
-    --color-mint-green: #7EDEB0;
-    --color-mint-green-light: #A1E7C5;
-    --color-purple: #8581E2;
-    --color-orange: #FF9539;
-    --color-teal-dark: #1B4141;
-    --color-gray-blue: #88A9A9;
-    --color-purple-dark: #504E74;
-    --color-lavender: #ECEBFF;
-    --color-white: #FFFFFF;
-    --color-black: #000000;
-
-    // Sombras
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-
-    // Transiciones
-    --transition-fast: 0.15s ease;
-    --transition-normal: 0.3s ease;
-    --transition-slow: 0.5s ease;
-
-    // Bordes
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-full: 9999px;
-}
-
-// ===== APLICAR TEMA CLARO POR DEFECTO =====
 html {
-    @include mat.all-component-themes($light-theme);
-    color-scheme: light;
+  @include mat.theme((
+    color: (
+      primary: mat.$cyan-palette,
+      tertiary: mat.$orange-palette,
+    ),
+    typography: Roboto,
+    density: 0,
+  ));
 }
 
 body {
-    background: var(--mat-sys-surface);
-    color: var(--mat-sys-on-surface);
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    margin: 0;
-    padding: 0;
-    transition: background-color var(--transition-normal), color var(--transition-normal);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  // Default the application to a light color theme. This can be changed to
+  // `dark` to enable the dark color theme, or to `light dark` to defer to the
+  // user's system settings.
+  color-scheme: light;
+
+  // Set a default background, font and text colors for the application using
+  // Angular Material's system-level CSS variables. Learn more about these
+  // variables at https://material.angular.dev/guide/system-variables
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+
+  // Reset the user agent margin.
+  margin: 0;
 }
-
-// ===== CLASE PARA MODO OSCURO =====
-.dark-theme {
-    @include mat.all-component-themes($dark-theme);
-    color-scheme: dark;
-
-    // Ajustar sombras para modo oscuro
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-}
-
-// ===== CLASES UTILITARIAS DE COLOR =====
-
-// Fondos usando el sistema de Material
-.bg-primary { background-color: var(--mat-sys-primary) !important; }
-.bg-secondary { background-color: var(--mat-sys-secondary) !important; }
-.bg-tertiary { background-color: var(--mat-sys-tertiary) !important; }
-.bg-surface { background-color: var(--mat-sys-surface) !important; }
-.bg-surface-container { background-color: var(--mat-sys-surface-container) !important; }
-.bg-surface-variant { background-color: var(--mat-sys-surface-variant) !important; }
-.bg-error { background-color: var(--mat-sys-error) !important; }
-
-// Fondos usando colores personalizados de Figma
-.bg-mint { background-color: var(--color-mint-green) !important; }
-.bg-purple { background-color: var(--color-purple) !important; }
-.bg-orange { background-color: var(--color-orange) !important; }
-.bg-teal-dark { background-color: var(--color-teal-dark) !important; }
-.bg-lavender { background-color: var(--color-lavender) !important; }
-
-// Colores de texto usando el sistema de Material
-.text-primary { color: var(--mat-sys-primary) !important; }
-.text-secondary { color: var(--mat-sys-secondary) !important; }
-.text-tertiary { color: var(--mat-sys-tertiary) !important; }
-.text-on-surface { color: var(--mat-sys-on-surface) !important; }
-.text-on-surface-variant { color: var(--mat-sys-on-surface-variant) !important; }
-.text-error { color: var(--mat-sys-error) !important; }
-
-// Colores de texto personalizados
-.text-mint { color: var(--color-mint-green) !important; }
-.text-purple { color: var(--color-purple) !important; }
-.text-orange { color: var(--color-orange) !important; }
-
-// ===== COMPONENTES PERSONALIZADOS =====
-
-// Tarjetas
-.card {
-    background-color: var(--mat-sys-surface-container);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-md);
-    transition: box-shadow var(--transition-normal), transform var(--transition-normal);
-
-    &:hover {
-        box-shadow: var(--shadow-lg);
-        transform: translateY(-2px);
-    }
-
-    &.card-flat {
-        box-shadow: none;
-        border: 1px solid var(--mat-sys-outline-variant);
-    }
-}
-
-// Botones personalizados
-.btn-custom {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    border-radius: var(--radius-md);
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.875rem;
-    transition: all var(--transition-fast);
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    &.btn-primary {
-        background-color: var(--mat-sys-primary);
-        color: var(--mat-sys-on-primary);
-
-        &:hover:not(:disabled) {
-            background-color: var(--mat-sys-primary-container);
-            transform: scale(1.02);
-        }
-    }
-
-    &.btn-secondary {
-        background-color: var(--mat-sys-secondary);
-        color: var(--mat-sys-on-secondary);
-
-        &:hover:not(:disabled) {
-            background-color: var(--mat-sys-secondary-container);
-            transform: scale(1.02);
-        }
-    }
-
-    &.btn-tertiary {
-        background-color: var(--mat-sys-tertiary);
-        color: var(--mat-sys-on-tertiary);
-
-        &:hover:not(:disabled) {
-            opacity: 0.9;
-            transform: scale(1.02);
-        }
-    }
-
-    &.btn-outline {
-        background-color: transparent;
-        border: 1px solid var(--mat-sys-outline);
-        color: var(--mat-sys-on-surface);
-
-        &:hover:not(:disabled) {
-            background-color: var(--mat-sys-surface-variant);
-        }
-    }
-}
-
-// Inputs personalizados
-.input-custom {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: var(--mat-sys-surface-container);
-    border: 1px solid var(--mat-sys-outline-variant);
-    border-radius: var(--radius-md);
-    color: var(--mat-sys-on-surface);
-    font-size: 0.875rem;
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-
-    &:focus {
-        outline: none;
-        border-color: var(--mat-sys-primary);
-        box-shadow: 0 0 0 3px rgba(126, 222, 176, 0.1);
-    }
-
-    &::placeholder {
-        color: var(--mat-sys-on-surface-variant);
-        opacity: 0.6;
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-}
-
-// Chips/Badges
-.chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-full);
-    font-size: 0.75rem;
-    font-weight: 500;
-
-    &.chip-primary {
-        background-color: var(--mat-sys-primary-container);
-        color: var(--mat-sys-on-primary-container);
-    }
-
-    &.chip-secondary {
-        background-color: var(--mat-sys-secondary-container);
-        color: var(--mat-sys-on-secondary-container);
-    }
-
-    &.chip-tertiary {
-        background-color: var(--mat-sys-tertiary-container);
-        color: var(--mat-sys-on-tertiary-container);
-    }
-
-    &.chip-error {
-        background-color: var(--mat-sys-error-container);
-        color: var(--mat-sys-on-error-container);
-    }
-}
-
-// Divisores
-.divider {
-    height: 1px;
-    background-color: var(--mat-sys-outline-variant);
-    border: none;
-    margin: 1rem 0;
-}
-
-// Contenedores con scroll
-.scrollable {
-    overflow-y: auto;
-
-    &::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: var(--mat-sys-surface-variant);
-        border-radius: var(--radius-sm);
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: var(--mat-sys-outline);
-        border-radius: var(--radius-sm);
-
-        &:hover {
-            background: var(--mat-sys-on-surface-variant);
-        }
-    }
-}
-
-// ===== UTILIDADES DE ESPACIADO =====
-.p-0 { padding: 0 !important; }
-.p-1 { padding: 0.25rem !important; }
-.p-2 { padding: 0.5rem !important; }
-.p-3 { padding: 0.75rem !important; }
-.p-4 { padding: 1rem !important; }
-.p-5 { padding: 1.5rem !important; }
-.p-6 { padding: 2rem !important; }
-
-.m-0 { margin: 0 !important; }
-.m-1 { margin: 0.25rem !important; }
-.m-2 { margin: 0.5rem !important; }
-.m-3 { margin: 0.75rem !important; }
-.m-4 { margin: 1rem !important; }
-.m-5 { margin: 1.5rem !important; }
-.m-6 { margin: 2rem !important; }
-
-// ===== UTILIDADES DE SOMBRA =====
-.shadow { box-shadow: var(--shadow-sm) !important; }
-.shadow-md { box-shadow: var(--shadow-md) !important; }
-.shadow-lg { box-shadow: var(--shadow-lg) !important; }
-.shadow-none { box-shadow: none !important; }

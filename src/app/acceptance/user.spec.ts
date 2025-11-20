@@ -6,10 +6,11 @@ import {UserService} from '../services/User/user.service';
 import {UserDB} from '../services/User/UserDB';
 import {UserNotFoundError} from '../errors/UserNotFoundError';
 import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
-import {SessionNotActiveError} from '../errors/SessionNotActiveError';
+import {SessionNotActiveError} from '../errors/DBAccessError';
 import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
-import {Auth} from '@angular/fire/auth';
 import {appConfig} from '../app.config';
+import firebase from 'firebase/compat/app';
+import {Auth} from '@angular/fire/auth';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603

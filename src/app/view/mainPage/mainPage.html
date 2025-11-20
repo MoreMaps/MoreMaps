@@ -13,7 +13,7 @@
         ngSrc="assets/images/logo.png"
         alt="Logo de la aplicación"
         class="app-logo"
-        height="100" width="100"/>
+        height="100" width="100" priority/>
     </div>
 
     <!-- Subtítulo descriptivo -->
@@ -26,7 +26,7 @@
       <button
         mat-raised-button
         class="login-button"
-        (click)="onLogin()"
+        (click)="openLoginDialog()"
         aria-label="Iniciar sesión"
       >
         Iniciar sesión
@@ -35,7 +35,7 @@
       <button
         mat-raised-button
         class="register-button"
-        (click)="onRegister()"
+        (click)="openRegisterDialog()"
         aria-label="Crear cuenta nueva"
       >
         Crear cuenta

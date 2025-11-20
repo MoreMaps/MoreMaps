@@ -1,0 +1,162 @@
+<div class="dialog-container">
+    <button mat-icon-button class="close-button" (click)="close()">
+        <mat-icon>close</mat-icon>
+    </button>
+
+    <h2 class="dialog-title">Crear cuenta</h2>
+
+    <!-- Mensaje de error general -->
+    @if (errorMessage) {
+        <div class="error-banner">
+            <mat-icon>error</mat-icon>
+            <span>{{ errorMessage }}</span>
+        </div>
+    }
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+        <div class="form-row">
+            <!-- First Name -->
+            <mat-form-field appearance="fill" class="half-width">
+                <mat-label>Nombre</mat-label>
+                <input
+                    matInput
+                    type="text"
+                    formControlName="firstName"
+                    placeholder="Nombre"
+                    autocomplete="given-name">
+                @if (registerForm.get('firstName')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+            </mat-form-field>
+
+            <!-- Last Name -->
+            <mat-form-field appearance="fill" class="half-width">
+                <mat-label>Apellidos</mat-label>
+                <input
+                    matInput
+                    type="text"
+                    formControlName="lastName"
+                    placeholder="Apellidos"
+                    autocomplete="family-name">
+                @if (registerForm.get('lastName')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+            </mat-form-field>
+        </div>
+
+        <div class="form-row">
+            <!-- Email -->
+            <mat-form-field appearance="fill" class="half-width">
+                <mat-label>Email</mat-label>
+                <input
+                    matInput
+                    type="email"
+                    formControlName="email"
+                    placeholder="email@ejemplo.com"
+                    autocomplete="email">
+                @if (registerForm.get('email')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+                @if (registerForm.get('email')?.hasError('email')) {
+                    <mat-error>Email inválido</mat-error>
+                }
+            </mat-form-field>
+
+            <!-- Confirm Email -->
+            <mat-form-field appearance="fill" class="half-width">
+                <mat-label>Confirma email</mat-label>
+                <input
+                    matInput
+                    type="email"
+                    formControlName="confirmEmail"
+                    placeholder="email@ejemplo.com"
+                    autocomplete="email">
+                @if (registerForm.get('confirmEmail')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+                @if (registerForm.get('confirmEmail')?.hasError('emailMismatch')) {
+                    <mat-error>Los emails no coinciden</mat-error>
+                }
+            </mat-form-field>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 20px;">
+            <!-- Password -->
+            <mat-form-field appearance="fill" class="half-width" style="margin-bottom: 20px;">
+                <mat-label>Contraseña</mat-label>
+                <input
+                    matInput
+                    [type]="hidePassword ? 'password' : 'text'"
+                    formControlName="password"
+                    placeholder="********"
+                    autocomplete="new-password">
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="hidePassword = !hidePassword">
+                    <mat-icon>visibility</mat-icon>
+                </button>
+                <mat-hint class="password-hint">
+                    al menos 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo
+                </mat-hint>
+                @if (registerForm.get('password')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+                @if (registerForm.get('password')?.hasError('minlength')) {
+                    <mat-error>Mínimo 8 caracteres</mat-error>
+                }
+                @if (registerForm.get('password')?.hasError('pattern')) {
+                    <mat-error>Debe incluir mayúscula, minúscula, número y símbolo</mat-error>
+                }
+            </mat-form-field>
+
+            <!-- Confirm Password -->
+            <mat-form-field appearance="fill" class="half-width" style="margin-bottom: 20px;">
+                <mat-label>Confirma contraseña</mat-label>
+                <input
+                    matInput
+                    [type]="hideConfirmPassword ? 'password' : 'text'"
+                    formControlName="confirmPassword"
+                    placeholder="********"
+                    autocomplete="new-password">
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="hideConfirmPassword = !hideConfirmPassword">
+                    <mat-icon>visibility</mat-icon>
+                </button>
+                @if (registerForm.get('confirmPassword')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+                @if (registerForm.get('confirmPassword')?.hasError('passwordMismatch')) {
+                    <mat-error>Las contraseñas no coinciden</mat-error>
+                }
+            </mat-form-field>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+            mat-raised-button
+            type="submit"
+            class="submit-button bg-mint"
+            [disabled]="!registerForm.valid || loading">
+            @if (loading) {
+                <mat-spinner diameter="20"></mat-spinner>
+            }
+            @if (!loading) {
+                <span>Continuar</span>
+            }
+        </button>
+
+        <!-- Switch to Login -->
+        <div class="link-container">
+            <a
+                class="text-link text-orange"
+                (click)="onSwitchToLogin()">
+                YA TENGO UNA CUENTA
+            </a>
+        </div>
+    </form>
+</div>

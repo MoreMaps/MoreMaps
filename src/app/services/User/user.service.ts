@@ -31,7 +31,13 @@ export class UserService {
 
     // HU102 Iniciar sesión
     async login(email: string, pwd: string): Promise<boolean> {
-        return false;
+        try{
+            const res = await this.userDb.validateCredentials(email, pwd);
+            return res;
+        }
+        catch(error){
+            throw error;
+        }
     }
 
     // HU105 Cerrar sesión

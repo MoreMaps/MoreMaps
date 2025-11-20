@@ -5,7 +5,6 @@ import {NgOptimizedImage} from '@angular/common';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {LoginDialogComponent} from './login-dialog/login-dialog';
 import {RegisterDialogComponent} from './register-dialog/register-dialog.component';
-import {MatSnackBar} from '@angular/material/snack-bar';
 
 @Component({
     selector: 'main-page',
@@ -21,8 +20,7 @@ export class MainPageComponent {
 
   constructor(private router: Router) {}
     private dialog = inject(MatDialog);
-    private snackbar = inject(MatSnackBar);
-  
+
     /**
      * Abre el diálogo de registro.
      */

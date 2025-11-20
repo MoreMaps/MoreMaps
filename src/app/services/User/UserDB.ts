@@ -2,12 +2,11 @@ import {UserModel} from '../../data/UserModel';
 import {UserRepository} from './UserRepository';
 import {inject, Injectable, signal} from '@angular/core';
 import {Observable} from 'rxjs';
-import {Auth, authState, updateProfile, User, signInWithEmailAndPassword, createUserWithEmailAndPassword} from '@angular/fire/auth';
+import {Auth, authState, updateProfile, User, signInWithEmailAndPassword, createUserWithEmailAndPassword, deleteUser} from '@angular/fire/auth';
 import {collection, Firestore, query, where, doc, getDocs, setDoc} from '@angular/fire/firestore';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
 import {UserNotFoundError} from '../../errors/UserNotFoundError';
 import {InvalidCredentialError} from '../../errors/InvalidCredentialError';
-import {UserNotFoundError} from '../../errors/UserNotFoundError';
 
 @Injectable({
     providedIn: 'root'
@@ -15,7 +14,7 @@ import {UserNotFoundError} from '../../errors/UserNotFoundError';
 export class UserDB implements UserRepository {
     private auth = inject(Auth);
     private firestore = inject(Firestore);
-  
+
     // Signal para el usuario actual
     currentUser = signal<User | null>(null);
 
@@ -64,8 +63,19 @@ export class UserDB implements UserRepository {
         }
     }
 
+
     async deleteUser(): Promise<boolean> {
-        return false;
+        // Obtiene el usuario de la sesión; si no hay, no se puede borrar
+        const user = this.auth.currentUser;
+        if (!user) throw new SessionNotActiveError();
+
+        // Borra al usuario de la BD, y cierra la sesión
+        // Si falla, se atrapa la excepción y no se borra el usuario
+        deleteUser(user).catch((error) => {
+            console.error('ERROR de Firebase al borrar usuario: ' + error);
+            return false;
+        });
+        return true;
     }
 
     /**
@@ -99,11 +109,9 @@ export class UserDB implements UserRepository {
                 case 'auth/wrong-password': {
                     throw new InvalidCredentialError();
                 }
-                // cualquier otro caso lanza un error genérico
-                default: {
-                    throw new WrongLoginError();
-                }
             }
+            console.error(error);
+            return false;
         }
     }
 
@@ -123,8 +131,6 @@ export class UserDB implements UserRepository {
             return false;
         }
     }
-    private firestore = inject(Firestore);
-    private auth = inject(Auth);
 
     /**
      * Intenta cerrar sesión en Firebase.

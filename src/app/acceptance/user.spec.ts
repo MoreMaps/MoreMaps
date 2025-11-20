@@ -6,12 +6,9 @@ import {UserService} from '../services/User/user.service';
 import {UserDB} from '../services/User/UserDB';
 import {UserNotFoundError} from '../errors/UserNotFoundError';
 import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
-import {SessionNotActiveError} from '../errors/DBAccessError';
-import {AccountNotFoundError} from '../errors/AccountNotFoundError';
+import {SessionNotActiveError} from '../errors/SessionNotActiveError';
 import {appConfig} from '../app.config';
 import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
-import {appConfig} from '../app.config';
-import firebase from 'firebase/compat/app';
 import {Auth} from '@angular/fire/auth';
 
 
@@ -42,7 +39,7 @@ describe('Pruebas sobre usuarios', () => {
         auth = TestBed.inject(Auth);
 
         // get datos de ramon
-        try {
+        try{
             const userDocRef = doc(firestore, `users/${uid}`);
             const docSnap = await getDoc(userDocRef);
             if (docSnap.exists()) {
@@ -53,14 +50,9 @@ describe('Pruebas sobre usuarios', () => {
                     data['nombre'],
                     data['apellidos']
                 );
-            }
-        }
-        catch(error) {
-            console.error(error);
-        }
-
-        // Fallo al obtener datos
-        if (!usuarioRegistradoRamon) { throw new UserNotFoundError(); }
+            } else throw new UserNotFoundError();
+        }catch(error){
+            console.error(error);}
     });
 
     describe('HU101: Registrar Usuario', () => {
@@ -83,6 +75,17 @@ describe('Pruebas sobre usuarios', () => {
                 nombre: maria.nombre,
                 apellidos: maria.apellidos,
             }));
+            // y el documento se crea
+            const userDocRef = doc(firestore, `users/${usuarioCreado.uid}`);
+            const docSnap = await getDoc(userDocRef);
+            expect(docSnap.exists()).toEqual(true);
+
+            // LIMPIEZA: la base de datos vuelve al estado inicial
+            await deleteDoc(userDocRef);
+            const currentUser  = auth.currentUser;
+            if (currentUser) {
+                await currentUser.delete();
+            }
         });
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
@@ -167,10 +170,14 @@ describe('Pruebas sobre usuarios', () => {
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
             //  lista de usuarios registrados incluye a "maria"
-            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            const usuario = await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
             // WHEN
             //  se intenta eliminar la cuenta
+            // todo: temporal, para borrar el documento mientras no lo haga el método
+            const userDocRef = doc(firestore, `users/${usuario.uid}`);
+            await deleteDoc(userDocRef);
+
             const usuarioBorrado = await userService.deleteUser();
 
             // THEN
@@ -180,26 +187,16 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
-            //  lista de usuarios registrados incluye a "maria"
-            const usuarioCreado = await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            //  lista de usuarios registrados incluye a "ramon"
 
             //   no se ha iniciado sesión
-            await userService.logout();
 
             // WHEN
-            //  se intenta eliminar la cuenta
+            //  se intenta eliminar la cuenta "ramon" sin haber iniciado sesion
             await expectAsync(userService.deleteUser())
                 .toBeRejectedWith(new SessionNotActiveError());
             // THEN
             //  se lanza el error SessionNotActiveError y no se elimina ninguna cuenta
-
-            // LIMPIEZA: la base de datos vuelve al estado inicial
-            const userDocRef = doc(firestore, `users/${usuarioCreado.uid}`);
-            await deleteDoc(userDocRef);
-            const currentUser  = auth.currentUser;
-            if (currentUser) {
-                await currentUser.delete();
-            }
         });
     });
 

@@ -3,6 +3,7 @@ import {UserRepository} from './UserRepository';
 import {deleteUser, Auth} from "@angular/fire/auth";
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
 import {inject} from '@angular/core';
+import {UserNotFoundError} from '../../errors/UserNotFoundError';
 
 export class UserDB implements UserRepository {
     private auth: Auth = inject(Auth)
@@ -16,8 +17,14 @@ export class UserDB implements UserRepository {
         if (!user) throw new SessionNotActiveError();
 
         // Borra al usuario de la BD, y cierra la sesión
-        // Si falla, se atrapa la excepción y no se borra el usuario
         deleteUser(user).catch((error) => {
+
+            // El usuario ya no existe (eliminar en pestañas distintas)
+            if (error.code == 'auth/invalid-credential') {
+                throw new UserNotFoundError();
+            }
+
+            // Error cualquiera
             console.error('ERROR de Firebase al borrar usuario: ' + error);
             return false;
         });

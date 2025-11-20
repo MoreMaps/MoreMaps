@@ -10,4 +10,13 @@ export class UserModel {
         this.nombre = nombre;
         this.apellidos = apellidos;
     }
+
+    toJSON() {
+        return {
+            uid: this.uid,
+            email: this.email,
+            nombre: this.nombre,
+            apellidos: this.apellidos
+        };
+    }
 }

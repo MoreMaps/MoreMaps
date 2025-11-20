@@ -4,6 +4,8 @@ import {InjectionToken} from '@angular/core';
 export const USER_REPOSITORY = new InjectionToken<UserRepository>('UserRepository');
 
 export interface UserRepository{
-    createUser(uid: string, email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel>
+    createUser(email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel>
+    deleteUser(u: UserModel) : Promise<boolean>
     validateCredentials(email: string, password: string): Promise<boolean>
+    logoutUser(): Promise<boolean>;
 }

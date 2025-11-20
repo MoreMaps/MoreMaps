@@ -9,31 +9,58 @@ import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../errors/DBAccessError';
 import {AccountNotFoundError} from '../errors/AccountNotFoundError';
 import {appConfig} from '../app.config';
+import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {appConfig} from '../app.config';
+import firebase from 'firebase/compat/app';
+import {Auth} from '@angular/fire/auth';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
+    let uid = 'gwe0WfRyPScPFXhK3sOsFIBVvyC3';
+    let firestore: Firestore;
+    let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
     const maria = USER_TEST_DATA[1];
 
     beforeAll( async() => {
         await TestBed.configureTestingModule({
-            providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}, appConfig.providers]
+            providers: [
+                UserService,
+                {provide: USER_REPOSITORY, useClass: UserDB},
+                appConfig.providers]
         }).compileComponents();
 
         // inyección del servicio
         userService = TestBed.inject(UserService);
 
-        // creación de un usuario
-        usuarioRegistradoRamon = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
-    });
+        // inyección de Firestore, Auth
+        firestore = TestBed.inject(Firestore);
+        auth = TestBed.inject(Auth);
 
-    afterAll( async() => {
-        // eliminación del usuario creado al terminar las pruebas
-        await userService.deleteUser(usuarioRegistradoRamon);
+        // get datos de ramon
+        try {
+            const userDocRef = doc(firestore, `users/${uid}`);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                usuarioRegistradoRamon = new UserModel(
+                    data['uid'],
+                    data['email'],
+                    data['nombre'],
+                    data['apellidos']
+                );
+            }
+        }
+        catch(error) {
+            console.error(error);
+        }
+
+        // Fallo al obtener datos
+        if (!usuarioRegistradoRamon) { throw new UserNotFoundError(); }
     });
 
     describe('HU101: Registrar Usuario', () => {
@@ -56,9 +83,6 @@ describe('Pruebas sobre usuarios', () => {
                 nombre: maria.nombre,
                 apellidos: maria.apellidos,
             }));
-
-            // la base de datos vuelve al estado inicial
-            await userService.deleteUser(usuarioCreado);
         });
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
@@ -138,42 +162,44 @@ describe('Pruebas sobre usuarios', () => {
         });
     });
 
-
     describe('HU106: Eliminar cuenta', () => {
 
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
-            //  el usuario "maria" está registrado y ha iniciado sesión
-            const usuarioCreado: UserModel = await userService
-                .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-            await userService.login(maria.email, maria.pwd);
+            //  lista de usuarios registrados incluye a "maria"
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
             // WHEN
             //  se intenta eliminar la cuenta
-            const usuarioBorrado = await userService.deleteUser(usuarioCreado);
+            const usuarioBorrado = await userService.deleteUser();
 
             // THEN
             //  se elimina la cuenta
             expect(usuarioBorrado).toBeTrue();
         });
 
-        it('HU106-EI01: Eliminar una cuenta que no existe', async () => {
+        it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
-            //  lista de usuarios registrados que no incluye a "maria"
-            //  no se ha iniciado sesión
+            //  lista de usuarios registrados incluye a "maria"
+            const usuarioCreado = await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+
+            //   no se ha iniciado sesión
+            await userService.logout();
 
             // WHEN
             //  se intenta eliminar la cuenta
-            const usuarioQueNoExiste = {
-                uid: "?",                        // UID que NO existe
-                email: maria.email,
-                nombre: maria.nombre,
-                apellidos: maria.apellidos,
-            }
-            await expectAsync(userService.deleteUser(usuarioQueNoExiste))
-                .toBeRejectedWith(new AccountNotFoundError());
+            await expectAsync(userService.deleteUser())
+                .toBeRejectedWith(new SessionNotActiveError());
             // THEN
-            //  se lanza el error AccountNotFoundError y no se elimina ninguna cuenta
+            //  se lanza el error SessionNotActiveError y no se elimina ninguna cuenta
+
+            // LIMPIEZA: la base de datos vuelve al estado inicial
+            const userDocRef = doc(firestore, `users/${usuarioCreado.uid}`);
+            await deleteDoc(userDocRef);
+            const currentUser  = auth.currentUser;
+            if (currentUser) {
+                await currentUser.delete();
+            }
         });
     });
 
@@ -184,9 +210,10 @@ describe('Pruebas sobre usuarios', () => {
             //  el usuario "ramon" está registrado y ha iniciado sesión
             await userService.login(ramon.email, ramon.pwd);
 
-            // WHEN
             //  se cierra la sesión involuntariamente
             await userService.logout();
+
+            // WHEN
             //  el usuario "ramon" vuelve a iniciar sesión
             await userService.login(ramon.email, ramon.pwd);
 
@@ -199,7 +226,5 @@ describe('Pruebas sobre usuarios', () => {
                 apellidos: ramon.apellidos,
             }));
         });
-
-        // No hay caso inválido, ya que la base de datos es una dependencia externa.
     })
 })

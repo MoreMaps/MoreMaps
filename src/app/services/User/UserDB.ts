@@ -1,11 +1,13 @@
 import {UserModel} from '../../data/UserModel';
 import {UserRepository} from './UserRepository';
-import {inject, Injectable} from '@angular/core';
-import {Auth, signInWithEmailAndPassword} from '@angular/fire/auth';
-import {WrongLoginError} from '../../errors/WrongLoginError';
+import {inject, Injectable, signal} from '@angular/core';
+import {Observable} from 'rxjs';
+import {Auth, authState, updateProfile, User, signInWithEmailAndPassword, createUserWithEmailAndPassword} from '@angular/fire/auth';
+import {collection, Firestore, query, where, doc, getDocs, setDoc} from '@angular/fire/firestore';
+import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {UserNotFoundError} from '../../errors/UserNotFoundError';
 import {InvalidCredentialError} from '../../errors/InvalidCredentialError';
 import {UserNotFoundError} from '../../errors/UserNotFoundError';
-import {collection, Firestore, query, where, getDocs} from '@angular/fire/firestore';
 
 @Injectable({
     providedIn: 'root'
@@ -13,9 +15,57 @@ import {collection, Firestore, query, where, getDocs} from '@angular/fire/firest
 export class UserDB implements UserRepository {
     private auth = inject(Auth);
     private firestore = inject(Firestore);
+  
+    // Signal para el usuario actual
+    currentUser = signal<User | null>(null);
 
-    async createUser(email: string, pwd: string, nombre: string, apellidos: string) : Promise<UserModel> {
-        return {uid:"", email: "", nombre:"", apellidos:""};
+    // Observable del estado de autenticación
+    authState$: Observable<User | null> = authState(this.auth);
+
+    constructor() {
+        // Actualizar signal cuando cambie el estado de autenticación
+        this.authState$.subscribe(user => {
+            this.currentUser.set(user);
+        });
+    }
+
+    async createUser(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
+        // Crear usuario en Firebase Auth
+        let userCredential;
+        try{
+            userCredential = await createUserWithEmailAndPassword(this.auth, email, pwd);
+        } catch(error) {
+            throw error;
+        }
+
+        const firebaseUser = userCredential.user;
+        const uid = firebaseUser.uid;
+
+        try {
+            await updateProfile(firebaseUser, {displayName: `${nombre} ${apellidos}`});
+        } catch (profileErr) {
+            console.warn('updateProfile failed:', profileErr);
+        }
+
+        const userModel = new UserModel(uid, email, nombre, apellidos);
+
+        const userDocRef = doc(this.firestore, `users/${uid}`);
+        try {
+            await setDoc(userDocRef, userModel.toJSON());
+            return userModel;
+        } catch (error) {
+            console.error('Firestore write failed: ', error);
+            try {
+                await firebaseUser.delete()
+            } catch (error) {
+                console.error('Failed to rollback and delete the user: ', error);
+            }
+            throw error;
+        }
+    }
+
+    async deleteUser(): Promise<boolean> {
+        return false;
     }
 
     /**
@@ -72,5 +122,31 @@ export class UserDB implements UserRepository {
         } catch (error) {
             return false;
         }
+    }
+    private firestore = inject(Firestore);
+    private auth = inject(Auth);
+
+    /**
+     * Intenta cerrar sesión en Firebase.
+     * @returns Promise con true si se ha podido cerrar sesión; false en caso de excepción.
+     */
+    async logoutUser(): Promise<boolean> {
+        // Obtiene el usuario de la sesión; si no hay, ya se ha cerrado la sesión
+        const user = this.auth.currentUser;
+        if (!user) throw new SessionNotActiveError();
+
+        // Cierra la sesión del usuario
+        this.auth.signOut().catch((error) => {
+
+            // El usuario ya no existe (eliminar y cerrar sesión en pestañas distintas)
+            if (error.code == 'auth/invalid-credential') {
+                throw new UserNotFoundError();
+            }
+
+            // Error cualquiera
+            console.error('ERROR de Firebase al borrar usuario: ' + error);
+            return false;
+        });
+        return true;
     }
 }

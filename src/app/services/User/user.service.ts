@@ -1,7 +1,8 @@
 import {inject, Injectable} from '@angular/core';
 import {UserModel} from '../../data/UserModel';
 import {USER_REPOSITORY, UserRepository} from './UserRepository';
-
+import {UserAlreadyExistsError} from '../../errors/UserAlreadyExistsError';
+import {WrongPasswordFormatError} from '../../errors/WrongPasswordFormatError';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -9,12 +10,23 @@ export class UserService {
 
     // HU101 Crear usuario
     async signUp(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
-        return {
-            uid: "",
-            email: "",
-            nombre: "",
-            apellidos: "",
-        };
+        try {return await this.userDb.createUser(email, pwd, nombre, apellidos);}
+        catch (error: any) {
+            if (error && typeof error.code === 'string') {
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        throw new UserAlreadyExistsError();
+                    case 'auth/invalid-password':
+                        throw new WrongPasswordFormatError();
+                    case 'auth/password-does-not-meet-requirements':
+                        throw new WrongPasswordFormatError();
+                    default:
+                        throw new Error('Error desconocido de Firebase: ' + error.code);
+                }
+            } else {
+                throw Error('Error desconocido: ' + error.code);
+            }
+        }
     }
 
     // HU102 Iniciar sesión
@@ -35,17 +47,12 @@ export class UserService {
 
     // HU105 Cerrar sesión (auxiliar: usuario actual)
     async getCurrentUser(): Promise<UserModel> {
-        return {
-            uid: "",
-            email: "",
-            nombre: "",
-            apellidos: "",
-        };
+        return new UserModel("", "", "", "");
+        return this.userDb.logoutUser();
     }
 
     // HU106 Eliminar cuenta
-    async deleteUser(u: UserModel): Promise<Boolean> {
+    async deleteUser(): Promise<boolean> {
         return false;
     }
-
 }

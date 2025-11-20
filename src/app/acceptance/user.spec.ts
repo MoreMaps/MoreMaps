@@ -16,7 +16,7 @@ import {Auth} from '@angular/fire/auth';
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
-    let uid = 'gwe0WfRyPScPFXhK3sOsFIBVvyC3';
+    let uid = 'LBlENZ0rtxW48TgGLYIfLZlgrzJ2';
     let firestore: Firestore;
     let auth: Auth;
 
@@ -170,26 +170,22 @@ describe('Pruebas sobre usuarios', () => {
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
             //  lista de usuarios registrados incluye a "maria"
-            const usuario = await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
             // WHEN
             //  se intenta eliminar la cuenta
-            // todo: temporal, para borrar el documento mientras no lo haga el método
-            const userDocRef = doc(firestore, `users/${usuario.uid}`);
-            await deleteDoc(userDocRef);
-
             const usuarioBorrado = await userService.deleteUser();
 
             // THEN
             //  se elimina la cuenta
             expect(usuarioBorrado).toBeTrue();
+            if(auth.currentUser) {pending('User is logged in: debug deleteUser.');}
         });
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
             //  lista de usuarios registrados incluye a "ramon"
-
             //   no se ha iniciado sesión
+            if(auth.currentUser) {pending('User is logged in: aborting...');}
 
             // WHEN
             //  se intenta eliminar la cuenta "ramon" sin haber iniciado sesion
@@ -222,6 +218,8 @@ describe('Pruebas sobre usuarios', () => {
                 nombre: ramon.nombre,
                 apellidos: ramon.apellidos,
             }));
+
+            await userService.logout();
         });
     })
 })

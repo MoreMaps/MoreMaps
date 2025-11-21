@@ -1,0 +1,77 @@
+// Import Leaflet CSS
+@import 'leaflet/dist/leaflet.css';
+
+:host {
+    display: block;
+    width: 100%;
+    height: 100vh;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+
+    // Fix for missing marker icons
+    .leaflet-marker-icon {
+        background: none;
+    }
+}
+
+// El contenedor del marcador
+.pulsing-beacon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    // EL MARCADOR TIPO DIANA (BULLSEYE)
+    .beacon-core {
+        // 1. El centro blanco
+        width: 10px;
+        height: 10px;
+        background-color: white;
+        border-radius: 50%;
+
+        // 2. El primer anillo naranja (borde real)
+        border: 5px solid #FF9539;
+
+        // 3. Los anillos exteriores usando sombras (sin desenfoque)
+        box-shadow:
+            0 0 0 3px white,    // El espacio blanco
+            0 0 0 7px #FF9539,  // El anillo naranja exterior
+            0 0 10px rgba(0,0,0,0.2); // Una pequeña sombra gris para dar profundidad (opcional)
+
+        z-index: 2;
+        box-sizing: content-box; // Importante para que el width/height no incluya el borde
+    }
+
+    // LA ANIMACIÓN (ONDA EXPANSIVA)
+    &::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        z-index: 1;
+        opacity: 0;
+        // La onda parte del mismo color
+        box-shadow: 0 0 0 4px #FF9539;
+
+        // Animación
+        animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    5% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(3.5); // Qué tan lejos llega la onda
+        opacity: 0;
+    }
+}

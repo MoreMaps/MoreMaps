@@ -45,7 +45,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     constructor(private mapUpdateService: MapUpdateService) {}
 
     ngOnInit() {
-
         this.mapUpdateService.marker$.subscribe((marker: MapMarker) => {
             this.addMarker(marker.lat, marker.lon, marker.name);
             this.map.setView([marker.lat, marker.lon], 14);
@@ -97,8 +96,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             const pulsingIcon = L.divIcon({
                 className: 'pulsing-beacon',
                 html: '<div class="beacon-core"></div>',
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                iconSize: [34, 34],
+                iconAnchor: [17, 17]
             });
 
             this.userLocationMarker = L.marker(e.latlng, {

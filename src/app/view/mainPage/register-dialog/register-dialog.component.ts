@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import {MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {UserService} from '../../../services/User/user.service';
-import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
+import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {RegisterModel} from '../../../data/RegisterModel';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
@@ -66,11 +66,11 @@ export class RegisterDialogComponent {
 
         // Add value change listeners to trigger re-validation
         this.registerForm.get('email')?.valueChanges.subscribe(() => {
-            this.registerForm.get('confirmEmail')?.updateValueAndValidity({ onlySelf: true });
+            this.registerForm.get('confirmEmail')?.updateValueAndValidity({onlySelf: true});
         });
 
         this.registerForm.get('password')?.valueChanges.subscribe(() => {
-            this.registerForm.get('confirmPassword')?.updateValueAndValidity({ onlySelf: true });
+            this.registerForm.get('confirmPassword')?.updateValueAndValidity({onlySelf: true});
         });
     }
 
@@ -98,8 +98,6 @@ export class RegisterDialogComponent {
         return null;
     }
 
-    private snackbar = inject(MatSnackBar);
-
     async onSubmit(): Promise<void> {
         if (this.registerForm.valid) {
             this.errorMessage = '';
@@ -118,15 +116,12 @@ export class RegisterDialogComponent {
                     registerData.pwd, registerData.nombre, registerData.apellidos);
                 this.loading = false;
                 this.dialogRef.close();
-                if (userModel && userModel.uid !== ''){
-                    // TODO: Redirigir (mediante router, supongo que llamando al mainPage) al mapa
-                    this.snackbar.open(`El usuario se ha creado correctamente. uid: ${userModel.uid}`, 'Cerrar', {
-                        duration: 3000,             // tiempo en milisegundos que dura el snackbar
-                        horizontalPosition: 'right', // 'start' | 'center' | 'end' | 'left' | 'right'
-                        verticalPosition: 'bottom',  // 'top' | 'bottom'
-                        panelClass: ['success-snackbar'] // opcional, para estilos personalizados
-                    });
-                } else {console.log(userModel);}
+                if (userModel && userModel.uid !== '') {
+                    // Cerrar diálogo y devolver success
+                    this.dialogRef.close({success: true});
+                } else {
+                    console.log(userModel);
+                }
             } catch (error: any) {
                 this.loading = false;
                 this.errorMessage = error.message;
@@ -139,6 +134,6 @@ export class RegisterDialogComponent {
     }
 
     close(): void {
-        this.dialogRef.close();
+        this.dialogRef.close({success: false});
     }
 }

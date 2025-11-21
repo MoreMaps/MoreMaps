@@ -31,6 +31,7 @@
               "src/favicon.ico"
             ],
             "styles": [
+              "node_modules/leaflet/dist/leaflet.css",
               "src/custom-theme.scss",
               "src/styles.css"
             ]

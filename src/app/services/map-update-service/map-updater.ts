@@ -1,6 +1,7 @@
 // map-update.service.ts
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
+import * as L from 'leaflet';
 
 export interface MapMarker {
     name: string;

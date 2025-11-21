@@ -10,6 +10,7 @@ export interface MapMarker {
 
 @Injectable({ providedIn: 'root' })
 export class MapUpdateService {
+    public lastKnownLocation: L.LatLng | null = null;
     private markerSubject = new Subject<MapMarker>();
     marker$ = this.markerSubject.asObservable();
 

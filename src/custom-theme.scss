@@ -687,6 +687,31 @@ body {
     animation: fadeIn 0.3s ease-out;
 }
 
+// ===== DIALOGO PERFIL =====
+.profile-menu-dialog {
+    .mat-mdc-dialog-container {
+        padding: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        overflow: visible !important;
+
+        .mdc-dialog__surface {
+            box-shadow: none !important;
+            background: transparent !important;
+            overflow: visible !important;
+        }
+    }
+
+    .mdc-dialog__container {
+        overflow: visible !important;
+    }
+}
+
+// Remove default Material backdrop for profile menu
+.cdk-overlay-backdrop.profile-menu-backdrop {
+    background: transparent !important;
+}
+
 // ===== UTILIDADES DE ESPACIADO =====
 .p-0 {
     padding: 0 !important;

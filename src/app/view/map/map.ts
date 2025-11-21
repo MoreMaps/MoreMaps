@@ -1,8 +1,15 @@
-import { Component, OnInit, AfterViewInit, inject, ElementRef, ViewEncapsulation } from '@angular/core';
+import {AfterViewInit, Component, ElementRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {CommonModule, NgOptimizedImage} from '@angular/common';
 import * as L from 'leaflet';
-import { MapMarker, MapUpdateService } from '../../services/map-update-service/map-updater';
-import { MatSnackBar, MatSnackBarModule, MatSnackBarRef } from '@angular/material/snack-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import {MapMarker, MapUpdateService} from '../../services/map-update-service/map-updater';
+import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
+import {doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {Auth, authState} from '@angular/fire/auth';
+import {Router} from '@angular/router';
+import {Subscription} from 'rxjs';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -15,14 +22,21 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     standalone: true,
     imports: [MatProgressSpinnerModule]
 })
-export class SpinnerSnackComponent {}
+export class SpinnerSnackComponent {
+}
 
 const customIcon = L.icon({
-    iconUrl: 'image_0.png', // Asegúrate de que esta ruta sea correcta en tu proyecto
+    iconUrl: 'image_0.png',
     iconSize: [40, 40],
     iconAnchor: [20, 20],
     popupAnchor: [0, -25]
 });
+
+export interface UserData {
+    fullName: string;
+    email: string;
+    profileImage: string;
+}
 
 @Component({
     selector: 'app-map',
@@ -30,38 +44,103 @@ const customIcon = L.icon({
     styleUrl: './map.scss',
     standalone: true,
     encapsulation: ViewEncapsulation.None,
-    imports: [MatSnackBarModule, MatProgressSpinnerModule]
+    imports: [CommonModule, MatSnackBarModule, MatProgressSpinnerModule, MatDialogModule, NgOptimizedImage],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
+    private router = inject(Router);
     private map!: L.Map;
     protected currentMarker: L.Marker | null = null;
     private snackBar = inject(MatSnackBar);
     private elementRef = inject(ElementRef);
     private userLocationMarker: L.Marker | null = null;
+    private dialog = inject(MatDialog);
+    private firestore = inject(Firestore);
+    private auth = inject(Auth);
+    private authSubscription: Subscription | null = null;
 
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
 
-    constructor(private mapUpdateService: MapUpdateService) {}
+    // Signal for user data
+    userData = signal<UserData>({
+        fullName: '',
+        email: '',
+        profileImage: 'assets/images/pfp.png'
+    });
 
-    ngOnInit() {
+    constructor(private mapUpdateService: MapUpdateService) {
+    }
+
+    async ngOnInit() {
+
+        this.authSubscription = authState(this.auth).subscribe(async (user) => {
+            if (user) {
+                // El usuario existe, cargamos sus datos
+                await this.loadUserData();
+
+                const mapContainer = this.elementRef.nativeElement.querySelector('#map');
+                if (mapContainer && !this.map) {
+                    this.initMap();
+                    this.setupLocationEventHandlers();
+
+                    if (this.mapUpdateService.lastKnownLocation) {
+                        console.log('Finding location by cache');
+                        this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
+                    } else {console.log('Finding location by API');this.startLocating();}
+                }
+            } else {
+                console.warn("No hay sesión, redirigiendo...");
+                this.router.navigate(['']);
+            }
+        });
+
         this.mapUpdateService.marker$.subscribe((marker: MapMarker) => {
             this.addMarker(marker.lat, marker.lon, marker.name);
-            this.map.setView([marker.lat, marker.lon], 14);
+            if (this.map) this.map.setView([marker.lat, marker.lon], 14);
         });
         this.mapUpdateService.snackbar$.subscribe((message: string) => {
             this.showSnackbar(message);
         });
     }
 
-    ngAfterViewInit() {
-        const mapContainer = this.elementRef.nativeElement.querySelector('#map');
-        if (mapContainer) {
-            this.initMap();
-            // 1. Primero configuramos los eventos (qué pasa si encuentro/fallo)
-            this.setupLocationEventHandlers();
-            // 2. Luego iniciamos la búsqueda
-            this.startLocating();
+    // Es buena práctica desuscribirse
+    ngOnDestroy() {
+        if (this.authSubscription) {
+            this.authSubscription.unsubscribe();
+        }
+    }
+
+    ngAfterViewInit() {  }
+
+    private async loadUserData(): Promise<void> {
+        const user = this.auth.currentUser;
+        if (!user) return;
+
+        try {
+            const userDoc = doc(this.firestore, `users/${user.uid}`);
+            const docSnap = await getDoc(userDoc);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                this.userData.set({
+                    fullName: `${data['nombre'] || ''} ${data['apellidos'] || ''}`.trim(),
+                    email: data['email'] || user.email || '',
+                    profileImage: 'assets/images/pfp.png'
+                });
+            } else {
+                this.userData.set({
+                    fullName: '',
+                    email: user.email || '',
+                    profileImage: 'assets/images/pfp.png'
+                });
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            this.userData.set({
+                fullName: '',
+                email: user.email || '',
+                profileImage: 'assets/images/pfp.png'
+            });
         }
     }
 
@@ -79,72 +158,78 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
     }
 
-    // Configura los listeners una sola vez para evitar duplicados al reintentar
     private setupLocationEventHandlers() {
         this.map.on('locationfound', (e: L.LocationEvent) => {
-            // Cerrar spinner
+            this.mapUpdateService.lastKnownLocation = e.latlng;
+
             if (this.loadingSnackBarRef) {
                 this.loadingSnackBarRef.dismiss();
             }
 
-            console.log('Location found:', e.latlng);
+            this.handleLocationSuccess(e.latlng);
 
-            if (this.userLocationMarker) {
-                this.map.removeLayer(this.userLocationMarker);
-            }
-
-            const pulsingIcon = L.divIcon({
-                className: 'pulsing-beacon',
-                html: '<div class="beacon-core"></div>',
-                iconSize: [34, 34],
-                iconAnchor: [17, 17]
-            });
-
-            this.userLocationMarker = L.marker(e.latlng, {
-                icon: pulsingIcon,
-                zIndexOffset: 1000
-            }).addTo(this.map);
-
-            this.map.setView(e.latlng, 15);
             this.showSnackbar('Ubicación encontrada');
         });
 
         this.map.on('locationerror', (e: L.ErrorEvent) => {
-            // Cerrar spinner
             if (this.loadingSnackBarRef) {
                 this.loadingSnackBarRef.dismiss();
             }
 
             console.error('Location error:', e);
 
-            // Lógica de Reintentar
             const snackRef = this.snackBar.open(
                 'Error al obtener ubicación: ' + e.message,
-                'Reintentar', // Texto del botón de acción
+                'Reintentar',
                 {
-                    duration: 10000, // Damos más tiempo para leer y clicar
+                    duration: 10000,
                     horizontalPosition: 'left',
                     verticalPosition: 'bottom',
                 }
             );
 
-            // Si el usuario pulsa "Reintentar"
             snackRef.onAction().subscribe(() => {
-                this.startLocating(); // Volvemos a llamar a la función de inicio
+                this.startLocating();
             });
         });
     }
 
-    // Función auxiliar para iniciar la búsqueda (llamada al inicio y al reintentar)
+    private handleLocationSuccess(latlng: L.LatLng) {
+        // 1. Cerrar spinner si estaba abierto
+        if (this.loadingSnackBarRef) {
+            this.loadingSnackBarRef.dismiss();
+        }
+
+        // 2. Limpiar marcador anterior
+        if (this.userLocationMarker) {
+            this.map.removeLayer(this.userLocationMarker);
+        }
+
+        // 3. Crear icono
+        const pulsingIcon = L.divIcon({
+            className: 'pulsing-beacon',
+            html: '<div class="beacon-core"></div>',
+            iconSize: [34, 34],
+            iconAnchor: [17, 17]
+        });
+
+        // 4. Poner marcador
+        this.userLocationMarker = L.marker(latlng, {
+            icon: pulsingIcon,
+            zIndexOffset: 1000
+        }).addTo(this.map);
+
+        // 5. Centrar mapa
+        this.map.setView(latlng, 15);
+    }
+
     private startLocating() {
-        // Mostrar spinner
         this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
             horizontalPosition: 'left',
             verticalPosition: 'bottom',
             duration: 0
         });
 
-        // Iniciar búsqueda en Leaflet
         this.map.locate({
             setView: false,
             maxZoom: 16,
@@ -159,7 +244,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.map.removeLayer(this.currentMarker);
         }
 
-        this.currentMarker = L.marker([lat, lng], { icon: customIcon })
+        this.currentMarker = L.marker([lat, lng], {icon: customIcon})
             .addTo(this.map)
             .bindPopup("Encontrado: " + name)
             .openPopup();
@@ -170,6 +255,22 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             duration: 5000,
             horizontalPosition: 'left',
             verticalPosition: 'bottom',
+        });
+    }
+
+    // Open profile menu with preloaded user data
+    openProfileMenu(): void {
+        this.dialog.open(ProfileMenuComponent, {
+            backdropClass: 'transparent-backdrop',
+            hasBackdrop: true,
+            panelClass: 'profile-menu-dialog',
+
+            position: { top: '16px', right: '16px' },
+
+            maxWidth: 'none',
+            enterAnimationDuration: '200ms',
+            exitAnimationDuration: '200ms',
+            data: this.userData()
         });
     }
 }

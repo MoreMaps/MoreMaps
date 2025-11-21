@@ -2,13 +2,16 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { UserService } from '../../services/User/user.service';
+import {USER_REPOSITORY} from '../../services/User/UserRepository';
+import {UserDB} from '../../services/User/UserDB';
 
 @Component({
     selector: 'deleteUser',
     standalone: true,
     imports: [CommonModule],
     templateUrl: './deleteUser.html',
-    styleUrls: ['./deleteUser.css']
+    styleUrls: ['./deleteUser.css'],
+    providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}]
 })
 export class AccountSettingsComponent {
     showModal: boolean = false;

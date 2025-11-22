@@ -37,7 +37,7 @@ export class AccountSettingsComponent {
                     console.log('Usuario no borrado');
                     return
                 }
-                this.router.navigate(['/login']);
+                this.router.navigate(['']);
             })
             .catch((err) => {
                 console.log('ERROR al borrar usuario' + err);

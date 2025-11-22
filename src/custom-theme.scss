@@ -102,6 +102,10 @@ body {
     --snackbar-success-bg: #504E74; // Morado oscuro en modo oscuro
     --snackbar-success-text: #FFFFFF; // Texto blanco
 
+    // Override global para títulos de diálogos en modo oscuro
+    .dialog-title {
+        color: var(--color-white);
+    }
 }
 
 // ===== CLASES UTILITARIAS DE COLOR =====
@@ -490,7 +494,7 @@ body {
     .dialog-title {
         font-size: 1.5rem;
         font-weight: 500;
-        color: var(--mat-sys-on-surface);
+        color: var(--color-purple-dark);
         text-align: center;
         margin: 0 0 2rem 0;
 
@@ -664,6 +668,7 @@ body {
             .mat-mdc-text-field-wrapper {
                 background-color: var(--mat-sys-surface-variant);
             }
+
             .mat-mdc-text-field-input {
                 padding-right: 2.5rem; // deja espacio para iconos
             }

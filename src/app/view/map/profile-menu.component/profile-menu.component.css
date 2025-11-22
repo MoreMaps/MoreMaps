@@ -7,16 +7,20 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     width: 320px;
-    /* Importante: permite que el contenedor crezca/decrezca según el contenido */
     min-height: 200px;
     overflow: hidden;
     color: var(--color-purple-dark);
-    z-index: 1; /* Asegura que no tape el mapa, pero el overlay lo tapará a él */
+    z-index: 1;
     transition: opacity 0.2s ease, visibility 0.2s;
-    animation: slideIn 0.2s ease-out; /* Mantenemos la animación de entrada del menú */
+    animation: slideIn 0.2s ease-out;
 }
 
-/* Clase utilitaria para ocultar suavemente el menú cuando sale el popup */
+/* Dark mode */
+:host-context(.dark-theme) .profile-menu-container, .dark-theme .profile-menu-container {
+    background: var(--color-purple-dark);
+    color: var(--color-white);
+}
+
 .menu-hidden {
     opacity: 0;
     visibility: hidden;
@@ -38,12 +42,20 @@
     background: var(--color-white);
 }
 
+:host-context(.dark-theme) .profile-header, .dark-theme .profile-header {
+    background: var(--color-purple-dark);
+}
+
 .profile-avatar {
     width: 56px;
     height: 56px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--color-lavender);
+}
+
+:host-context(.dark-theme) .profile-avatar, .dark-theme .profile-avatar {
+    border-color: var(--color-purple);
 }
 
 .profile-info {
@@ -61,13 +73,21 @@
     text-overflow: ellipsis;
 }
 
+:host-context(.dark-theme) .profile-name, .dark-theme .profile-name {
+    color: var(--color-white);
+}
+
 .profile-email {
     margin: 0;
     font-size: 0.875rem;
-    color: var(--color-gray-blue); /* Color gris/azulado para el email */
+    color: var(--color-gray-blue);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+:host-context(.dark-theme) .profile-email, .dark-theme .profile-email {
+    color: var(--color-lavender);
 }
 
 /* =========================================
@@ -80,6 +100,10 @@
     background-color: var(--color-lavender);
 }
 
+:host-context(.dark-theme) .divider, .dark-theme .divider {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
 /* =========================================
    Acciones (Botones Menú Principal)
    ========================================= */
@@ -88,6 +112,11 @@
     background: var(--color-white);
 }
 
+:host-context(.dark-theme) .profile-actions, .dark-theme .profile-actions {
+    background: var(--color-purple-dark);
+}
+
+/* --- BOTÓN GENÉRICO (Ajustes) --- */
 .action-button {
     width: 100%;
     padding: 1rem 1.25rem;
@@ -102,33 +131,56 @@
     letter-spacing: 0.5px;
     text-align: left;
     transition: background-color var(--transition-fast), color var(--transition-fast);
-    /* Color base usando el solicitado #88A9A9 */
-    color: var(--color-gray-blue);
+    color: var(--color-gray-blue); /* Color base Light */
 }
 
 .action-button mat-icon {
     flex-shrink: 0;
-    color: inherit;
+    color: inherit; /* Hereda el color del botón */
     transition: color var(--transition-fast);
 }
 
+/* Hover en Light Mode */
 .action-button:hover {
     background-color: var(--color-lavender);
-    /* Oscurecemos el texto al hacer hover para mejor contraste */
     color: var(--color-purple-dark);
 }
 
-/* Botón Logout específico */
+/* --- ESTILOS MODO OSCURO GENÉRICOS (Ajustes) --- */
+/* 1. Estado Base en Dark Mode: Blanco y fondo transparente */
+:host-context(.dark-theme) .action-button,
+.dark-theme .action-button {
+    background-color: transparent;
+}
+
+/* 2. Estado Hover en Dark Mode: Fondo grisáceo suave */
+:host-context(.dark-theme) .action-button:hover,
+.dark-theme .action-button:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-white);
+}
+
+/* --- BOTÓN LOGOUT ESPECÍFICO --- */
 .action-button.logout {
     color: var(--color-orange);
 }
 
-.action-button.logout mat-icon {
+/* Override explícito para Dark Mode para asegurar que sea NARANJA y no blanco */
+:host-context(.dark-theme) .action-button.logout,
+.dark-theme .action-button.logout {
     color: var(--color-orange);
 }
 
+/* Hover Logout en Light Mode */
 .action-button.logout:hover {
     background-color: var(--color-lavender);
+    color: var(--color-orange);
+}
+
+/* Hover Logout en Dark Mode */
+:host-context(.dark-theme) .action-button.logout:hover,
+.dark-theme .action-button.logout:hover {
+    background-color: rgba(255, 149, 57, 0.15); /* Fondo naranja translúcido */
     color: var(--color-orange);
 }
 
@@ -141,17 +193,18 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    /* Fondo negro con 0.3 de opacidad */
     background-color: rgba(0, 0, 0, 0.3);
     z-index: 9999;
     display: flex;
     justify-content: center;
     align-items: center;
-
     pointer-events: auto;
     backdrop-filter: blur(2px);
-
     animation: fadeIn 0.3s ease-out;
+}
+
+:host-context(.dark-theme) .logout-overlay-fixed, .dark-theme .logout-overlay-fixed {
+    background-color: rgba(0, 0, 0, 0.5);
 }
 
 /* =========================================
@@ -170,10 +223,14 @@
     animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+:host-context(.dark-theme) .logout-popup-card, .dark-theme .logout-popup-card {
+    background: var(--color-purple-dark);
+    color: var(--color-white);
+}
+
 .logout-popup-card h3 {
     font-size: 1.375rem;
     font-weight: 600;
-    color: var(--color-purple-dark);
     margin: 0 0 2rem 0;
     line-height: 1.4;
 }
@@ -186,7 +243,7 @@
 }
 
 /* =========================================
-   Botones del Popup (Se mantienen igual)
+   Botones del Popup
    ========================================= */
 .popup-button {
     width: 100%;
@@ -228,11 +285,20 @@
     color: var(--color-gray-blue);
     border: 2px solid var(--color-lavender);
 }
+:host-context(.dark-theme) .popup-button.cancel, .dark-theme .popup-button.cancel {
+    color: var(--color-mint-green-light);
+    border-color: rgba(255, 255, 255, 0.2);
+}
 
 .popup-button.cancel:hover {
     background-color: var(--color-lavender);
     color: var(--color-purple-dark);
     border-color: var(--color-lavender);
+}
+:host-context(.dark-theme) .popup-button.cancel:hover, .dark-theme .popup-button.cancel:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-white);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* =========================================

@@ -8,10 +8,12 @@
 .map-container {
     width: 100%;
     height: 100%;
-    background-color: #a8a8a8;
+    background-color: #a8a8a8; /* Puedes cambiar esto por var(--mat-sys-surface-variant) si deseas */
 }
 
-/* Botón de usuario */
+/* =========================================
+   Botón de usuario (Floating)
+   ========================================= */
 .user-button {
     position: absolute;
     top: 20px;
@@ -19,15 +21,21 @@
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background-color: #4CAF50;
-    border: 3px solid white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    background-color: var(--color-mint-green);
+    border: 3px solid var(--color-white);
+    box-shadow: var(--shadow-md);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1001;
-    transition: transform 0.2s;
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* Borde oscuro en modo oscuro para que se fusione mejor o destaque */
+:host-context(.dark-theme) .user-button, .dark-theme .user-button {
+    border-color: var(--color-purple-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .user-button:hover {
@@ -35,23 +43,31 @@
 }
 
 .user-button svg {
-    color: white;
+    color: var(--color-teal-dark); /* Color del icono dentro del botón menta */
 }
 
-/* Menú desplegable */
+/* =========================================
+   Menú desplegable
+   ========================================= */
 .user-menu {
     position: absolute;
     top: 85px;
     right: 20px;
     width: 280px;
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    background-color: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
     z-index: 1000;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
+    overflow: hidden; /* Para respetar bordes redondeados en hijos */
+}
+
+:host-context(.dark-theme) .user-menu, .dark-theme .user-menu {
+    background-color: var(--color-purple-dark);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 .user-menu.show {
@@ -63,7 +79,7 @@
 .user-info {
     display: flex;
     align-items: center;
-    padding: 20px;
+    padding: 1.25rem; /* 20px */
     gap: 15px;
 }
 
@@ -71,37 +87,52 @@
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background-color: #4CAF50;
+    background-color: var(--color-mint-green-light);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-}
-
-.user-avatar svg {
-    color: white;
+    color: var(--color-teal-dark);
 }
 
 .user-details {
     flex: 1;
+    overflow: hidden;
 }
 
 .user-name {
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 600;
-    color: #333;
+    color: var(--color-purple-dark);
     margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:host-context(.dark-theme) .user-name, .dark-theme .user-name {
+    color: var(--color-white);
 }
 
 .user-handle {
-    font-size: 14px;
-    color: #666;
+    font-size: 0.875rem;
+    color: var(--color-gray-blue);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* =========================================
+   Divisor y Opciones
+   ========================================= */
 .menu-divider {
     height: 1px;
-    background-color: #e0e0e0;
-    margin: 0 15px;
+    background-color: var(--color-lavender);
+    margin: 0;
+}
+
+:host-context(.dark-theme) .menu-divider, .dark-theme .menu-divider {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .menu-option {
@@ -109,49 +140,79 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 15px 20px;
+    padding: 1rem 1.25rem;
     border: none;
-    background: none;
+    background: transparent;
     cursor: pointer;
-    transition: background-color 0.2s;
-    color: #666;
-    font-size: 13px;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    color: var(--color-gray-blue);
+    font-size: 0.8125rem;
     font-weight: 600;
     letter-spacing: 0.5px;
 }
 
-.menu-option:first-of-type {
-    border-radius: 0;
-}
-
-.menu-option:last-of-type {
-    border-radius: 0 0 12px 12px;
-}
-
+/* Hover en modo claro */
 .menu-option:hover {
-    background-color: #f5f5f5;
+    background-color: var(--color-lavender);
+    color: var(--color-purple-dark);
 }
 
+/* Modo Oscuro: Base */
+:host-context(.dark-theme) .menu-option, .dark-theme .menu-option {
+    color: var(--color-white);
+}
+
+/* Modo Oscuro: Hover */
+:host-context(.dark-theme) .menu-option:hover, .dark-theme .menu-option:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-white);
+}
+
+/* Opción de Logout Específica */
 .menu-option.logout {
-    color: #FF6B35;
+    color: var(--color-orange);
+}
+
+.menu-option.logout:hover {
+    background-color: var(--color-lavender);
+    color: var(--color-orange);
+}
+
+/* Logout en Modo Oscuro */
+:host-context(.dark-theme) .menu-option.logout, .dark-theme .menu-option.logout {
+    color: var(--color-orange);
+}
+
+:host-context(.dark-theme) .menu-option.logout:hover, .dark-theme .menu-option.logout:hover {
+    background-color: rgba(255, 149, 57, 0.15);
+    color: var(--color-orange);
 }
 
 .menu-option svg {
     flex-shrink: 0;
+    width: 20px;
+    height: 20px;
 }
 
-/* Overlay oscuro */
+/* =========================================
+   Overlay oscuro
+   ========================================= */
 .overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.3);
     z-index: 999;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
+    backdrop-filter: blur(2px);
+}
+
+:host-context(.dark-theme) .overlay, .dark-theme .overlay {
+    background-color: rgba(0, 0, 0, 0.5);
 }
 
 .overlay.show {
@@ -159,7 +220,9 @@
     visibility: visible;
 }
 
-/* Popup de confirmación */
+/* =========================================
+   Popup de confirmación
+   ========================================= */
 .logout-popup {
     position: fixed;
     top: 50%;
@@ -167,14 +230,19 @@
     transform: translate(-50%, -50%) scale(0.9);
     width: 90%;
     max-width: 400px;
-    background-color: white;
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    background-color: var(--color-white);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow-lg);
     z-index: 1000;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+:host-context(.dark-theme) .logout-popup, .dark-theme .logout-popup {
+    background-color: var(--color-purple-dark);
+    color: var(--color-white);
 }
 
 .logout-popup.show {
@@ -183,29 +251,29 @@
     transform: translate(-50%, -50%) scale(1);
 }
 
-.logout-popup h3 {
+.dialog-title {
     text-align: center;
-    font-size: 22px;
-    font-weight: 500;
-    color: #333;
-    margin: 0 0 30px 0;
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 0 0 2rem 0;
     line-height: 1.4;
 }
 
+/* Botones del Popup */
 .popup-button {
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    padding: 15px;
+    padding: 0.9375rem;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
     font-weight: 600;
     letter-spacing: 0.5px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     margin-bottom: 12px;
 }
 
@@ -213,26 +281,40 @@
     margin-bottom: 0;
 }
 
+/* Botón Confirmar (Naranja) */
 .popup-button.confirm {
-    background-color: #FF6B35;
-    color: white;
+    background-color: var(--color-orange);
+    color: var(--color-white);
 }
 
 .popup-button.confirm:hover {
-    background-color: #e55a25;
+    opacity: 0.9;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    box-shadow: var(--shadow-md);
 }
 
+/* Botón Cancelar (Outline) */
 .popup-button.cancel {
     background-color: transparent;
-    color: #666;
-    border: 2px solid #e0e0e0;
+    color: var(--color-gray-blue);
+    border: 2px solid var(--color-lavender);
+}
+
+:host-context(.dark-theme) .popup-button.cancel, .dark-theme .popup-button.cancel {
+    color: var(--color-white);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .popup-button.cancel:hover {
-    background-color: #f5f5f5;
-    border-color: #d0d0d0;
+    background-color: var(--color-lavender);
+    color: var(--color-purple-dark);
+    border-color: var(--color-lavender);
+}
+
+:host-context(.dark-theme) .popup-button.cancel:hover, .dark-theme .popup-button.cancel:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-white);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .popup-button svg {
@@ -249,7 +331,7 @@
 
     .logout-popup {
         width: calc(100% - 40px);
-        padding: 25px;
+        padding: 1.5rem;
     }
 
     .user-button {

@@ -10,6 +10,8 @@ import {doc, Firestore, getDoc} from '@angular/fire/firestore';
 import {Auth, authState} from '@angular/fire/auth';
 import {Router} from '@angular/router';
 import {Subscription} from 'rxjs';
+import {NavbarComponent} from '../navbar/navbar.component';
+import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -44,7 +46,7 @@ export interface UserData {
     styleUrl: './map.scss',
     standalone: true,
     encapsulation: ViewEncapsulation.None,
-    imports: [CommonModule, MatSnackBarModule, MatProgressSpinnerModule, MatDialogModule, NgOptimizedImage],
+    imports: [CommonModule, MatSnackBarModule, MatProgressSpinnerModule, MatDialogModule, NgOptimizedImage, NavbarComponent, ThemeToggleComponent],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
     private router = inject(Router);

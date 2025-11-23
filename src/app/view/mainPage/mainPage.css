@@ -1,0 +1,166 @@
+.landing-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url('/assets/images/background.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+}
+
+/* Capa de overlay para mejorar la legibilidad del texto */
+.background-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 1;
+}
+
+/* Contenedor del contenido principal */
+.content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+    max-width: 800px;
+}
+
+/* Título principal - FORZAR COLOR NEGRO */
+.main-title {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #000000 !important;
+    margin: 0 0 2rem 0;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.4),
+    0 0 15px rgba(255, 255, 255, 0.7);
+    line-height: 1.2;
+}
+
+/* Contenedor del logo - SIN FONDO BLANCO */
+.logo-container {
+    margin: 2rem 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+}
+
+.app-logo {
+    width: 120px;
+    height: 120px;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+/* Subtítulo - CON EFECTO DIFUMINADO */
+.subtitle {
+    font-size: 1.5rem;
+    color: #000000 !important;
+    margin: 2rem 0 3rem 0;
+    font-weight: 500;
+    border-bottom: 2px dotted #000000;
+    padding-bottom: 0.5rem;
+    text-shadow:
+        0 0 8px rgba(255, 255, 255, 0.4),
+        0 0 15px rgba(255, 255, 255, 0.7);
+}
+
+/* Contenedor de botones */
+.action-buttons {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* Estilos para el botón de iniciar sesión */
+.login-button {
+    background-color: #7EDEB0 !important;
+    color: #000000 !important;
+    font-size: 1rem !important;
+    padding: 0.75rem 2rem !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.3s ease !important;
+}
+
+.login-button:hover {
+    background-color: #66d19e !important;
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+/* Estilos para el botón de crear cuenta */
+.register-button {
+    background-color: #8581E2 !important;
+    color: #FFFFFF !important;
+    font-size: 1rem !important;
+    padding: 0.75rem 2rem !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.3s ease !important;
+}
+
+.register-button:hover {
+    background-color: #726eda !important;
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+/* Responsive para tablets y móviles */
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 2.5rem;
+    }
+
+    .subtitle {
+        font-size: 1.2rem;
+    }
+
+    .app-logo {
+        width: 100px;
+        height: 100px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 1rem;
+    }
+
+    .login-button,
+    .register-button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-title {
+        font-size: 2rem;
+    }
+
+    .subtitle {
+        font-size: 1rem;
+    }
+
+    .app-logo {
+        width: 80px;
+        height: 80px;
+    }
+
+    .content {
+        padding: 1rem;
+    }
+}

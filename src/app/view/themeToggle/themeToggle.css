@@ -1,0 +1,65 @@
+.theme-toggle-button {
+    position: fixed;
+    top: 20px;
+    right: 80px;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    border: 3px solid var(--color-white);
+    background: var(--toggle-bg, var(--color-white));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+    transition: all var(--transition-fast);
+    outline: none;
+    color: var(--toggle-icon-color, var(--color-orange));
+}
+
+.theme-toggle-button:hover {
+    box-shadow: var(--shadow-lg);
+    transform: scale(1.05) rotate(15deg);
+}
+
+.theme-toggle-button:active {
+    transform: scale(0.98) rotate(15deg);
+}
+
+.theme-toggle-button:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+}
+
+.theme-icon {
+    width: 24px;
+    height: 24px;
+    transition: transform var(--transition-fast);
+}
+
+.theme-toggle-button:hover .theme-icon {
+    transform: scale(1.1);
+}
+
+/* Dark theme styles */
+.dark-theme .theme-toggle-button {
+    --toggle-bg: var(--color-purple-dark);
+    --toggle-icon-color: var(--color-mint-green);
+    border-color: var(--color-purple-dark);
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+    .theme-toggle-button {
+        top: 16px;
+        right: 70px;
+        width: 44px;
+        height: 44px;
+    }
+
+    .theme-icon {
+        width: 22px;
+        height: 22px;
+    }
+}

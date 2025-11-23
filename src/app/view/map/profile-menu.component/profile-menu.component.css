@@ -1,0 +1,323 @@
+/* =========================================
+   Contenedor Principal (Menú Pequeño)
+   ========================================= */
+.profile-menu-container {
+    position: relative;
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 320px;
+    min-height: 200px;
+    overflow: hidden;
+    color: var(--color-purple-dark);
+    z-index: 1;
+    transition: opacity 0.2s ease, visibility 0.2s;
+    animation: slideIn 0.2s ease-out;
+}
+
+/* Dark mode */
+:host-context(.dark-theme) .profile-menu-container, .dark-theme .profile-menu-container {
+    background: var(--color-purple-dark);
+    color: var(--color-white);
+}
+
+.menu-hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   Header del Perfil
+   ========================================= */
+.profile-header {
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--color-white);
+}
+
+:host-context(.dark-theme) .profile-header, .dark-theme .profile-header {
+    background: var(--color-purple-dark);
+}
+
+.profile-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--color-lavender);
+}
+
+:host-context(.dark-theme) .profile-avatar, .dark-theme .profile-avatar {
+    border-color: var(--color-purple);
+}
+
+.profile-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.profile-name {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-purple-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:host-context(.dark-theme) .profile-name, .dark-theme .profile-name {
+    color: var(--color-white);
+}
+
+.profile-email {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-gray-blue);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:host-context(.dark-theme) .profile-email, .dark-theme .profile-email {
+    color: var(--color-lavender);
+}
+
+/* =========================================
+   Divisor
+   ========================================= */
+.divider {
+    height: 1px;
+    width: 100%;
+    margin: 0;
+    background-color: var(--color-lavender);
+}
+
+:host-context(.dark-theme) .divider, .dark-theme .divider {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* =========================================
+   Acciones (Botones Menú Principal)
+   ========================================= */
+.profile-actions {
+    padding: 0.5rem 0;
+    background: var(--color-white);
+}
+
+:host-context(.dark-theme) .profile-actions, .dark-theme .profile-actions {
+    background: var(--color-purple-dark);
+}
+
+/* --- BOTÓN GENÉRICO (Ajustes) --- */
+.action-button {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-align: left;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    color: var(--color-gray-blue); /* Color base Light */
+}
+
+.action-button mat-icon {
+    flex-shrink: 0;
+    color: inherit; /* Hereda el color del botón */
+    transition: color var(--transition-fast);
+}
+
+/* Hover en Light Mode */
+.action-button:hover {
+    background-color: var(--color-lavender);
+    color: var(--color-purple-dark);
+}
+
+/* --- ESTILOS MODO OSCURO GENÉRICOS (Ajustes) --- */
+/* 1. Estado Base en Dark Mode: Blanco y fondo transparente */
+:host-context(.dark-theme) .action-button,
+.dark-theme .action-button {
+    background-color: transparent;
+}
+
+/* 2. Estado Hover en Dark Mode: Fondo grisáceo suave */
+:host-context(.dark-theme) .action-button:hover,
+.dark-theme .action-button:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-white);
+}
+
+/* --- BOTÓN LOGOUT ESPECÍFICO --- */
+.action-button.logout {
+    color: var(--color-orange);
+}
+
+/* Override explícito para Dark Mode para asegurar que sea NARANJA y no blanco */
+:host-context(.dark-theme) .action-button.logout,
+.dark-theme .action-button.logout {
+    color: var(--color-orange);
+}
+
+/* Hover Logout en Light Mode */
+.action-button.logout:hover {
+    background-color: var(--color-lavender);
+    color: var(--color-orange);
+}
+
+/* Hover Logout en Dark Mode */
+:host-context(.dark-theme) .action-button.logout:hover,
+.dark-theme .action-button.logout:hover {
+    background-color: rgba(255, 149, 57, 0.15); /* Fondo naranja translúcido */
+    color: var(--color-orange);
+}
+
+/* =========================================
+   Overlay de Pantalla Completa
+   ========================================= */
+.logout-overlay-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.3s ease-out;
+}
+
+:host-context(.dark-theme) .logout-overlay-fixed, .dark-theme .logout-overlay-fixed {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================
+   Tarjeta de Popup Centrada
+   ========================================= */
+.logout-popup-card {
+    background: var(--color-white);
+    padding: 2.5rem 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    color: var(--color-purple-dark);
+    pointer-events: auto;
+    animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+:host-context(.dark-theme) .logout-popup-card, .dark-theme .logout-popup-card {
+    background: var(--color-purple-dark);
+    color: var(--color-white);
+}
+
+.logout-popup-card h3 {
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 0 0 2rem 0;
+    line-height: 1.4;
+}
+
+.popup-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* =========================================
+   Botones del Popup
+   ========================================= */
+.popup-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.9375rem;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.popup-button mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+}
+
+/* Botón Confirmar (Naranja) */
+.popup-button.confirm {
+    background-color: var(--color-orange);
+    color: var(--color-white);
+}
+
+.popup-button.confirm:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Botón Cancelar (Borde suave) */
+.popup-button.cancel {
+    background-color: transparent;
+    color: var(--color-gray-blue);
+    border: 2px solid var(--color-lavender);
+}
+:host-context(.dark-theme) .popup-button.cancel, .dark-theme .popup-button.cancel {
+    color: var(--color-mint-green-light);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.popup-button.cancel:hover {
+    background-color: var(--color-lavender);
+    color: var(--color-purple-dark);
+    border-color: var(--color-lavender);
+}
+:host-context(.dark-theme) .popup-button.cancel:hover, .dark-theme .popup-button.cancel:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-white);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* =========================================
+   Animaciones Compartidas
+   ========================================= */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .profile-menu-container {
+        width: 100%;
+        border-radius: 0;
+    }
+}

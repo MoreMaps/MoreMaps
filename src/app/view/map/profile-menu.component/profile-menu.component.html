@@ -1,0 +1,42 @@
+<div class="profile-menu-container" [class.menu-hidden]="showLogoutConfirmation()" (click)="$event.stopPropagation()">
+    <div class="profile-header">
+        <img [src]="profileImage()" alt="Profile" class="profile-avatar">
+        <div class="profile-info">
+            <h3 class="profile-name">{{ fullName() }}</h3>
+            <p class="profile-email">{{ email() }}</p>
+        </div>
+    </div>
+
+    <div class="divider" style="margin: 0;"></div>
+
+    <div class="profile-actions">
+        <button class="action-button" (click)="goToSettings()">
+            <mat-icon>settings</mat-icon>
+            <span>AJUSTES DE CUENTA</span>
+        </button>
+
+        <button class="action-button logout" (click)="openLogoutPopup()">
+            <mat-icon>logout</mat-icon>
+            <span>CERRAR SESIÓN</span>
+        </button>
+    </div>
+</div>
+
+@if (showLogoutConfirmation()) {
+    <div class="logout-overlay-fixed animation-fade-in" (click)="closeLogoutPopup()">
+        <div class="logout-popup-card animation-scale-up" (click)="$event.stopPropagation()">
+            <h3>¿Seguro que quieres<br>cerrar sesión?</h3>
+
+            <div class="popup-actions">
+                <button class="popup-button confirm" (click)="confirmLogout()">
+                    <mat-icon class="material-icons-outlined">logout</mat-icon>
+                    <span>SÍ, CERRAR SESIÓN</span>
+                </button>
+
+                <button class="popup-button cancel" (click)="closeLogoutPopup()">
+                    <span>NO</span>
+                </button>
+            </div>
+        </div>
+    </div>
+}

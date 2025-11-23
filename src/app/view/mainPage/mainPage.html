@@ -1,0 +1,44 @@
+<div class="landing-container">
+    <!-- Contenedor principal con el fondo -->
+    <div class="background-overlay"></div>
+
+    <!-- Contenido centrado -->
+    <div class="content">
+        <!-- Título principal -->
+        <h1 class="main-title">Planea, recorre, ahorra.</h1>
+
+    <!-- Logo de la aplicación -->
+    <div class="logo-container">
+      <img
+        ngSrc="assets/images/logo.png"
+        alt="Logo de la aplicación"
+        class="app-logo"
+        height="100" width="100" priority/>
+    </div>
+
+        <!-- Subtítulo descriptivo -->
+        <p class="subtitle">
+            Tu compañero de viaje para rutas más rápidas y económicas.
+        </p>
+
+    <!-- Botones de acción -->
+    <div class="action-buttons">
+      <button
+        mat-raised-button
+        class="login-button"
+        (click)="openLoginDialog()"
+        aria-label="Iniciar sesión"
+      >
+        Iniciar sesión
+      </button>
+
+      <button
+        mat-raised-button
+        class="register-button"
+        (click)="openRegisterDialog()"
+        aria-label="Crear cuenta nueva"
+      >
+        Crear cuenta
+      </button>
+    </div>
+</div>

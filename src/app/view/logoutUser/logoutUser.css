@@ -1,0 +1,340 @@
+.main-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.map-container {
+    width: 100%;
+    height: 100%;
+    background-color: #a8a8a8; /* Puedes cambiar esto por var(--mat-sys-surface-variant) si deseas */
+}
+
+/* =========================================
+   Botón de usuario (Floating)
+   ========================================= */
+.user-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--color-mint-green);
+    border: 3px solid var(--color-white);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* Borde oscuro en modo oscuro para que se fusione mejor o destaque */
+:host-context(.dark-theme) .user-button, .dark-theme .user-button {
+    border-color: var(--color-purple-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.user-button:hover {
+    transform: scale(1.05);
+}
+
+.user-button svg {
+    color: var(--color-teal-dark); /* Color del icono dentro del botón menta */
+}
+
+/* =========================================
+   Menú desplegable
+   ========================================= */
+.user-menu {
+    position: absolute;
+    top: 85px;
+    right: 20px;
+    width: 280px;
+    background-color: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all var(--transition-normal);
+    overflow: hidden; /* Para respetar bordes redondeados en hijos */
+}
+
+:host-context(.dark-theme) .user-menu, .dark-theme .user-menu {
+    background-color: var(--color-purple-dark);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.user-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    padding: 1.25rem; /* 20px */
+    gap: 15px;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--color-mint-green-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--color-teal-dark);
+}
+
+.user-details {
+    flex: 1;
+    overflow: hidden;
+}
+
+.user-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-purple-dark);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+:host-context(.dark-theme) .user-name, .dark-theme .user-name {
+    color: var(--color-white);
+}
+
+.user-handle {
+    font-size: 0.875rem;
+    color: var(--color-gray-blue);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =========================================
+   Divisor y Opciones
+   ========================================= */
+.menu-divider {
+    height: 1px;
+    background-color: var(--color-lavender);
+    margin: 0;
+}
+
+:host-context(.dark-theme) .menu-divider, .dark-theme .menu-divider {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 1rem 1.25rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    color: var(--color-gray-blue);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Hover en modo claro */
+.menu-option:hover {
+    background-color: var(--color-lavender);
+    color: var(--color-purple-dark);
+}
+
+/* Modo Oscuro: Base */
+:host-context(.dark-theme) .menu-option, .dark-theme .menu-option {
+    color: var(--color-white);
+}
+
+/* Modo Oscuro: Hover */
+:host-context(.dark-theme) .menu-option:hover, .dark-theme .menu-option:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-white);
+}
+
+/* Opción de Logout Específica */
+.menu-option.logout {
+    color: var(--color-orange);
+}
+
+.menu-option.logout:hover {
+    background-color: var(--color-lavender);
+    color: var(--color-orange);
+}
+
+/* Logout en Modo Oscuro */
+:host-context(.dark-theme) .menu-option.logout, .dark-theme .menu-option.logout {
+    color: var(--color-orange);
+}
+
+:host-context(.dark-theme) .menu-option.logout:hover, .dark-theme .menu-option.logout:hover {
+    background-color: rgba(255, 149, 57, 0.15);
+    color: var(--color-orange);
+}
+
+.menu-option svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+}
+
+/* =========================================
+   Overlay oscuro
+   ========================================= */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+    backdrop-filter: blur(2px);
+}
+
+:host-context(.dark-theme) .overlay, .dark-theme .overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* =========================================
+   Popup de confirmación
+   ========================================= */
+.logout-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 90%;
+    max-width: 400px;
+    background-color: var(--color-white);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+:host-context(.dark-theme) .logout-popup, .dark-theme .logout-popup {
+    background-color: var(--color-purple-dark);
+    color: var(--color-white);
+}
+
+.logout-popup.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.dialog-title {
+    text-align: center;
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 0 0 2rem 0;
+    line-height: 1.4;
+}
+
+/* Botones del Popup */
+.popup-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 0.9375rem;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-bottom: 12px;
+}
+
+.popup-button:last-child {
+    margin-bottom: 0;
+}
+
+/* Botón Confirmar (Naranja) */
+.popup-button.confirm {
+    background-color: var(--color-orange);
+    color: var(--color-white);
+}
+
+.popup-button.confirm:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Botón Cancelar (Outline) */
+.popup-button.cancel {
+    background-color: transparent;
+    color: var(--color-gray-blue);
+    border: 2px solid var(--color-lavender);
+}
+
+:host-context(.dark-theme) .popup-button.cancel, .dark-theme .popup-button.cancel {
+    color: var(--color-white);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.popup-button.cancel:hover {
+    background-color: var(--color-lavender);
+    color: var(--color-purple-dark);
+    border-color: var(--color-lavender);
+}
+
+:host-context(.dark-theme) .popup-button.cancel:hover, .dark-theme .popup-button.cancel:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-white);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.popup-button svg {
+    flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .user-menu {
+        right: 10px;
+        width: calc(100% - 20px);
+        max-width: 320px;
+    }
+
+    .logout-popup {
+        width: calc(100% - 40px);
+        padding: 1.5rem;
+    }
+
+    .user-button {
+        right: 10px;
+    }
+}

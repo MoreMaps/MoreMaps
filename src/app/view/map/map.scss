@@ -70,19 +70,19 @@
     // EL MARCADOR TIPO DIANA (BULLSEYE)
     .beacon-core {
         // 1. El centro blanco
-        width: 10px;
-        height: 10px;
+        width: 8px;
+        height: 8px;
         background-color: white;
         border-radius: 50%;
 
         // 2. El primer anillo naranja (borde real)
-        border: 5px solid #FF9539;
+        border: 3px solid var(--color-orange);
 
         // 3. Los anillos exteriores usando sombras (sin desenfoque)
         box-shadow:
-            0 0 0 3px white,    // El espacio blanco
-            0 0 0 7px #FF9539,  // El anillo naranja exterior
-            0 0 10px rgba(0,0,0,0.2); // Una pequeña sombra gris para dar profundidad (opcional)
+            0 0 0 2px var(--color-white),    // El espacio blanco
+            0 0 0 4px var(--color-orange),  // El anillo naranja exterior
+            0 0 6px rgba(0,0,0,0.2); // Una pequeña sombra gris para dar profundidad (opcional)
 
         z-index: 2;
         box-sizing: content-box; // Importante para que el width/height no incluya el borde
@@ -98,7 +98,7 @@
         z-index: 1;
         opacity: 0;
         // La onda parte del mismo color
-        box-shadow: 0 0 0 4px #FF9539;
+        box-shadow: 0 0 0 2px #FF9539;
 
         // Animación
         animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
@@ -117,4 +117,104 @@
         transform: scale(3.5); // Qué tan lejos llega la onda
         opacity: 0;
     }
+}
+
+/* =========================================
+   DARK MODE MAP STYLES
+   ========================================= */
+
+/* prevents flashes when changing between maps */
+:host-context(.dark-theme) #map {
+    background-color: #242424;
+}
+
+/* FILTERS ON LEAFLET TILES (img) */
+:host-context(.dark-theme) .leaflet-tile-pane {
+    /* invert(100%): Turns white to black (creates the dark base)
+       hue-rotate(180deg): Rotates colors so blue (water) stays blue
+                           instead of inverting to orange.
+       brightness & contrast: Tweaks to make it look less "washed out"
+    */
+    filter: invert(92%) saturate(200%);
+
+    /* Smooth transition when switching themes */
+    transition: filter 0.3s ease-in-out;
+}
+
+/* OPTIONAL: If the labels are too hard to read, you can try
+   forcing high contrast, though this varies by screen */
+:host-context(.dark-theme) .leaflet-tile-container {
+    filter: contrast(110%);
+}
+
+/* 1. Target the global dark theme class directly */
+.dark-theme #map {
+    background-color: #222; /* Dark background behind tiles */
+}
+
+/* 2. Target the tile pane specifically to invert colors */
+.dark-theme #map .leaflet-tile-pane {
+    filter: invert(92%) saturate(200%);
+    transition: filter 0.3s ease-in-out;
+}
+.leaflet-tile-pane {
+    transition: filter 0.3s ease-in-out;
+}
+
+/* 3. OPTIONAL: Fix for map controls (zoom buttons) if they look weird */
+.dark-theme .leaflet-control-zoom a {
+    background-color: #333;
+    color: #fff;
+    border-color: #444;
+}
+
+/* =========================================
+   WRAPPER & COLOR OVERLAY
+   ========================================= */
+
+.map-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh; /* Match the viewport height */
+    z-index: 100;
+}
+#map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.leaflet-tile-pane::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+
+    /*Ensures that the overlay doesn't "cut" when zooming out (box-shadow spreads "forever")*/
+    box-shadow: 0 0 0 100000vmax var(--color-lavender);
+    transform:translate(-50%, -50%);
+
+    /* shifts the map's hue. */
+    mix-blend-mode: hue;
+    background: transparent;
+    opacity: 0.65;
+
+    /* Ensure the overlay is above the tiles but below markers/UI */
+    z-index: 10;
+
+    /*the wrapper won't interfere with map mouse events*/
+    pointer-events: none;
+
+    /* smooth transition for when the theme switches */
+    transition: opacity 0.4s ease, background-color 0s;
+}
+
+.dark-theme .leaflet-tile-pane::after {
+    opacity: 0.8;
+    box-shadow: 0 0 0 100000vmax var(--color-teal-dark);
+    filter: hue-rotate(170deg) saturate(140%) brightness(140%);
 }

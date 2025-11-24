@@ -147,17 +147,19 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private initMap() {
-        const baseMapURl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-        this.map = L.map('map').setView([39.9864, -0.0513], 6);
+        // Standard OpenStreetMap URL
+        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-        L.tileLayer(baseMapURl, {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(this.map);
+        this.map = L.map('map').setView([39.9864, -0.0513], 6);
 
         this.map.whenReady(() => {
             this.map.invalidateSize();
         });
+
+        L.tileLayer(osmUrl, {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(this.map);
     }
 
     private setupLocationEventHandlers() {
@@ -211,8 +213,9 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         const pulsingIcon = L.divIcon({
             className: 'pulsing-beacon',
             html: '<div class="beacon-core"></div>',
-            iconSize: [34, 34],
-            iconAnchor: [17, 17]
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+            popupAnchor: [0, -10]
         });
 
         // 4. Poner marcador

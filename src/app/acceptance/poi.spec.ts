@@ -20,6 +20,7 @@ import {DescriptionLengthError} from '../errors/DescriptionLengthError';
 import {MapSearchService} from '../services/map-search-service/map-search.service';
 import {MAP_SEARCH_REPOSITORY} from '../services/map-search-service/MapSearchRepository';
 import {MapSearchAPI} from '../services/map-search-service/MapSearchAPI';
+import {POISearchModel} from '../data/POISearchModel';
 
 fdescribe('Pruebas sobre usuarios', () => {
     let userService: UserService;
@@ -94,7 +95,7 @@ fdescribe('Pruebas sobre usuarios', () => {
             // Se intenta dar de alta el POI "B" mediante sus coordenadas
             const poiBuscado = await mapSearchService.searchPOIByCoords(poiB.latitud, poiB.longitud);
             const geoHash = geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7);
-            const poiCreado = await poiService.createPOI(poiBuscado.lat, poiBuscado.lon, poiBuscado.placeName)
+            const poiCreado = await poiService.createPOI(new POISearchModel(0, 0, ""))
             // THEN
             // Se da de alta el POI
             expect(poiCreado).toEqual(jasmine.objectContaining({
@@ -142,7 +143,7 @@ fdescribe('Pruebas sobre usuarios', () => {
             // Se intenta dar de alta el POI “B” por topónimo ("València")
             const poiBuscado = await mapSearchService.searchPOIByPlaceName(poiB.toponimo);
             const geoHash = geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7);
-            const poiCreado = await poiService.createPOI(poiBuscado.lat, poiBuscado.lon, poiBuscado.placeName)
+            const poiCreado = await poiService.createPOI(new POISearchModel(0, 0, ""))
 
             // THEN
             // Se da de alta el POI
@@ -336,13 +337,13 @@ fdescribe('Pruebas sobre usuarios', () => {
     });
 
 
-    describe('HU206: Eliminar un POI', () => {
+    fdescribe('HU206: Eliminar un POI', () => {
 
         it('HU206-EV01: Eliminar un POI registrado', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
             // Lista de POI registrados es ["A, B"] (registrar "B")
-            const nuevoPoi = await poiService.createPOI(poiB.latitud, poiB.longitud, poiB.toponimo)
+            const nuevoPoi = await poiService.createPOI(await mapSearchService.searchPOIByPlaceName(poiB.toponimo))
 
             // WHEN
             // El usuario trata de borrar el POI "B"
@@ -373,7 +374,7 @@ fdescribe('Pruebas sobre usuarios', () => {
 
             // WHEN
             // El usuario trata de borrar el POI con geohash vacío (no registrado).
-            await expectAsync(poiService.deletePOI(auth, ""))
+            await expectAsync(poiService.deletePOI(auth, " "))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError
@@ -387,7 +388,7 @@ fdescribe('Pruebas sobre usuarios', () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
             // Lista de POI registrados es ["A", "B"] (registrar B)
-            const nuevoPoi = await poiService.createPOI(poiB.latitud, poiB.longitud, poiB.toponimo);
+            const nuevoPoi = await poiService.createPOI(await mapSearchService.searchPOIByPlaceName(poiB.toponimo));
 
             // Ambos puntos no son fijados, una consulta de POI devuelve ["A", "B"]
             let list = await poiService.getPOIList(auth);

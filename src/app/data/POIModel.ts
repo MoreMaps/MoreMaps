@@ -48,5 +48,9 @@ export class POIModel {
             ...(this.pinned !== undefined ? {pinned: this.pinned} : {pinned: false})
         }
     }
+
+    static fromJSON(json: any): POIModel {
+        return new POIModel(json.lat, json.lon, json.placeName, json.geohash, json.pinned, json.alias, json.description);
+    }
 }
 

@@ -24,7 +24,7 @@ export class POIService {
 
     // HU205 Modificar información de POI
     async updatePOI(user: Auth, geohash: string, update: Partial<POIModel>): Promise<boolean> {
-        return false;
+        return this.poiDb.updatePOI(user, geohash, update);
     }
 
     // HU206 Eliminar POI

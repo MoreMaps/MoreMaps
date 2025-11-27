@@ -2,8 +2,8 @@ import {POIRepository} from './POIRepository';
 import {inject, Injectable} from '@angular/core';
 import {POIModel} from '../../data/POIModel';
 import {Auth} from '@angular/fire/auth';
-import {Geohash, geohashForLocation} from 'geofire-common';
-import {addDoc, deleteDoc, doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';
+import {Geohash} from 'geofire-common';
+import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
 import {MissingPOIError} from '../../errors/MissingPOIError';
 import {POISearchModel} from '../../data/POISearchModel';
 
@@ -12,19 +12,10 @@ import {POISearchModel} from '../../data/POISearchModel';
 })
 export class POIDB implements POIRepository {
     private firestore = inject(Firestore);
-    private auth = inject(Auth);
 
     async createPOI(poi: POISearchModel): Promise<POIModel> {
         // geohash de 7 caracteres en base a las coordenadas
-        const geohash: Geohash = geohashForLocation([poi.lat, poi.lon], 7);
-
-        const poiRegistrado: POIModel = new POIModel(poi.lat, poi.lon, poi.placeName, geohash);
-
-        const userUid = this.auth.currentUser?.uid;
-        const poiDocRef = doc(this.firestore, `items/${userUid}/pois/${geohash}`);
-        await setDoc(poiDocRef, poiRegistrado.toJSON());
-
-        return poiRegistrado;
+        return new POIModel(0, 0, "", "");
     }
 
     async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {

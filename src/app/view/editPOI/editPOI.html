@@ -1,0 +1,120 @@
+@if (poi) {
+    <div class="menu-container">
+        <!-- Estado de visualización / edición -->
+        @if (!isEditing) {
+            <div class="view-mode">
+                <div class="header">
+                    <div class="icon-title">
+                        <img ngSrc="assets/images/marker.svg"
+                             alt="arrow_right" fill>
+                        <h2>{{ poi.alias }}</h2>
+                    </div>
+                    <button class="close-btn" (click)="onClose()">✕</button>
+                </div>
+
+                <div class="content">
+                    <div class="info-section">
+                        <p class="label">{{ poi.placeName }}</p>
+                        <p class="label">Coordenadas</p>
+                    </div>
+
+                    <p class="description">{{ poi.description }}</p>
+
+                    <div class="actions">
+                        <button class="btn btn-secondary" (click)="onNewRoute()">
+                            <img ngSrc="assets/images/arrow_right.svg"
+                                                    alt="arrow_right" fill>
+                            NUEVA RUTA
+                        </button>
+
+                        <button class="btn btn-secondary" (click)="onEdit()">
+                            <img ngSrc="assets/images/pencil.svg"
+                                                    alt="arrow_right" fill>
+                            EDITAR
+                        </button>
+
+                        <button class="btn btn-delete" (click)="onDelete()">
+                            <img ngSrc="assets/images/trash.svg"
+                                                    alt="arrow_right" fill>
+                            ELIMINAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @else {
+            <div class="edit-mode">
+                <div class="header">
+                    <h2>Editar punto de interés</h2>
+                </div>
+
+                <form [formGroup]="editForm" class="edit-form">
+                    <div class="form-group">
+                        <label>Alias</label>
+                        <div class="input-wrapper">
+                            <input
+                                type="text"
+                                formControlName="alias"
+                                placeholder="Texto"
+                            />
+                            @if (editForm.get('alias')?.value) {
+                                <button
+                                    type="button"
+                                    class="clear-btn"
+                                    (click)="clearField('alias')"
+                                >
+                                    ⊗
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <div class="input-wrapper">
+                  <textarea
+                      formControlName="description"
+                      placeholder="Texto"
+                      rows="4"
+                      maxlength="150"
+                  ></textarea>
+                            @if (editForm.get('description')?.value) {
+                                <button
+                                    type="button"
+                                    class="clear-btn"
+                                    (click)="clearField('description')"
+                                >
+                                    ⊗
+                                </button>
+                            }
+                        </div>
+                        <small class="char-count">{{ descriptionLength }}/150 caracteres</small>
+                        @if (editForm.get('description')?.errors?.['maxLength']) {
+                            La descripción no puede superar los 150 caracteres
+                        }
+                    </div>
+
+                    <div class="form-actions">
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            (click)="onSave()"
+                            [disabled]="!editForm.valid"
+                        >
+                            GUARDAR
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-cancel"
+                            (click)="onCancel()"
+                        >
+                            CANCELAR
+                        </button>
+                    </div>
+                </form>
+            </div>
+        }
+    </div>
+}

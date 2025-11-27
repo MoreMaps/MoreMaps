@@ -193,44 +193,29 @@ fdescribe('Pruebas sobre usuarios', () => {
 
             // THEN
             // Se devuelve el listado de POI
-            expect(listaPoi.length).toBe(1);
+            expect(listaPoi.length).toEqual(1);
 
             // No se modifica el estado
         });
 
         it('HU203-EI02: Consultar la lista de POI de otro usuario', async () => {
             // GIVEN
-            // El usuario ramon ha cerrado sesión
-            await userService.logout();
-
-            // El usuario maria ha iniciado sesión (crear su cuenta)
-            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-            // El usuario ramon está registrado
+            // El usuario ramon ha iniciado sesión
+            // El usuario ramon tiene los datos de otro usuario
+            const authBadUser : Auth = {
+                currentUser: {
+                    uid: 'notARealUser',
+                }
+            } as unknown as Auth;
 
             // WHEN
-            // El usuario maria consulta la lista usando el UID de ramon
-            await expectAsync(poiService.getPOIList(auth))
+            // El usuario ramon consulta la lista usando el UID de otro
+            await expectAsync(poiService.getPOIList(authBadUser))
                 .toBeRejectedWith(new ForbiddenContentError());
             // THEN
             // Se lanza el error ForbiddenContentError
             // No se modifica el estado
-
-            // CLEANUP
-            // Borrar cuenta del usuario maria
-            await userService.deleteUser();
-            // El usuario ramon inicia sesión.
-            await userService.login(ramon.email, ramon.pwd);
         });
-        afterAll(async () => {
-            if (auth.currentUser?.uid !== uid) {
-                // CLEANUP
-                // Borrar cuenta del usuario maria
-                console.log(`Deleting this user: ${auth.currentUser?.displayName}`);
-                await userService.deleteUser();
-                // El usuario ramon inicia sesión.
-                await userService.login(ramon.email, ramon.pwd);
-            }
-        })
     });
 
 

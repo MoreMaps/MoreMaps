@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import {MainPageComponent} from './view/mainPage/mainPage';
 import {LeafletMapComponent} from './view/map/map';
 import {AccountSettingsComponent} from './view/deleteUser/deleteUser';
+import {SavedItemsComponent} from './view/saved/saved';
 
 export const routes: Routes = [
     {
@@ -15,5 +16,9 @@ export const routes: Routes = [
     {
         path: 'deleteUser',
         component: AccountSettingsComponent
+    },
+    {
+        path: 'saved',
+        component: SavedItemsComponent
     }
 ];

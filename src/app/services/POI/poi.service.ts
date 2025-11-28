@@ -2,14 +2,16 @@ import {inject, Injectable} from '@angular/core';
 import {POIModel} from '../../data/POIModel';
 import {POI_REPOSITORY, POIRepository} from './POIRepository';
 import {Auth} from '@angular/fire/auth';
+import {Geohash, geohashForLocation} from 'geofire-common';
+import {POISearchModel} from '../../data/POISearchModel';
 
 @Injectable({ providedIn: 'root' })
 export class POIService {
     private poiDb : POIRepository = inject(POI_REPOSITORY);
 
     // HU201 y HU202 Crear POI
-    async createPOI(lat: number, lon: number, placeName: string): Promise<POIModel> {
-        return new POIModel(0, 0, "", "");
+    async createPOI(poi: POISearchModel): Promise<POIModel> {
+        return this.poiDb.createPOI(poi);
     }
 
     // HU203 Consultar lista de POI

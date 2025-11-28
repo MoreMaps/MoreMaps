@@ -20,8 +20,9 @@ import {DescriptionLengthError} from '../errors/DescriptionLengthError';
 import {MapSearchService} from '../services/map-search-service/map-search.service';
 import {MAP_SEARCH_REPOSITORY} from '../services/map-search-service/MapSearchRepository';
 import {MapSearchAPI} from '../services/map-search-service/MapSearchAPI';
+import {POISearchModel} from '../data/POISearchModel';
 
-fdescribe('Pruebas sobre usuarios', () => {
+describe('Pruebas sobre POI', () => {
     let userService: UserService;
     let poiService: POIService;
     let poiRegistrado: POIModel;
@@ -94,7 +95,7 @@ fdescribe('Pruebas sobre usuarios', () => {
             // Se intenta dar de alta el POI "B" mediante sus coordenadas
             const poiBuscado = await mapSearchService.searchPOIByCoords(poiB.latitud, poiB.longitud);
             const geoHash = geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7);
-            const poiCreado = await poiService.createPOI(poiBuscado.lat, poiBuscado.lon, poiBuscado.placeName)
+            const poiCreado = await poiService.createPOI(poiBuscado)
             // THEN
             // Se da de alta el POI
             expect(poiCreado).toEqual(jasmine.objectContaining({
@@ -140,9 +141,11 @@ fdescribe('Pruebas sobre usuarios', () => {
 
             // WHEN
             // Se intenta dar de alta el POI “B” por topónimo ("València")
-            const poiBuscado = await mapSearchService.searchPOIByPlaceName(poiB.toponimo);
+            const poiBuscado: POISearchModel = await mapSearchService.searchPOIByPlaceName(poiB.toponimo);
+
             const geoHash = geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7);
-            const poiCreado = await poiService.createPOI(poiBuscado.lat, poiBuscado.lon, poiBuscado.placeName)
+
+            const poiCreado = await poiService.createPOI(poiBuscado)
 
             // THEN
             // Se da de alta el POI
@@ -342,11 +345,12 @@ fdescribe('Pruebas sobre usuarios', () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
             // Lista de POI registrados es ["A, B"] (registrar "B")
-            const nuevoPoi = await poiService.createPOI(poiB.latitud, poiB.longitud, poiB.toponimo)
+            const nuevoPoi: POISearchModel = new POISearchModel(poiB.latitud, poiB.longitud, poiB.toponimo);
+            const poiCreado: POIModel = await poiService.createPOI(nuevoPoi)
 
             // WHEN
             // El usuario trata de borrar el POI "B"
-            const poiBorrado = await poiService.deletePOI(auth, nuevoPoi.geohash);
+            const poiBorrado = await poiService.deletePOI(auth, poiCreado.geohash);
 
             // THEN
             // El POI "B" se elimina
@@ -387,7 +391,8 @@ fdescribe('Pruebas sobre usuarios', () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
             // Lista de POI registrados es ["A", "B"] (registrar B)
-            const nuevoPoi = await poiService.createPOI(poiB.latitud, poiB.longitud, poiB.toponimo);
+            const nuevoPoi: POISearchModel = new POISearchModel(poiB.latitud, poiB.longitud, poiB.toponimo);
+            const poiCreado: POIModel = await poiService.createPOI(nuevoPoi)
 
             // Ambos puntos no son fijados, una consulta de POI devuelve ["A", "B"]
             let list = await poiService.getPOIList(auth);
@@ -395,7 +400,7 @@ fdescribe('Pruebas sobre usuarios', () => {
 
             // WHEN
             // El usuario trata de fijar el POI "B"
-            const poiFijado = await poiService.pinPOI(auth, nuevoPoi);
+            const poiFijado = await poiService.pinPOI(auth, poiCreado);
 
             // THEN
             // El punto A pasa a estar fijado (pinned = true)
@@ -412,7 +417,7 @@ fdescribe('Pruebas sobre usuarios', () => {
             expect(list.at(0)?.placeName).toEqual('Alicante');
 
             // Borrar el POI "B"
-            await poiService.deletePOI(auth, nuevoPoi.geohash);
+            await poiService.deletePOI(auth, poiCreado.geohash);
 
             // La lista es ahora ["A"]
             list = await poiService.getPOIList(auth);

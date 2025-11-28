@@ -12,6 +12,9 @@ import {Router} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
+import { MapSearchService } from '../../services/map-search-service/map-search.service';
+import { MAP_SEARCH_REPOSITORY } from '../../services/map-search-service/MapSearchRepository';
+import { MapSearchAPI } from '../../services/map-search-service/MapSearchAPI';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -28,10 +31,10 @@ export class SpinnerSnackComponent {
 }
 
 const customIcon = L.icon({
-    iconUrl: 'image_0.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -25]
+    iconUrl: 'assets/images/poi/customMarker.png',
+    iconSize: [27, 35],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
 });
 
 export interface UserData {
@@ -46,7 +49,19 @@ export interface UserData {
     styleUrl: './map.scss',
     standalone: true,
     encapsulation: ViewEncapsulation.None,
-    imports: [CommonModule, MatSnackBarModule, MatProgressSpinnerModule, MatDialogModule, NgOptimizedImage, NavbarComponent, ThemeToggleComponent],
+    imports: [
+        CommonModule,
+        MatSnackBarModule,
+        MatProgressSpinnerModule,
+        MatDialogModule,
+        NgOptimizedImage,
+        NavbarComponent,
+        ThemeToggleComponent,
+    ],
+    providers: [
+        MapSearchService,
+        { provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI }
+    ],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
     private router = inject(Router);
@@ -56,9 +71,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private elementRef = inject(ElementRef);
     private userLocationMarker: L.Marker | null = null;
     private dialog = inject(MatDialog);
-    private firestore = inject(Firestore);
-    private auth = inject(Auth);
     private authSubscription: Subscription | null = null;
+    private mapSearchService = inject(MapSearchService);
 
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
@@ -70,7 +84,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         profileImage: 'assets/images/pfp.png'
     });
 
-    constructor(private mapUpdateService: MapUpdateService) {
+    constructor(private mapUpdateService: MapUpdateService, private firestore: Firestore, private auth: Auth ) {
     }
 
     async ngOnInit() {
@@ -98,7 +112,9 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         this.mapUpdateService.marker$.subscribe((marker: MapMarker) => {
             this.addMarker(marker.lat, marker.lon, marker.name);
-            if (this.map) this.map.setView([marker.lat, marker.lon], 14);
+            if (this.map) {
+                this.map.panTo([marker.lat, marker.lon]);
+            }
         });
         this.mapUpdateService.snackbar$.subscribe((message: string) => {
             this.showSnackbar(message);
@@ -150,7 +166,14 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         // Standard OpenStreetMap URL
         const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-        this.map = L.map('map').setView([39.9864, -0.0513], 6);
+        const southWest = L.latLng(-90, -180);
+        const northEast = L.latLng(90, 180);
+        const bounds = L.latLngBounds(southWest, northEast);
+
+        this.map = L.map('map', {
+            maxBounds: bounds,
+            maxBoundsViscosity: 1.0,
+        });
 
         this.map.whenReady(() => {
             this.map.invalidateSize();
@@ -158,8 +181,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         L.tileLayer(osmUrl, {
             maxZoom: 19,
+            minZoom: 3,
+            noWrap: true,
             attribution: '© OpenStreetMap contributors'
         }).addTo(this.map);
+
+        this.setupMapClickHandler();
     }
 
     private setupLocationEventHandlers() {
@@ -260,6 +287,68 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             duration: 5000,
             horizontalPosition: 'left',
             verticalPosition: 'bottom',
+        });
+    }
+
+    private setupMapClickHandler(): void {
+        this.map.on('click', async (e: L.LeafletMouseEvent) => {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+
+            console.log(`Click en coordenadas: ${lat}, ${lon}`);
+
+            try {
+                // Mostrar spinner mientras se busca
+                this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
+                    horizontalPosition: 'left',
+                    verticalPosition: 'bottom',
+                    duration: 0
+                });
+
+                // Realizar búsqueda por coordenadas
+                const poiSearchResult = await this.mapSearchService.searchPOIByCoords(lat, lon);
+
+                // Cerrar spinner
+                if (this.loadingSnackBarRef) {
+                    this.loadingSnackBarRef.dismiss();
+                }
+
+                // Mostrar el POI en el mapa
+                this.addMarker(poiSearchResult.lat, poiSearchResult.lon, poiSearchResult.placeName);
+
+                // Mostrar notificación
+                this.showSnackbar(`Lugar encontrado: ${poiSearchResult.placeName}`);
+
+                // Opcional: Emitir evento para que otros componentes sepan del nuevo POI
+                this.mapUpdateService.sendMarker({
+                    name: poiSearchResult.placeName,
+                    lat: poiSearchResult.lat,
+                    lon: poiSearchResult.lon
+                });
+
+            } catch (error: any) {
+                // Cerrar spinner si hay error
+                if (this.loadingSnackBarRef) {
+                    this.loadingSnackBarRef.dismiss();
+                }
+
+                console.error('Error al buscar POI: ', error);
+
+                const snackRef = this.snackBar.open(
+                    `Error al buscar: ${error.message}`,
+                    'Reintentar',
+                    {
+                        duration: 5000,
+                        horizontalPosition: 'left',
+                        verticalPosition: 'bottom',
+                    }
+                );
+
+                snackRef.onAction().subscribe(() => {
+                    // Reintentar al hacer click
+                    this.setupMapClickHandler();
+                });
+            }
         });
     }
 

@@ -1,16 +1,29 @@
 import {POIRepository} from './POIRepository';
-import {Injectable} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {POIModel} from '../../data/POIModel';
 import {Auth} from '@angular/fire/auth';
-import {Geohash} from 'geofire-common';
+import {Geohash, geohashForLocation} from 'geofire-common';
+import {POISearchModel} from '../../data/POISearchModel';
+import {doc, Firestore, setDoc} from '@angular/fire/firestore';
 
 @Injectable({
     providedIn: 'root'
 })
 export class POIDB implements POIRepository {
-    async createPOI(lat: number, lon: number, placeName: string): Promise<POIModel> {
-        // geohash de 7 decimales se crea aquí
-        return new POIModel(0, 0, "", "");
+    private auth = inject(Auth);
+    private firestore = inject(Firestore);
+
+    async createPOI(poi: POISearchModel): Promise<POIModel> {
+        // geohash de 7 caracteres en base a las coordenadas
+        const geohash: Geohash = geohashForLocation([poi.lat, poi.lon], 7);
+
+        const poiRegistrado: POIModel = new POIModel(poi.lat, poi.lon, poi.placeName, geohash);
+
+        const userUid = this.auth.currentUser?.uid;
+        const poiDocRef = doc(this.firestore, `items/${userUid}/pois/${geohash}`);
+        await setDoc(poiDocRef, poiRegistrado.toJSON());
+
+        return poiRegistrado;
     }
 
     async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {

@@ -54,6 +54,6 @@ export class POIService {
 
     // HU501 Fijar POI
     async pinPOI(user: Auth, poi: POIModel): Promise<boolean> {
-        return false;
+        return await this.poiDb.pinPOI(user, poi);
     }
 }

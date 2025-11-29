@@ -4,8 +4,9 @@ import {POIModel} from '../../data/POIModel';
 import {Auth} from '@angular/fire/auth';
 import {Geohash} from 'geofire-common';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
-import {collection, Firestore, getDocs, query} from '@angular/fire/firestore';
+import {collection, doc, Firestore, getDocs, query, updateDoc} from '@angular/fire/firestore';
 import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
+import {MissingPOIError} from '../../errors/MissingPOIError';
 
 @Injectable({
     providedIn: 'root'
@@ -32,19 +33,11 @@ export class POIDB implements POIRepository {
     }
 
     async getPOIList(user: Auth): Promise<POIModel[]> {
-        const authUser = this.auth.currentUser;
-
-        if (!authUser) {
-            throw new SessionNotActiveError();
-        }
-
-        // Comprobar que el usuario registrado y el que consulta son el mismo
-        if (authUser.uid !== user.currentUser?.uid) {
-            throw new ForbiddenContentError();
-        }
+        this.safetyChecks(user);
 
         // Referencia a la colección
         let collectionPath: string;
+        // El if-else es necesario para evitar errores al compilar. Se comprueba en safetyChecks()
         if (user.currentUser) collectionPath = `/items/${user.currentUser.uid}/pois`;
         else throw new SessionNotActiveError();
 
@@ -73,6 +66,42 @@ export class POIDB implements POIRepository {
     }
 
     async pinPOI(user: Auth, poi: POIModel): Promise<boolean> {
-        return false;
+        this.safetyChecks(user);
+
+        // Referencia a la colección
+        let docPath: string;
+        // El if-else es necesario para evitar errores al compilar. Se comprueba en safetyChecks()
+        if (user.currentUser) docPath = `/items/${user.currentUser.uid}/pois/${poi.geohash}`;
+        else throw new SessionNotActiveError();
+
+        // Actualiza el documento para que invertir el boolean pinned del POI
+        try {
+            await updateDoc(doc(this.firestore, docPath), {pinned: !poi.pinned});
+            poi.pinned = !poi.pinned;
+            console.log(`Cambiado pinned de POI ${poi.geohash} a: ${poi.pinned}`)
+            return true;
+        } catch (error: any) {
+            console.log(`Error al cambiar pinned del POI: ${error}`);
+            switch(error.code) {
+                case 'invalid-argument':
+                case 'not-found':
+                    throw new MissingPOIError();
+            }
+            throw error;
+        }
+    }
+
+    private safetyChecks(user: Auth) {
+        const authUser = this.auth.currentUser;
+
+        // si el usuario pasado por argumento o el de auth no existen...
+        if (!authUser || !user.currentUser) {
+            throw new SessionNotActiveError();
+        }
+
+        // si el usuario pasado por argumento y el de auth no coinciden
+        if (authUser.uid !== user.currentUser?.uid) {
+            throw new ForbiddenContentError();
+        }
     }
 }

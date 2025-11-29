@@ -74,17 +74,23 @@
 
 .page-info {
     font-size: 0.875rem;
-    color: var(--mat-sys-on-surface-variant);
+    padding-left: 0.5rem;
+    color: var(--color-purple-dark);
 }
 
 .pagination-buttons {
     display: flex;
     gap: 0.5rem;
-    color: var(--color-purple-dark) !important;
-}
 
-.pagination-buttons button mat-icon {
-    color: var(--color-purple-dark) !important;
+    button {
+        &:disabled {
+            opacity: 0.3;
+        }
+        &.mat-icon {
+            color: var(--color-purple-dark) !important;
+
+        }
+    }
 }
 
 /* Lista de items */
@@ -99,20 +105,20 @@
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background-color: var(--mat-sys-surface-container);
+    background-color: transparent;
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-fast);
     border: 2px solid transparent;
 
     &:hover {
-        background-color: var(--mat-sys-surface-container-high);
+        background-color: rgba(133, 129, 226, 0.1);
         transform: translateX(4px);
     }
 
     &.selected {
         border-color: var(--color-purple);
-        background-color: var(--mat-sys-primary-container);
+        background-color: rgba(133, 129, 226, 0.3);
     }
 }
 
@@ -165,12 +171,12 @@
     flex-shrink: 0;
 
     mat-icon {
-        color: var(--mat-sys-on-surface-variant);
+        color: var(--color-purple);
         transition: all var(--transition-fast);
     }
 
     &.pinned mat-icon {
-        color: var(--color-orange);
+        color: var(--color-purple);
     }
 
     &:hover mat-icon {
@@ -267,6 +273,7 @@
             color: var(--color-white);
         }
     }
+
     .page-info {
         color: var(--color-white);
     }
@@ -275,7 +282,9 @@
         color: var(--color-mint-green-light) !important;
     }
 
-    .details-not-selected  p {color: var(--color-white);}
+    .details-not-selected p {
+        color: var(--color-white);
+    }
 
 
     .empty-icon {
@@ -284,6 +293,29 @@
 
     .empty-message {
         color: var(--color-white);
+    }
+
+    .favorite-button {
+        mat-icon {
+            color: var(--color-mint-green);
+        }
+
+        &.pinned mat-icon {
+            color: var(--color-mint-green);
+        }
+    }
+
+
+    .item-card {
+        &:hover {
+            background-color: rgb(161, 231, 197, 0.1);
+            transform: translateX(4px);
+        }
+
+        &.selected {
+            border-color: var(--color-mint-green-light);
+            background-color: rgba(161, 231, 197, 0.3);
+        }
     }
 
 }

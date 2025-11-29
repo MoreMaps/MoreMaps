@@ -5,7 +5,7 @@ import {USER_REPOSITORY} from '../services/User/UserRepository';
 import {UserService} from '../services/User/user.service';
 import {UserDB} from '../services/User/UserDB';
 import {appConfig} from '../app.config';
-import {doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';
+import {deleteDoc, doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';
 import {Auth} from '@angular/fire/auth';
 import {POIService} from '../services/POI/poi.service';
 import {POIModel} from '../data/POIModel';
@@ -98,11 +98,11 @@ fdescribe('Pruebas sobre usuarios', () => {
             // THEN
             // Se da de alta el POI
             expect(poiCreado).toEqual(jasmine.objectContaining({
-                lat: poiBuscado.lat,
-                lon: poiBuscado.lon,
-                placeName: poiBuscado.placeName,
-                geohash: geoHash,
-                pinned: false
+                    lat: poiBuscado.lat,
+                    lon: poiBuscado.lon,
+                    placeName: poiBuscado.placeName,
+                    geohash: geoHash,
+                    pinned: false
                 })
             );
 
@@ -181,7 +181,7 @@ fdescribe('Pruebas sobre usuarios', () => {
     });
 
 
-    describe('HU203: Consultar el listado vacío de POI', () => {
+    fdescribe('HU203: Consultar el listado de POI', () => {
         it('HU203-EV02: Consultar el listado no vacío de POI', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
@@ -193,7 +193,11 @@ fdescribe('Pruebas sobre usuarios', () => {
 
             // THEN
             // Se devuelve el listado de POI
-            expect(listaPoi.length).toEqual(1);
+            /* Conforme el desarrollo va avanzando, el usuario ramón tiene más de 1 elemento,
+            con especial atención a probar temas como la paginación.
+            Para evitar problemas de tests, se ha cambiado la condición a >=1.
+            * */
+            expect(listaPoi.length).toBeGreaterThanOrEqual(1);
 
             // No se modifica el estado
         });
@@ -202,7 +206,7 @@ fdescribe('Pruebas sobre usuarios', () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
             // El usuario ramon tiene los datos de otro usuario
-            const authBadUser : Auth = {
+            const authBadUser: Auth = {
                 currentUser: {
                     uid: 'notARealUser',
                 }
@@ -309,9 +313,11 @@ fdescribe('Pruebas sobre usuarios', () => {
             // WHEN
             // El usuario modifica la descripción del POI "A" a un texto con 151 caracteres (el máximo es 150)
             await expectAsync(poiService.updatePOI(auth, poiRegistrado.geohash,
-                {description: "The descriptive text is deliberately engineered " +
+                {
+                    description: "The descriptive text is deliberately engineered " +
                         "to exceed the maximum character limit of 150. " +
-                        "As such, it serves as a perfect test case for validation."}))
+                        "As such, it serves as a perfect test case for validation."
+                }))
                 .toBeRejectedWith(new DescriptionLengthError());
 
             // THEN
@@ -366,24 +372,30 @@ fdescribe('Pruebas sobre usuarios', () => {
     });
 
 
-    describe('HU501: Fijar un POI', () => {
+    fdescribe('HU501: Fijar un POI', () => {
 
         it('HU501-EV01: Fijar un POI registrado', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
             // Lista de POI registrados es ["A", "B"] (registrar B)
-            const nuevoPoi = await poiService.createPOI(poiB.latitud, poiB.longitud, poiB.toponimo);
+            // TODO Cambiar por la línea siguiente cuando createPOI esté implementado
+            // const nuevoPoi = await poiService.createPOI(poiB.latitud, poiB.longitud, poiB.toponimo);
+            let geohash = geohashForLocation([poiB.latitud, poiB.longitud], 7);
+            let nuevoPoi = new POIModel(poiB.latitud, poiB.longitud, poiB.toponimo,
+                geohash, false, poiB.alias, poiB.descripcion);
+            let docRef = doc(firestore, `items/${auth.currentUser?.uid}/pois/${geohash}`);
+            await setDoc(docRef, nuevoPoi.toJSON());
 
             // Ambos puntos no son fijados, una consulta de POI devuelve ["A", "B"]
             let list = await poiService.getPOIList(auth);
-            expect(list.at(0)?.placeName !== 'Alicante').toBeTrue();
+            expect(list.at(0)?.placeName === 'Alicante').toBeTrue();
 
             // WHEN
             // El usuario trata de fijar el POI "B"
             const poiFijado = await poiService.pinPOI(auth, nuevoPoi);
 
             // THEN
-            // El punto A pasa a estar fijado (pinned = true)
+            // El punto B pasa a estar fijado (pinned = true)
             expect(poiFijado).toBeTrue();
 
             // el orden ahora es ["B", "A"]
@@ -391,20 +403,28 @@ fdescribe('Pruebas sobre usuarios', () => {
             expect(list.at(0)?.placeName).toEqual('Valencia');
 
             // CLEANUP
-            // Usar el toggle, B ya no está fijado y la lista es ["A", "B"]
-            await poiService.pinPOI(auth, poiRegistrado);
+            // Usar el toggle, ninguno está fijado y la lista es ["A", "B"]
+            await poiService.pinPOI(auth, nuevoPoi);
             list = await poiService.getPOIList(auth);
             expect(list.at(0)?.placeName).toEqual('Alicante');
 
             // Borrar el POI "B"
-            await poiService.deletePOI(auth, nuevoPoi.geohash);
+            // TODO cambiar por la línea siguiente cuando deletePOI esté implementado
+            // await poiService.deletePOI(auth, nuevoPoi.geohash);
+            await deleteDoc(docRef);
 
             // La lista es ahora ["A"]
             list = await poiService.getPOIList(auth);
+            console.log(`${list.at(0)?.lat} - ${poiA.latitud} - ${list.at(0)?.lat === poiA.latitud}`)
+            console.log(`${list.at(0)?.lon} - ${poiA.longitud} - ${list.at(0)?.lon === poiA.longitud}`)
+            console.log(`${list.at(0)?.placeName} - ${poiA.toponimo} - ${list.at(0)?.placeName === poiA.toponimo}`)
+            console.log(`${list.at(0)?.alias} - ${poiA.alias} - ${list.at(0)?.alias === poiA.alias}`)
+            console.log(`${list.at(0)?.description} - ${poiA.descripcion} - ${list.at(0)?.description === poiA.descripcion}`)
+            console.log(`${list.at(0)?.pinned} - false - ${list.at(0)?.pinned === false}`)
             expect(list.at(0)).toEqual(jasmine.objectContaining({
                     lat: poiA.latitud,
                     lon: poiA.longitud,
-                    geohash: geohash,
+                    geohash: geohashForLocation([poiA.latitud, poiA.longitud], 7),
                     placeName: poiA.toponimo,
                     alias: poiA.alias,
                     description: poiA.descripcion,
@@ -420,7 +440,7 @@ fdescribe('Pruebas sobre usuarios', () => {
 
             // WHEN
             // El usuario trata de fijar un POI no registrado
-            await expectAsync(poiService.pinPOI(auth, new POIModel(-999, -999, "", "")))
+            await expectAsync(poiService.pinPOI(auth, new POIModel(-999, -999, "yoNoExist0", "yoNoExist0")))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError

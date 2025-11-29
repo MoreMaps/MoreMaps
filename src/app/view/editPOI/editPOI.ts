@@ -1,25 +1,30 @@
 // poi-detail-menu.component.ts
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
-import {CommonModule, NgOptimizedImage} from '@angular/common';
+import {CommonModule} from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { POIModel } from '../../data/POIModel';
+import {POIService} from '../../services/POI/poi.service';
+import {Auth} from '@angular/fire/auth';
+import {POI_REPOSITORY} from '../../services/POI/POIRepository';
+import {POIDB} from '../../services/POI/POIDB';
 
 @Component({
-    selector: 'app-poi-detail-menu',
+    selector: 'app-poi-modify-menu',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, NgOptimizedImage],
+    imports: [CommonModule, ReactiveFormsModule],
     templateUrl: './editPOI.html',
-    styleUrls: ['./editPOI.css']
+    styleUrls: ['./editPOI.css'],
+    providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB}],
 })
 export class PoiDetailMenuComponent implements OnInit {
-    @Input() poi: Partial<POIModel> | null = null;
+    @Input() poi: POIModel | null = null;
+    // Sería mejor obtener esto de un contexto global...
+    @Input() auth: Auth | null = null;
     @Output() close = new EventEmitter<void>();
-    @Output() update = new EventEmitter<Partial<POIModel>>();
-
-    isEditing = false;
+    @Output() update = new EventEmitter<boolean>();
     editForm!: FormGroup;
 
-    constructor(private fb: FormBuilder) {}
+    constructor(private fb: FormBuilder, private service: POIService) {}
 
     ngOnInit(): void {
         this.initForm();
@@ -30,58 +35,32 @@ export class PoiDetailMenuComponent implements OnInit {
             alias: ['', ],
             description: ['', [Validators.maxLength(150)]]
         });
-    }
 
-    // Obtiene los datos del POI y los pone por defecto
-    onEdit(): void {
+        // Obtiene los datos del POI y los pone por defecto
         if (this.poi) {
             this.editForm.patchValue({
-                alias: this.poi.alias,
-                description: this.poi.description
+                alias: this.poi?.alias,
+                description: this.poi?.description
             });
-            this.isEditing = true;
         }
     }
 
-    // Guarda los nuevos datos del POI, y cierra el formulario
-    onSave(): void {
-        if (this.editForm.valid && this.poi) {
+    // Guarda los nuevos datos del POI, y emite el evento de cierre
+    async onSave(): Promise<void> {
+        if (this.editForm.valid && this.poi && this.auth) {
             const updatedPOI: Partial<POIModel> = {
                 alias: this.editForm.value?.alias,
                 description: this.editForm.value?.description
             };
-            this.updatePOI(updatedPOI);
+            this.update.emit(await this.service.updatePOI(this.auth, this.poi.geohash, updatedPOI));
+            this.close.emit();
         }
-        this.isEditing = false;
-        this.editForm.reset();
     }
 
-    // Cancela la operación
+    // Cancela la operación y emite el evento de cierre
     onCancel(): void {
-        this.isEditing = false;
         this.editForm.reset();
-    }
-
-    // Emite el valor de cierre
-    onClose(): void {
-        this.isEditing = false;
         this.close.emit();
-    }
-
-    onNewRoute(): void {
-        // Implementar lógica para nueva ruta
-        console.log('Nueva ruta desde:', this.poi);
-    }
-
-    onDelete(): void {
-        // Implementar lógica para eliminar
-        console.log('Eliminar POI:', this.poi);
-    }
-
-    // Emite el valor del formulario
-    updatePOI(poi: Partial<POIModel>): void {
-        this.update.emit(poi);
-        this.isEditing = false;
     }
 
     // Limpia el campo "X"

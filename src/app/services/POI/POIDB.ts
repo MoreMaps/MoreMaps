@@ -31,7 +31,7 @@ export class POIDB implements POIRepository {
             // Si no existe, se lanza un error
             if (!poiSnap.exists()) throw new MissingPOIError();
 
-            // Comprobar reglas de negocio
+            // Comprobar reglas de negocio (el formulario también lo hace)
             // Descripción demasiado larga (>150 chars)
             if (update.description && update.description?.length > 150) throw new DescriptionLengthError();
 

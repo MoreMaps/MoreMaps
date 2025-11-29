@@ -3,6 +3,7 @@ import {MainPageComponent} from './view/mainPage/mainPage';
 import {LeafletMapComponent} from './view/map/map';
 import {AccountSettingsComponent} from './view/deleteUser/deleteUser';
 import {SavedItemsComponent} from './view/saved/saved';
+import {AuthGuard} from '@angular/fire/auth-guard';
 
 export const routes: Routes = [
     {
@@ -11,14 +12,17 @@ export const routes: Routes = [
     },
     {
         path: 'map',
-        component: LeafletMapComponent
+        component: LeafletMapComponent,
+        canActivate: [AuthGuard],
     },
     {
         path: 'deleteUser',
-        component: AccountSettingsComponent
+        component: AccountSettingsComponent,
+        canActivate: [AuthGuard],
     },
     {
         path: 'saved',
-        component: SavedItemsComponent
+        component: SavedItemsComponent,
+        canActivate: [AuthGuard],
     }
 ];

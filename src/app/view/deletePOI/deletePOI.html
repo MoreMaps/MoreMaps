@@ -1,6 +1,6 @@
 <!-- Overlay con filtro de fondo -->
 @if (isVisible) {
-    <div class="overlay" (click)="onCancel()">
+    <div class="overlay" (click)="onClose()">
         <!-- Popup -->
         <div class="popup" (click)="$event.stopPropagation()">
             <!-- Título -->
@@ -14,7 +14,7 @@
                 <button class="btn btn-confirm" (click)="onConfirm()">
                     SÍ, ELIMINAR
                 </button>
-                <button class="btn btn-cancel" (click)="onCancel()">
+                <button class="btn btn-cancel" (click)="onClose()">
                     NO, CANCELAR
                 </button>
             </div>
@@ -24,7 +24,11 @@
     <!-- Snackbar -->
     @if (showSnackbar) {
         <div class="snackbar">
-            <span>Punto de interés eliminado</span>
+            @if (success) {
+                <span>Punto de interés eliminado</span>
+            } @else {
+                <span>Fallo al eliminar punto de interés</span>
+            }
             <button class="snackbar-btn" (click)="closeSnackbar()">OK</button>
         </div>
     }

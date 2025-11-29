@@ -3,6 +3,7 @@ import {POIModel} from '../../data/POIModel';
 import {POI_REPOSITORY, POIRepository} from './POIRepository';
 import {Auth} from '@angular/fire/auth';
 import {POISearchModel} from '../../data/POISearchModel';
+import {Geohash} from 'geofire-common';
 
 @Injectable({ providedIn: 'root' })
 export class POIService {
@@ -29,7 +30,7 @@ export class POIService {
     }
 
     // HU206 Eliminar POI
-    async deletePOI(user: Auth, geohash: string): Promise<boolean> {
+    async deletePOI(user: Auth, geohash: Geohash): Promise<boolean> {
         return this.poiDb.deletePOI(user, geohash);
     }
 

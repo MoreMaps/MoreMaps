@@ -1,6 +1,8 @@
 import {Component, EventEmitter, Output} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { POIService } from '../../services/POI/poi.service';
 import { Geohash } from 'geofire-common';
+import { Auth } from '@angular/fire/auth';
 
 @Component({
     selector: 'app-delete-confirmation-popup',
@@ -10,28 +12,33 @@ import { Geohash } from 'geofire-common';
     styleUrls: ['./deletePOI.css']
 })
 export class DeleteConfirmationPopupComponent {
-    isVisible = false;
+    isVisible = true;
     showSnackbar = false;
+    @Output() success = new EventEmitter<boolean>();
     private snackbarTimeout: any;
+    private geohash: any;
+    private auth: any;
 
-    open() {
+    constructor(private service: POIService) {}
+
+    // Componente padre abre el popup, inyecta el geohash del POI
+    // ¿Se podría obtener el auth directamente del contexto de la app?
+    open(auth: Auth, geohash: Geohash) {
         this.isVisible = true;
+        this.geohash = geohash;
+        this.auth = auth;
     }
 
-    close() {
+    // Cierra el popup
+    onClose() {
         this.isVisible = false;
     }
 
-    // Cancela la operación
-    onCancel() {
-        this.close();
-    }
-
-    // Ejecuta el borrado, emitiendo un booleano
-    onConfirm() {
-        this.close();
+    // Ejecuta el borrado (y cierra el popup, si procede)
+    // Propaga el valor obtenido al padre
+    async onConfirm(): Promise<void> {
+        this.success.emit(await this.service.deletePOI(this.auth, this.geohash));
         this.displaySnackbar();
-        // Borrado de POI
     }
 
     // Mostrar el snackbar

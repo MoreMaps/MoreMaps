@@ -1,0 +1,196 @@
+import {Component, computed, effect, inject, OnDestroy, signal} from '@angular/core';
+import {CommonModule, NgOptimizedImage} from '@angular/common';
+import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
+import {MatDialogModule} from '@angular/material/dialog';
+import {Auth} from '@angular/fire/auth';
+import {POIModel} from '../../data/POIModel';
+import {ThemeToggleComponent} from '../themeToggle/themeToggle';
+import {NavbarComponent} from '../navbar/navbar.component';
+import {ProfileButtonComponent} from '../profileButton/profileButton';
+import {POIService} from '../../services/POI/poi.service';
+import {POI_REPOSITORY} from '../../services/POI/POIRepository';
+import {POIDB} from '../../services/POI/POIDB';
+import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {Router} from '@angular/router';
+import {MatSnackBar, MatSnackBarRef} from '@angular/material/snack-bar';
+import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
+import {SavedVehiclesStrategy} from '../../services/saved-items/savedVehiclesStrategy';
+import {SavedItemsStrategy} from '../../services/saved-items/savedItemsStrategy';
+import {SpinnerSnackComponent} from '../map/map';
+import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
+
+type ItemType = 'lugares' | 'vehiculos' | 'rutas';
+
+@Component({
+    selector: 'app-saved-items',
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatButtonModule,
+        MatIconModule,
+        MatDialogModule,
+        ThemeToggleComponent,
+        NavbarComponent,
+        ProfileButtonComponent,
+        NgOptimizedImage
+    ],
+    templateUrl: './saved.html',
+    styleUrls: ['./saved.scss'],
+    providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB},
+        SavedPOIStrategy, SavedVehiclesStrategy, SavedRouteStrategy]
+})
+export class SavedItemsComponent implements OnDestroy{
+    private auth = inject(Auth);
+    private router = inject(Router);
+    private snackBar = inject(MatSnackBar);
+    private activeSnackRef: MatSnackBarRef<any> | null = null;
+    private loadingTimeout: any = null;
+
+    private strategies: Record<string, SavedItemsStrategy> = {
+        'lugares': inject(SavedPOIStrategy),
+        'vehiculos': inject(SavedVehiclesStrategy),
+        'rutas': inject(SavedVehiclesStrategy)
+    };
+
+    selectedType = signal<ItemType>('lugares');
+    items = signal<any[] | null>(null);
+    selectedItem: any;
+
+    // Paginación
+    currentPage = signal(1);
+    itemsPerPage = signal(4);
+    totalPages = computed(
+        () => {
+            // necesario para evitar error en compilación
+            let itemSnap = this.items();
+            if (!itemSnap) return 1;
+            const total = Math.ceil(itemSnap.length / this.itemsPerPage());
+            return total === 0 ? 1 : total;
+        });
+
+    currentStrategy = computed(
+        () => this.strategies[this.selectedType()]);
+
+    constructor() {
+        const savedType = localStorage.getItem('user_preference_saved_tab');
+        if(savedType) {
+            this.selectedType.set(savedType as ItemType);
+        }
+        this.fetchDataWithLoading();
+        effect(() => {
+            const currentType = this.selectedType();
+            localStorage.setItem('user_preference_saved_tab', currentType);
+        });
+    }
+
+    ngOnDestroy(): void {
+        this.clearLoadingState()
+    }
+
+    private clearLoadingState(): void {
+        if (this.loadingTimeout) {
+            clearTimeout(this.loadingTimeout);
+            this.loadingTimeout = null;
+        }
+        if (this.activeSnackRef) {
+            this.activeSnackRef.dismiss();
+            this.activeSnackRef = null;
+        }
+    }
+
+    async loadItems(): Promise<void> {
+        try {
+            this.items.set(await this.currentStrategy().loadItems(this.auth));
+        } catch (error) {
+            if (error instanceof SessionNotActiveError) {
+                this.router.navigate(['']);
+                return;
+            }
+            console.error('Error loading items:', error);
+            this.items.set([]);
+        }
+    }
+
+    selectType(type: ItemType): void {
+        if (this.selectedType() === type) return;
+
+        this.selectedType.set(type);
+        this.currentPage.set(1);
+        this.selectedItem = null;
+
+        this.fetchDataWithLoading();
+    }
+
+    private async fetchDataWithLoading(): Promise<void> {
+        this.items.set(null);
+
+        if (this.activeSnackRef) {this.activeSnackRef.dismiss();}
+
+        this.loadingTimeout = setTimeout(() => {
+            this.activeSnackRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
+                horizontalPosition: 'left',
+                verticalPosition: 'bottom',
+                duration: 0
+            });
+        }, 300);
+
+        try {
+            await this.loadItems();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this.clearLoadingState();
+        }
+    }
+
+    selectItem(item: POIModel): void {
+        this.selectedItem = item;
+    }
+
+    getDisplayName(item: POIModel): string {
+        return this.currentStrategy().getDisplayName(item);
+    }
+
+    paginatedItems = computed(
+        () => {
+            const start = (this.currentPage() - 1) * this.itemsPerPage();
+            const end = start + this.itemsPerPage();
+            // Necesario para evitar errores al compilar
+            let itemSnap = this.items();
+            if (!itemSnap) return [];
+            return itemSnap.slice(start, end);
+        });
+
+    previousPage(): void {
+        if (this.currentPage() > 1) {
+            this.currentPage.set(this.currentPage() - 1);
+        }
+    }
+
+    nextPage(): void {
+        if (this.currentPage() < this.totalPages()) {
+            this.currentPage.set(this.currentPage() + 1);
+        }
+    }
+
+    emptyMessage = computed(
+        () => this.currentStrategy().getEmptyMessage());
+
+    // Poner los tipos VehicleModel y RouteModel cuando se vayan a implementar
+    async toggleFavorite(item: POIModel | any, event: Event): Promise<void> {
+        event.stopPropagation();
+        const success = await this.currentStrategy().toggleFavorite(this.auth, item);
+        if (success) {
+            this.showSnackbar(`${item.pinned ? 'Se ha fijado' : ''} POI "${this.getDisplayName(item)}"${!item.pinned ? ' ya no está fijado.' : '.'}`)
+        }
+    }
+
+    private showSnackbar(msg: string): void {
+        this.snackBar.open(msg, 'Ok', {
+            duration: 5000,
+            horizontalPosition: 'left',
+            verticalPosition: 'bottom',
+        });
+    }
+}

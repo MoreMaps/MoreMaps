@@ -11,6 +11,8 @@
     box-shadow: var(--shadow-lg);
     z-index: 1000;
     transition: background var(--transition-normal);
+
+    overflow: visible;
 }
 
 /* Light mode (default) */
@@ -73,10 +75,12 @@
     padding: 8px;
 }
 
+/*A spacer made so that the navbar's third icon isn't hidden by the add-button.
+(Because the add-button is not part of the normal flow)*/
 .nav-spacer {
     width: 70px;
     height: 20px;
-    color: var(--navbar-bg);
+    pointer-events: none;
 }
 
 .nav-button:hover {
@@ -100,7 +104,7 @@
 
 .nav-indicator {
     position: absolute;
-    bottom: 8px;
+    bottom: 12%;
     width: 6px;
     height: 6px;
     background: var(--indicator-color);
@@ -116,29 +120,42 @@
 }
 
 .add-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
+    /*Out of normal navbar flow, but still locked to its coordinates*/
+    position: absolute;
+
+    /*Center the button vertically with the navbar no matter how big it is*/
+    bottom: auto;
+    top: 50%;
+    transform: translateY(-50%);
+
+    /*Anchor it to the right, relative to the navbar edge*/
+    right: -1px;
+
+    /*Makes it a bigger circle that puts the cursor into pointer mode*/
     width: 90px;
     height: 90px;
     background: transparent;
     border: none;
     border-radius: var(--radius-full);
     cursor: pointer;
+
+    /*Centers the logo/icon inside the button circle*/
     display: flex;
     align-items: center;
     justify-content: center;
+
+    /*All transitions are smoother. Index so that it's over the navbar.*/
     transition: all var(--transition-fast);
     z-index: 1001;
     flex-shrink: 0;
 }
 
 .add-button:hover {
-    transform: scale(1.08) translateY(-2px);
+    transform: translateY(-50%) scale(1.08) translateY(-2px);
 }
 
 .add-button:active {
-    transform: scale(0.95);
+    transform: translateY(-50%) scale(0.95);
 }
 
 .add-icon {
@@ -167,8 +184,10 @@
     }
 
     .nav-spacer {
-        width: 50px;
+        width: 60px;
         height: 50px;
+        border: none;
+        background: transparent;
     }
 
     .nav-icon {
@@ -177,8 +196,6 @@
     }
 
     .add-button {
-        bottom: 16px;
-        right: 16px;
         width: 75px;
         height: 75px;
     }

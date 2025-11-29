@@ -198,7 +198,7 @@ describe('Pruebas sobre usuarios', () => {
 
     describe('HU603: Guardar datos de usuarios', () => {
 
-        it('HU603-EV01: Comprobación de datos guardados ante cierre involuntario', async () => {
+        it('HU603-EV01: Comprobación de datos de usuario guardados ante cierre involuntario', async () => {
             // GIVEN
             //  el usuario "ramon" está registrado y ha iniciado sesión
             await userService.login(ramon.email, ramon.pwd);
@@ -219,6 +219,8 @@ describe('Pruebas sobre usuarios', () => {
                 apellidos: ramon.apellidos,
             }));
 
+            // LIMPIEZA
+            // "ramon" cierra sesión
             await userService.logout();
         });
     })

@@ -5,6 +5,7 @@ import {NgOptimizedImage} from '@angular/common';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {LoginDialogComponent} from './login-dialog/login-dialog';
 import {RegisterDialogComponent} from './register-dialog/register-dialog.component';
+import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 
 @Component({
     selector: 'main-page',
@@ -13,6 +14,7 @@ import {RegisterDialogComponent} from './register-dialog/register-dialog.compone
         MatButton,
         NgOptimizedImage,
         MatDialogModule,
+        ThemeToggleComponent,
     ],
     styleUrls: ['./mainPage.css']
 })

@@ -1,17 +1,16 @@
-import {AfterViewInit, Component, ElementRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
-import {CommonModule, NgOptimizedImage} from '@angular/common';
+import {AfterViewInit, Component, ElementRef, inject, OnInit, ViewEncapsulation} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import * as L from 'leaflet';
 import {MapMarker, MapUpdateService} from '../../services/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatDialog, MatDialogModule} from '@angular/material/dialog';
-import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
-import {doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {MatDialogModule} from '@angular/material/dialog';
 import {Auth, authState} from '@angular/fire/auth';
 import {Router} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
+import {ProfileButtonComponent} from '../profileButton/profileButton';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -34,19 +33,13 @@ const customIcon = L.icon({
     popupAnchor: [0, -25]
 });
 
-export interface UserData {
-    fullName: string;
-    email: string;
-    profileImage: string;
-}
-
 @Component({
     selector: 'app-map',
     templateUrl: './map.html',
     styleUrl: './map.scss',
     standalone: true,
     encapsulation: ViewEncapsulation.None,
-    imports: [CommonModule, MatSnackBarModule, MatProgressSpinnerModule, MatDialogModule, NgOptimizedImage, NavbarComponent, ThemeToggleComponent],
+    imports: [CommonModule, MatSnackBarModule, MatProgressSpinnerModule, MatDialogModule, NavbarComponent, ThemeToggleComponent, ProfileButtonComponent],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
     private router = inject(Router);
@@ -55,31 +48,18 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private snackBar = inject(MatSnackBar);
     private elementRef = inject(ElementRef);
     private userLocationMarker: L.Marker | null = null;
-    private dialog = inject(MatDialog);
-    private firestore = inject(Firestore);
     private auth = inject(Auth);
     private authSubscription: Subscription | null = null;
 
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
 
-    // Signal for user data
-    userData = signal<UserData>({
-        fullName: '',
-        email: '',
-        profileImage: 'assets/images/pfp.png'
-    });
-
     constructor(private mapUpdateService: MapUpdateService) {
     }
 
     async ngOnInit() {
-
         this.authSubscription = authState(this.auth).subscribe(async (user) => {
             if (user) {
-                // El usuario existe, cargamos sus datos
-                await this.loadUserData();
-
                 const mapContainer = this.elementRef.nativeElement.querySelector('#map');
                 if (mapContainer && !this.map) {
                     this.initMap();
@@ -114,50 +94,20 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
     ngAfterViewInit() {  }
 
-    private async loadUserData(): Promise<void> {
-        const user = this.auth.currentUser;
-        if (!user) return;
-
-        try {
-            const userDoc = doc(this.firestore, `users/${user.uid}`);
-            const docSnap = await getDoc(userDoc);
-
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                this.userData.set({
-                    fullName: `${data['nombre'] || ''} ${data['apellidos'] || ''}`.trim(),
-                    email: data['email'] || user.email || '',
-                    profileImage: 'assets/images/pfp.png'
-                });
-            } else {
-                this.userData.set({
-                    fullName: '',
-                    email: user.email || '',
-                    profileImage: 'assets/images/pfp.png'
-                });
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-            this.userData.set({
-                fullName: '',
-                email: user.email || '',
-                profileImage: 'assets/images/pfp.png'
-            });
-        }
-    }
-
     private initMap() {
-        const baseMapURl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-        this.map = L.map('map').setView([39.9864, -0.0513], 6);
+        // Standard OpenStreetMap URL
+        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-        L.tileLayer(baseMapURl, {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(this.map);
+        this.map = L.map('map').setView([39.9864, -0.0513], 6);
 
         this.map.whenReady(() => {
             this.map.invalidateSize();
         });
+
+        L.tileLayer(osmUrl, {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(this.map);
     }
 
     private setupLocationEventHandlers() {
@@ -211,8 +161,9 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         const pulsingIcon = L.divIcon({
             className: 'pulsing-beacon',
             html: '<div class="beacon-core"></div>',
-            iconSize: [34, 34],
-            iconAnchor: [17, 17]
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+            popupAnchor: [0, -10]
         });
 
         // 4. Poner marcador
@@ -257,22 +208,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             duration: 5000,
             horizontalPosition: 'left',
             verticalPosition: 'bottom',
-        });
-    }
-
-    // Open profile menu with preloaded user data
-    openProfileMenu(): void {
-        this.dialog.open(ProfileMenuComponent, {
-            backdropClass: 'transparent-backdrop',
-            hasBackdrop: true,
-            panelClass: 'profile-menu-dialog',
-
-            position: { top: '16px', right: '16px' },
-
-            maxWidth: 'none',
-            enterAnimationDuration: '200ms',
-            exitAnimationDuration: '200ms',
-            data: this.userData()
         });
     }
 }

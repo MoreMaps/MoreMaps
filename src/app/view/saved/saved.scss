@@ -126,15 +126,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 33px;
+    height: 44px;
     border-radius: var(--radius-md);
     flex-shrink: 0;
 
     .poi-icon-img {
-        width: 32px;
-        height: 32px;
+        display: none;
         object-fit: contain;
+
+        &.visible {
+            display: block;
+            animation: fadeIn var(--transition-fast) ease-in;
+        }
+
     }
 }
 
@@ -222,6 +227,10 @@
     padding: 2rem;
     overflow-y: auto;
     transition: all var(--transition-normal);
+
+    @media (max-width: 800px) {
+        display: none;
+    }
 
     p {
         opacity: 0.6;

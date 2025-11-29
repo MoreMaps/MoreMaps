@@ -1,111 +1,119 @@
 <dev-theme-toggle></dev-theme-toggle>
 <app-navbar></app-navbar>
-@if (loading) {
-    <div style="display: flex; flex-direction:row; justify-content: center; padding: 50px;">
-        <mat-spinner diameter="20" color="accent"></mat-spinner>
-        <p>Verificando sesión...</p>
-    </div>
-} @else {
+<div class="saved-items-container">
     <profile-button></profile-button>
-    <div class="saved-items-container">
-        <!-- Lista de elementos guardados -->
-        <div class="items-list-section">
-            <div class="section-header">
-                <h2 class="section-title">Elementos guardados</h2>
+    <!-- Lista de elementos guardados -->
+    <div class="items-list-section">
+        <div class="section-header">
+            <h2 class="section-title">Elementos guardados</h2>
 
-                <!-- Selector de tipo de elemento -->
-                <div class="item-type-selector">
-                    <button
-                        class="type-button"
-                        [class.active]="selectedType === 'lugares'"
-                        (click)="selectType('lugares')">
-                        Lugares
-                    </button>
-                    <button
-                        class="type-button"
-                        [class.active]="selectedType === 'vehiculos'"
-                        (click)="selectType('vehiculos')">
-                        Vehículos
-                    </button>
-                    <button
-                        class="type-button"
-                        [class.active]="selectedType === 'rutas'"
-                        (click)="selectType('rutas')">
-                        Rutas
-                    </button>
-                </div>
-
-                <!-- Paginación -->
-                @if (items.length > 0) {
-                    <div class="pagination">
-                        <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
-                        <div class="pagination-buttons">
-                            <button
-                                mat-icon-button
-                                (click)="previousPage()"
-                                [disabled]="currentPage === 1">
-                                <mat-icon>chevron_left</mat-icon>
-                            </button>
-                            <button
-                                mat-icon-button
-                                (click)="nextPage()"
-                                [disabled]="currentPage === totalPages">
-                                <mat-icon>chevron_right</mat-icon>
-                            </button>
-                        </div>
-                    </div>
-                }
+            <!-- Selector de tipo de elemento -->
+            <div class="item-type-selector">
+                <button
+                    class="type-button"
+                    [class.active]="selectedType() === 'lugares'"
+                    (click)="selectType('lugares')">
+                    Lugares
+                </button>
+                <button
+                    class="type-button"
+                    [class.active]="selectedType() === 'vehiculos'"
+                    (click)="selectType('vehiculos')">
+                    Vehículos
+                </button>
+                <button
+                    class="type-button"
+                    [class.active]="selectedType() === 'rutas'"
+                    (click)="selectType('rutas')">
+                    Rutas
+                </button>
             </div>
 
-            <!-- Lista de items -->
-            @if (items.length > 0) {
-                <div class="items-list">
-                    @for (item of paginatedItems; track item.geohash) {
-                        <div
-                            class="item-card"
-                            (click)="selectItem(item)"
-                            [class.selected]="selectedItem?.geohash === item.geohash">
-                            <div class="item-icon">
-                                <img
-                                    [ngSrc]="selectedItem?.geohash === item.geohash ? 'assets/images/poi_active.png' : 'assets/images/poi_inactive.png'"
-                                    width="30"
-                                    height="30"
-                                    alt="POI icon"
-                                    class="poi-icon-img">
-                            </div>
-                            <div class="item-info">
-                                <h3 class="item-name">{{ getDisplayName(item) }}</h3>
-                                @if(getDisplayName(item)!==item.placeName){<p class="item-place-if-alias">{{ item.placeName }}</p>}
-                                <p class="item-description">({{ item.lat || 'Dummy' }}, {{ item.lon || 'Dummy' }})</p>
-                                <p class="item-description">{{ item.description || 'Sin descripción' }}</p>
-                            </div>
-                            <button
-                                mat-icon-button
-                                class="favorite-button"
-                                [class.pinned]="item.pinned"
-                                (click)="toggleFavorite(item, $event)">
-                                <mat-icon>{{ item.pinned ? 'star' : 'star_border' }}</mat-icon>
-                            </button>
-                        </div>
-                    }
-                </div>
-            } @else {
-                <!-- Estado vacío -->
-                <div class="empty-state">
-                    <mat-icon class="empty-icon">bookmark_border</mat-icon>
-                    <p class="empty-message">
-                        {{ getEmptyMessage() }}
-                    </p>
+            <!-- Paginación -->
+            @if (items() && items()!.length > 0) {
+                <div class="pagination">
+                    <span class="page-info">Página {{ currentPage() }} de {{ totalPages() }}</span>
+                    <div class="pagination-buttons">
+                        <button
+                            mat-icon-button
+                            (click)="previousPage()"
+                            [disabled]="currentPage() === 1">
+                            <mat-icon>chevron_left</mat-icon>
+                        </button>
+                        <button
+                            mat-icon-button
+                            (click)="nextPage()"
+                            [disabled]="currentPage() === totalPages()">
+                            <mat-icon>chevron_right</mat-icon>
+                        </button>
+                    </div>
                 </div>
             }
         </div>
 
-        <!-- Panel de detalles (Desktop: lado derecho, Mobile: overlay) -->
-        <!-- TODO Show details HU204-->
-        <div class="details-not-selected">
-            @if(!selectedItem){<p>Selecciona un elemento para ver sus detalles.</p>}
-            @else{<p>Seleccionaste algo, pero esto no está implementado aún.</p>}
-        </div>
+        <!-- Lista de items -->
+        @if (items() === null || items()!.length > 0) {
+            <div class="items-list">
+                @for (item of paginatedItems(); track item.geohash) {
+                    <div
+                        class="item-card"
+                        (click)="selectItem(item)"
+                        [class.selected]="selectedItem?.geohash === item.geohash">
+                        <div class="item-icon">
+                            <img
+                                ngSrc="assets/images/poi_active.png"
+                                height="44"
+                                width="33"
+                                priority
+                                alt="POI icon"
+                                class="poi-icon-img"
+                                [class.visible]="selectedItem?.geohash === item.geohash">
+                            <img
+                                ngSrc="assets/images/poi_inactive.png"
+                                priority
+                                height="44"
+                                width="33"
+                                alt="POI icon"
+                                class="poi-icon-img"
+                                [class.visible]="selectedItem?.geohash !== item.geohash">
+                        </div>
+                        <div class="item-info">
+                            <h3 class="item-name">{{ getDisplayName(item) }}</h3>
+                            @if (getDisplayName(item) !== item.placeName) {
+                                <p class="item-place-if-alias">{{ item.placeName }}</p>
+                            }
+                            <p class="item-description">({{ item.lat || 'Dummy' }}, {{ item.lon || 'Dummy' }})</p>
+                            <p class="item-description">{{ item.description || 'Sin descripción' }}</p>
+                        </div>
+                        <button
+                            mat-icon-button
+                            class="favorite-button"
+                            [class.pinned]="item.pinned"
+                            (click)="toggleFavorite(item, $event)">
+                            <mat-icon>{{ item.pinned ? 'star' : 'star_border' }}</mat-icon>
+                        </button>
+                    </div>
+                }
+            </div>
+        } @else {
+            <!-- Estado vacío -->
+            <div class="empty-state">
+                <mat-icon class="empty-icon">bookmark_border</mat-icon>
+                <p class="empty-message">
+                    {{ emptyMessage() }}
+                </p>
+            </div>
+        }
     </div>
 
-}
+    <!-- Panel de detalles (Desktop: lado derecho, Mobile: overlay) -->
+    <!-- TODO Show details HU204-->
+    <div class="details-not-selected">
+        @if (!selectedItem) {
+            <p>Selecciona un elemento para ver sus detalles.</p>
+        } @else {
+            <p>Seleccionaste algo, pero esto no está implementado aún.</p>
+        }
+    </div>
+
+</div>

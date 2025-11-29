@@ -2,6 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {POIModel} from '../../data/POIModel';
 import {POI_REPOSITORY, POIRepository} from './POIRepository';
 import {Auth} from '@angular/fire/auth';
+import {Geohash} from 'geofire-common';
 
 @Injectable({ providedIn: 'root' })
 export class POIService {
@@ -18,8 +19,8 @@ export class POIService {
     }
 
     // HU204 Consultar POI
-    async readPOI(user: Auth, geohash: string): Promise<POIModel> {
-        return new POIModel(-999, -999, "", "");
+    async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {
+        return this.poiDb.readPOI(user, geohash);
     }
 
     // HU205 Modificar información de POI

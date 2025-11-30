@@ -1,0 +1,25 @@
+<div class="poi-card-container">
+    <div class="poi-info">
+        <h2 class="poi-title">{{ placeName() }}</h2>
+        <div class="poi-coords">
+            <div class="coord-row">
+                <span class="label">Latitud</span>
+                <span class="value">{{ lat() | number:'1.6-6' }}</span>
+            </div>
+            <div class="coord-row">
+                <span class="label">Longitud</span>
+                <span class="value">{{ lon() | number:'1.6-6' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="poi-actions">
+        <button class="action-btn save-btn" (click)="onSave()">
+            <mat-icon>bookmark</mat-icon>
+        </button>
+
+        <button class="action-btn close-btn" (click)="onCancel()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+</div>

@@ -6,11 +6,12 @@ import {POISearchModel} from '../../data/POISearchModel';
 export class MapSearchService {
     private mapSearchApi: MapSearchRepository = inject(MAP_SEARCH_REPOSITORY);
 
-    async searchPOIByCoords(lat: number, lon: number): Promise<POISearchModel>{
-        return new POISearchModel(0, 0, "");
+    async searchPOIByCoords(lat: number, lon: number): Promise<POISearchModel> {
+        return this.mapSearchApi.searchPOIByCoords(lat, lon);
+        // todo: tratar errores desde la interfaz
     }
 
     async searchPOIByPlaceName(placeName: string): Promise<POISearchModel> {
-        return new POISearchModel(0, 0, "");
+        return this.mapSearchApi.searchPOIByPlaceName(placeName);
     }
 }

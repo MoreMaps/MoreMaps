@@ -4,7 +4,7 @@ import {POIModel} from '../../data/POIModel';
 import {Auth} from '@angular/fire/auth';
 import {Geohash} from 'geofire-common';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
-import {collection, doc, Firestore, getDocs, query, updateDoc} from '@angular/fire/firestore';
+import {collection, doc, Firestore, getDocs, query, setDoc, updateDoc} from '@angular/fire/firestore';
 import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
 import {MissingPOIError} from '../../errors/MissingPOIError';
 

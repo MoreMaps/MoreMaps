@@ -4,13 +4,13 @@ import * as L from 'leaflet';
 import {MapUpdateService} from '../../services/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatDialogModule} from '@angular/material/dialog';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {Auth, authState} from '@angular/fire/auth';
 import {Router} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
-import {ProfileButtonComponent} from '../profileButton/profileButton';
+import {ProfileButtonComponent, UserData} from '../profileButton/profileButton';
 import {MapSearchService} from '../../services/map-search-service/map-search.service';
 import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
 import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
@@ -19,6 +19,8 @@ import {PoiDetailsDialog} from './poi-details-dialog/poi-details-dialog';
 import {POIService} from '../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
+import {Firestore} from '@angular/fire/firestore';
+import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -52,7 +54,6 @@ const customIcon = L.icon({
         MatSnackBarModule,
         MatProgressSpinnerModule,
         MatDialogModule,
-        NgOptimizedImage,
         NavbarComponent,
         ThemeToggleComponent,
         ProfileButtonComponent
@@ -138,8 +139,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.authSubscription.unsubscribe();
         }
     }
-
-    ngAfterViewInit() {  }
 
     private initMap() {
         // Standard OpenStreetMap URL

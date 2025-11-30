@@ -347,7 +347,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         // abrir el diálogo con información y botones
         const dialogRef = this.dialog.open(PoiDetailsDialog, {
-            position: {bottom: '20px'},
+            position: {bottom: '20px', left: '20px'},
             width: '50vw',
             maxWidth: '500px',
             height: 'auto',
@@ -358,7 +358,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             restoreFocus: true,
             enterAnimationDuration: '300ms',
             exitAnimationDuration: '200ms',
-            data: this.currentPOI()
+            data: this.currentPOI(),
         });
 
         // función cuando se pulsa el botón de guardar

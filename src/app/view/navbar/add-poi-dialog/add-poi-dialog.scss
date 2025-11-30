@@ -7,7 +7,6 @@
     background-color: var(--color-white);
     border-radius: var(--radius-lg);
     // Ajuste de color de texto base
-    color: var(--color-teal-dark);
 }
 
 .dialog-title {
@@ -46,8 +45,6 @@
 
     border: none;
     border-radius: var(--radius-full); // Bordes totalmente redondos (píldora)
-    font-weight: 500;
-    font-size: 0.95rem;
     cursor: pointer;
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 
@@ -76,5 +73,15 @@
 
     &:hover {
         opacity: 0.9;
+    }
+}
+
+:host-context(.dark-theme) {
+    .add-poi-container {
+        background-color: var(--color-purple-dark);
+    }
+
+    .dialog-subtitle {
+        color: var(--color-lavender);
     }
 }

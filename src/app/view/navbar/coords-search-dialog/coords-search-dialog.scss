@@ -4,7 +4,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    color: var(--color-teal-dark);
+    background-color: var(--color-white);
 }
 
 .dialog-title {
@@ -81,9 +81,29 @@
         background-color: var(--color-lavender) !important; // Fondo lavanda suave
         border-radius: var(--radius-md);
     }
+}
 
-    // Ocultar la línea inferior por defecto de Material si se desea un look más "box"
-    .mdc-line-ripple {
-        display: none;
+:host-context(.dark-theme) {
+    .coords-dialog-container {
+        background-color: var(--color-purple-dark);
+
+        .dialog-subtitle {
+            color: var(--color-lavender);
+        }
+
+        .form-container mat-hint  {
+            color: var(--color-white) !important;
+        }
+
     }
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    --webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield; /* Firefox */
 }

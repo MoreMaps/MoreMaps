@@ -63,7 +63,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: all 0.2s ease-in-out;
 
         // Iconos
         mat-icon {
@@ -84,20 +84,26 @@
         // Estilo Botón Guardar (Mint Green)
         &.save-btn {
             background-color: var(--color-mint-green-light); // Usamos el tono claro como base
-            color: var(--color-teal-dark); // Contraste oscuro para el icono
+            mat-icon {
+                color: var(--color-teal-dark); // Contraste oscuro para el icono
+            }
 
             &:hover {
-                background-color: var(--color-mint-green); // Tono más fuerte al hover
+                filter: brightness(0.8);
             }
         }
 
         // Estilo Botón Cerrar (Orange)
         &.close-btn {
             background-color: var(--color-orange);
-            color: var(--color-white); // Icono blanco para contraste con naranja (o negro según prefieras)
 
-            // Si prefieres el icono negro en el naranja (como parece en la imagen):
-            // color: var(--color-black);
+            mat-icon {
+                color: var(--color-black);
+                opacity: 0.8;
+            }
+            &:hover {
+                filter: brightness(0.8);
+            }
         }
     }
 }
@@ -111,5 +117,35 @@
     .poi-actions .action-btn {
         width: 40px;
         height: 40px;
+    }
+}
+
+
+:host-context(.dark-theme) {
+    .poi-card-container {
+        background-color: var(--color-purple-dark);
+    }
+    .poi-info {
+        .poi-title {
+            color: var(--color-white);
+        }
+        .poi-coords {
+            color: var(--color-lavender);
+        }
+    }
+    .poi-actions {
+        .action-btn {
+            &.save-btn {
+                background-color: var(--color-mint-green); // Contraste oscuro para el icono
+                &:hover {
+                    filter: brightness(1.2);
+                }
+            }
+            &.close-btn {
+                &:hover {
+                    filter: brightness(1.2);
+                }
+            }
+        }
     }
 }

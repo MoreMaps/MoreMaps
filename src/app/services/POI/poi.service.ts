@@ -41,8 +41,8 @@ export class POIService {
     }
 
     // HU204 Consultar POI
-    async readPOI(user: Auth, geohash: string): Promise<POIModel> {
-        return new POIModel(-999, -999, "", "");
+    async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {
+        return this.poiDb.readPOI(user, geohash);
     }
 
     // HU205 Modificar información de POI

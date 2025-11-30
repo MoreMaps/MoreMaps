@@ -24,7 +24,23 @@ export class POIDB implements POIRepository {
     }
 
     async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {
-        return new POIModel(0, 0, "", "");
+        try {
+            const poiSnap = await getDoc(
+                doc(this.firestore, `items/${user.currentUser?.uid}/pois/${geohash}`)
+            );
+
+            if (!poiSnap.exists()) {
+                throw new MissingPOIError();
+            }
+
+            // Devolver POI
+            return POIModel.fromJSON(poiSnap.data());
+
+        } catch (error: any) {
+            // Si el error es de Firebase, loguearlo
+            if (error.code) console.error("ERROR de Firebase: " + error);
+            throw error;
+        }
     }
 
     async updatePOI(user: Auth, geohash: Geohash, update: Partial<POIModel>): Promise<boolean> {

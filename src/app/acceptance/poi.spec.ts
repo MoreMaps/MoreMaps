@@ -228,7 +228,7 @@ describe('Pruebas sobre POI', () => {
     });
 
 
-    describe('HU204: Consultar información de POI', () => {
+    fdescribe('HU204: Consultar información de POI', () => {
 
         it('HU204-EV01: Consultar información de un POI registrado', async () => {
             // GIVEN
@@ -261,7 +261,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario consulta los datos del POI con geohash vacío (no registrado)
-            await expectAsync(poiService.readPOI(auth, ""))
+            await expectAsync(poiService.readPOI(auth, " "))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError

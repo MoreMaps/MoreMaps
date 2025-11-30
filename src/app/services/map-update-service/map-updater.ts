@@ -14,6 +14,10 @@ export class MapUpdateService {
     private searchCoordsSource = new Subject<{ lat: number, lon: number }>();
     searchCoords$ = this.searchCoordsSource.asObservable();
 
+    // Subject para escuchar topónimos
+    private searchPlacenameSource = new Subject<string>();
+    searchPlaceName$ = this.searchPlacenameSource.asObservable();
+
     sendMarker(marker: POISearchModel) {
         this.markerSubject.next(marker);
     }
@@ -26,5 +30,10 @@ export class MapUpdateService {
     // Función para emitir las coordenadas
     triggerCoordinateSearch(lat: number, lon: number) {
         this.searchCoordsSource.next({ lat, lon });
+    }
+
+    // Función para emitir el topónimo
+    triggerPlacenameSearch(placeName: string) {
+        this.searchPlacenameSource.next(placeName);
     }
 }

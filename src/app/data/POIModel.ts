@@ -37,7 +37,7 @@ export class POIModel {
         } else this.pinned = false;
     }
 
-    toJSON() {
+    toJSON?() {
         return {
             lat: this.lat,
             lon: this.lon,

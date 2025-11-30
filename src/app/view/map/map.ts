@@ -1,10 +1,10 @@
-import {AfterViewInit, Component, ElementRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, inject, OnInit, OnDestroy, signal, ViewEncapsulation} from '@angular/core';
 import {CommonModule, NgOptimizedImage} from '@angular/common';
 import * as L from 'leaflet';
-import {MapMarker, MapUpdateService} from '../../services/map-update-service/map-updater';
+import {MapUpdateService} from '../../services/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
 import {doc, Firestore, getDoc} from '@angular/fire/firestore';
 import {Auth, authState} from '@angular/fire/auth';
@@ -16,7 +16,6 @@ import {MapSearchService} from '../../services/map-search-service/map-search.ser
 import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
 import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../../data/POISearchModel';
-import {RegisterDialogComponent} from '../mainPage/register-dialog/register-dialog.component';
 import {PoiDetailsDialog} from './poi-details-dialog/poi-details-dialog';
 import {POIService} from '../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
@@ -120,12 +119,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 }
             } else {
                 console.warn("No hay sesión, redirigiendo...");
-                this.router.navigate(['']);
+                await this.router.navigate(['']);
             }
         });
 
-        this.mapUpdateService.marker$.subscribe((marker: MapMarker) => {
-            this.addMarker(new POISearchModel(marker.lat, marker.lon, marker.name));
+        this.mapUpdateService.marker$.subscribe((marker: POISearchModel) => {
+            this.addMarker(new POISearchModel(marker.lat, marker.lon, marker.placeName));
             if (this.map) {
                 this.map.panTo([marker.lat, marker.lon]);
             }
@@ -133,16 +132,21 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.mapUpdateService.snackbar$.subscribe((message: string) => {
             this.showSnackbar(message);
         });
-    }
 
-    // Es buena práctica desuscribirse
-    ngOnDestroy() {
-        if (this.authSubscription) {
-            this.authSubscription.unsubscribe();
-        }
+        this.mapUpdateService.searchCoords$.subscribe((coords) => {
+            console.log('Recibidas coordenadas externas:', coords);
+            this.searchByCoords(coords.lat, coords.lon);
+        });
     }
 
     ngAfterViewInit() {
+    }
+
+    // Es buena práctica desuscribirse
+    ngOnDestroy(): void {
+        if (this.authSubscription) {
+            this.authSubscription.unsubscribe();
+        }
     }
 
     private async loadUserData(): Promise<void> {
@@ -300,8 +304,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         if (this.listMarkers) {
             for (const item of this.listMarkers) {
                 this.map.removeLayer(item);
-                this.listMarkers = [];
             }
+            this.listMarkers = [];
         }
     }
 
@@ -329,69 +333,58 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
     }
 
+    async searchByCoords(lat: number, lon: number): Promise<void> {
+        try {
+            // Mostrar spinner de carga
+            this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
+                horizontalPosition: 'left',
+                verticalPosition: 'bottom',
+                duration: 0
+            });
+
+            // Realizar búsqueda en la API (Reverse Geocoding)
+            const poiSearchResult: POISearchModel = await this.mapSearchService.searchPOIByCoords(lat, lon);
+
+            // Cerrar spinner de carga
+            if (this.loadingSnackBarRef) {
+                this.loadingSnackBarRef.dismiss();
+            }
+
+            // Limpiar estado anterior
+            this.deleteCurrentMarker();
+            this.closePOIDetailsDialog();
+
+            // Actualizar mapa y estado
+            this.currentMarker = this.addMarker(poiSearchResult);
+            this.currentPOI.set(poiSearchResult);
+
+            // Abrir diálogo de detalles
+            this.openPOIDetailsDialog();
+
+        } catch (error: any) {
+            // Manejo de errores
+            if (this.loadingSnackBarRef) {
+                this.loadingSnackBarRef.dismiss();
+            }
+            console.error(`Error al buscar por coordenadas: ${error}`);
+            this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', { duration: 5000 });
+        }
+    }
+
     private setupMapClickHandler(): void {
         this.map.on('click', async (e: L.LeafletMouseEvent) => {
             const lat = e.latlng.lat;
             const lon = e.latlng.lng;
 
+            // todo: borrar log
             console.log(`Click en coordenadas: ${lat}, ${lon}`);
 
-            try {
-                // Mostrar spinner mientras se busca
-                this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
-                    horizontalPosition: 'left',
-                    verticalPosition: 'bottom',
-                    duration: 0
-                });
-
-                // Realizar búsqueda por coordenadas
-                const poiSearchResult: POISearchModel = await this.mapSearchService.searchPOIByCoords(lat, lon);
-
-                // Cerrar spinner
-                if (this.loadingSnackBarRef) {
-                    this.loadingSnackBarRef.dismiss();
-                }
-
-                // Borrar el marker anterior
-                this.deleteCurrentMarker();
-                this.closePOIDetailsDialog();
-
-                // Mostrar el POI en el mapa
-                this.currentMarker = this.addMarker(poiSearchResult);
-                this.currentPOI.set(poiSearchResult);
-
-                // Abrir el diálogo
-                this.openPOIDetailsDialog();
-
-
-            } catch (error: any) {
-                // Cerrar spinner si hay error
-                if (this.loadingSnackBarRef) {
-                    this.loadingSnackBarRef.dismiss();
-                }
-
-                console.error('Error al buscar POI: ', error);
-
-                const snackRef = this.snackBar.open(
-                    `Error al buscar: ${error.message}`,
-                    'Reintentar',
-                    {
-                        duration: 5000,
-                        horizontalPosition: 'left',
-                        verticalPosition: 'bottom',
-                    }
-                );
-
-                snackRef.onAction().subscribe(() => {
-                    // Reintentar al hacer click
-                    this.setupMapClickHandler();
-                });
-            }
+            await this.searchByCoords(lat, lon);
         });
     }
 
     openPOIDetailsDialog(): void {
-        // esconder el navbar (añadir clase o estilo display:none)
+        // todo: esconder el navbar (añadir clase o estilo display:none)
 
         // abrir el diálogo con información y botones
         const dialogRef = this.dialog.open(PoiDetailsDialog, {
@@ -412,14 +405,13 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         // función cuando se pulsa el botón de guardar
         dialogRef.componentInstance.save.subscribe(() => {
             dialogRef.close({savePOI: true});
-
         });
 
         // Subscribe to dialog close to check if registration was successful
         dialogRef.afterClosed().subscribe(result => {
             if (result?.savePOI && result.savePOI && this.currentPOI()) {
                 // Llamada a guardar POI del poiService
-                this.poiService.createPOI(<POISearchModel>this.currentPOI());
+                this.poiService.createPOI(<POISearchModel>this.currentPOI()).then();
                 // si la busqueda tiene un elemento, se borra ese elemento.
                 this.deleteCurrentMarker();
                 // si tiene varios elementos, se deben borrar también

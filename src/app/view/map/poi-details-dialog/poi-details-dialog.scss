@@ -1,0 +1,156 @@
+.poi-card-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem; // Espaciado interno
+    background-color: var(--color-white);
+    height: 100%;
+    box-sizing: border-box;
+    gap: 1rem;
+}
+
+.poi-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden; // Previene que el texto empuje los botones
+
+    .poi-title {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--color-black);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .poi-coords {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        color: var(--mat-sys-on-surface-variant);
+
+        .coord-row {
+            display: flex;
+            gap: 0.5rem;
+
+            .label {
+                font-weight: 500;
+                opacity: 0.7;
+            }
+
+            .value {
+                font-family: monospace; // Alinea mejor los números
+            }
+        }
+    }
+}
+
+.poi-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+
+    .tooltip-wrapper {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .action-btn {
+        border: none;
+        outline: none;
+        cursor: pointer;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px; // Bordes redondeados como en la imagen (aprox radius-lg)
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease-in-out;
+
+        // Iconos
+        mat-icon {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+        }
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        &:active {
+            transform: scale(0.95);
+        }
+
+        // Estilo Botón Guardar (Mint Green)
+        &.save-btn {
+            background-color: var(--color-mint-green-light); // Usamos el tono claro como base
+            mat-icon {
+                color: var(--color-teal-dark); // Contraste oscuro para el icono
+            }
+
+            &:hover {
+                filter: brightness(0.8);
+            }
+        }
+
+        // Estilo Botón Cerrar (Orange)
+        &.close-btn {
+            background-color: var(--color-orange);
+
+            mat-icon {
+                color: var(--color-black);
+                opacity: 0.8;
+            }
+            &:hover {
+                filter: brightness(0.8);
+            }
+        }
+    }
+}
+
+// Media query para pantallas muy pequeñas
+@media (max-width: 400px) {
+    .poi-card-container {
+        padding: 0.75rem;
+    }
+
+    .poi-actions .action-btn {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+
+:host-context(.dark-theme) {
+    .poi-card-container {
+        background-color: var(--color-purple-dark);
+    }
+    .poi-info {
+        .poi-title {
+            color: var(--color-white);
+        }
+        .poi-coords {
+            color: var(--color-lavender);
+        }
+    }
+    .poi-actions {
+        .action-btn {
+            &.save-btn {
+                background-color: var(--color-mint-green); // Contraste oscuro para el icono
+                &:hover {
+                    filter: brightness(1.2);
+                }
+            }
+            &.close-btn {
+                &:hover {
+                    filter: brightness(1.2);
+                }
+            }
+        }
+    }
+}

@@ -12,7 +12,7 @@ import {POIService} from '../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {MatSnackBar, MatSnackBarRef} from '@angular/material/snack-bar';
 import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
 import {SavedVehiclesStrategy} from '../../services/saved-items/savedVehiclesStrategy';
@@ -46,6 +46,7 @@ export class SavedItemsComponent implements OnDestroy{
     private snackBar = inject(MatSnackBar);
     private activeSnackRef: MatSnackBarRef<any> | null = null;
     private loadingTimeout: any = null;
+    private route = inject(ActivatedRoute);
 
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
@@ -101,7 +102,9 @@ export class SavedItemsComponent implements OnDestroy{
 
     async loadItems(): Promise<void> {
         try {
-            this.items.set(await this.currentStrategy().loadItems(this.auth));
+            const loadedItems = await this.currentStrategy().loadItems(this.auth)
+            this.items.set(loadedItems);
+            this.checkAndSelectFromParams(loadedItems);
         } catch (error) {
             if (error instanceof SessionNotActiveError) {
                 this.router.navigate(['']);
@@ -109,6 +112,24 @@ export class SavedItemsComponent implements OnDestroy{
             }
             console.error('Error loading items:', error);
             this.items.set([]);
+        }
+    }
+
+    private checkAndSelectFromParams(items: any[]): void {
+        // Leo el geohash del elemento en el queryParam
+        const params = this.route.snapshot.queryParams;
+        const target = params['id'];
+
+        if(target && items) {
+            const foundItem = items.find(item => item.geohash === target);
+
+            if (foundItem) {
+                this.selectedItem = foundItem;
+
+                const index = items.indexOf(foundItem);
+                const page = Math.floor(index / this.itemsPerPage()) + 1;
+                this.currentPage.set(page);
+            }
         }
     }
 

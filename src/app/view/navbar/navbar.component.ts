@@ -6,7 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {AddPoiDialogComponent, AddPoiMethod} from './add-poi-dialog/add-poi-dialog';
 import {CoordsSearchDialogComponent} from './coords-search-dialog/coords-search-dialog';
-import { MapUpdateService } from '../../services/map-update-service/map-updater'; // Asegura la ruta correcta
+import { MapUpdateService } from '../../services/map-update-service/map-updater';
+import {PlaceNameSearchDialogComponent} from './placename-search-dialog/placename-search-dialog'; // Asegura la ruta correcta
 
 @Component({
     selector: 'app-navbar',
@@ -49,10 +50,6 @@ export class NavbarComponent {
         });
     }
 
-    openPlaceNameDialog(): void {
-        // todo en hu202
-    }
-
     openCoordsDialog(): void {
         const coordsDialogRef = this.dialog.open(CoordsSearchDialogComponent, {
             width: '90%',
@@ -73,6 +70,30 @@ export class NavbarComponent {
 
                 // Se envían las coordenadas al servicio
                 this.mapUpdateService.triggerCoordinateSearch(result.lat, result.lon);
+            }
+        });
+    }
+
+    openPlaceNameDialog(): void {
+        const placeNameDialogRef = this.dialog.open(PlaceNameSearchDialogComponent, {
+            width: '90%',
+            maxWidth: '400px',
+            disableClose: false,
+            autoFocus: true,
+            restoreFocus: true,
+            enterAnimationDuration: '300ms',
+            exitAnimationDuration: '200ms',
+        });
+
+        placeNameDialogRef.afterClosed().subscribe((placeName: string | null) => {
+            if (placeName) {
+                // Se navega al mapa en caso de no estar ahí
+                if (this.router.url !== '/map') {
+                    this.navigateTo('/map');
+                }
+
+                // Se envían las coordenadas al servicio
+                this.mapUpdateService.triggerPlacenameSearch(placeName);
             }
         });
     }

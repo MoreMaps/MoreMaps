@@ -8,6 +8,9 @@ import { LatitudeRangeError } from '../../errors/LatitudeRangeError';
 import { LongitudeRangeError } from '../../errors/LongitudeRangeError';
 import { CoordsNotFoundError } from '../../errors/CoordsNotFoundError';
 import { environment } from '../../../environments/environment';
+import {PlaceNameNotFoundError} from '../../errors/PlaceNameNotFoundError';
+import {DBAccessError} from '../../errors/DBAccessError';
+import {APIAccessError} from '../../errors/APIAccessError';
 
 @Injectable({
     providedIn: 'root'
@@ -55,7 +58,7 @@ export class MapSearchAPI implements MapSearchRepository {
             );
         } catch (error) {
             console.error('Error al obtener respuesta de la API: ' + error);
-            throw new CoordsNotFoundError(lat, lon);
+            throw new APIAccessError();
         }
 
         // Lista de POI recibidos (de tamaño "size")
@@ -68,9 +71,45 @@ export class MapSearchAPI implements MapSearchRepository {
         return listaPOI[0];
     }
 
-    async searchPOIByPlaceName(placeName: string): Promise<POISearchModel> {
+    async searchPOIByPlaceName(placeName: string): Promise<POISearchModel[]> {
+        console.log("Buscando topónimo: " + placeName);
 
-        return new POISearchModel(0, 0, "");
+        // Número de features que va a devolver la llamada a la API de Geocode.
+        const size = 10;
+
+        // Parámetros para la llamada a la API de Geocode.
+        const params: HttpParams = new HttpParams({
+            fromObject: {
+                api_key: this.apiKey,
+                text: placeName,
+                size: size.toString(),
+            }
+        });
+
+        // Respuesta de la llamada a la API de Geocode, en formato GeoJSON.
+        let respuesta: GeoJSON;
+
+        // Llamada a la API.
+        try {
+            respuesta = await this.getDataFromAPI<GeoJSON>(
+                `${this.baseUrl}/geocode/search`,
+                this.headers,
+                params,
+            );
+        } catch (error) {
+            console.error(`La respuesta al API ha fallado, ${error}`);
+            throw new APIAccessError();
+        }
+
+        // Lista de POI recibidos (de tamaño "size")
+        const listaPOI: POISearchModel[] = this.obtainDataFromGeoJsonFeatures(respuesta, size);
+
+        console.log(listaPOI);
+        if (listaPOI.length === 0) {
+            throw new PlaceNameNotFoundError(placeName);
+        }
+
+        return listaPOI;
     }
 
     /**

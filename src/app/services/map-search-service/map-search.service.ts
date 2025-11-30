@@ -8,10 +8,9 @@ export class MapSearchService {
 
     async searchPOIByCoords(lat: number, lon: number): Promise<POISearchModel> {
         return this.mapSearchApi.searchPOIByCoords(lat, lon);
-        // todo: tratar errores desde la interfaz
     }
 
-    async searchPOIByPlaceName(placeName: string): Promise<POISearchModel> {
+    async searchPOIByPlaceName(placeName: string): Promise<POISearchModel[]> {
         return this.mapSearchApi.searchPOIByPlaceName(placeName);
     }
 }

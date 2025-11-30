@@ -11,8 +11,7 @@ export class POIService {
 
     // HU201 y HU202 Crear POI
     async createPOI(poi: POISearchModel): Promise<POIModel> {
-        let poiForDB : POIModel = new POIModel(poi.lat, poi.lon, poi.placeName, geohashForLocation([poi.lat, poi.lon], 7));
-        return this.poiDb.createPOI(poiForDB);
+        return this.poiDb.createPOI(poi);
     }
 
     // HU203 Consultar lista de POI
@@ -51,8 +50,8 @@ export class POIService {
     }
 
     // HU206 Eliminar POI
-    async deletePOI(user: Auth, geohash: string): Promise<boolean> {
-        return false;
+    async deletePOI(user: Auth, geohash: Geohash): Promise<boolean> {
+        return this.poiDb.deletePOI(user, geohash);
     }
 
     // HU501 Fijar POI

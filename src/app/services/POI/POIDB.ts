@@ -4,10 +4,11 @@ import {POIModel} from '../../data/POIModel';
 import {Auth} from '@angular/fire/auth';
 import {Geohash} from 'geofire-common';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
-import {collection, doc, Firestore, getDocs, query, getDoc, setDoc, updateDoc} from '@angular/fire/firestore';
+import {collection, doc, Firestore, getDocs, query, getDoc, setDoc, updateDoc, deleteDoc} from '@angular/fire/firestore';
 import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
 import {MissingPOIError} from '../../errors/MissingPOIError';
 import {DescriptionLengthError} from '../../errors/DescriptionLengthError';
+import {POISearchModel} from '../../data/POISearchModel';
 
 @Injectable({
     providedIn: 'root'
@@ -74,7 +75,29 @@ export class POIDB implements POIRepository {
     }
 
     async deletePOI(user: Auth, geohash: Geohash): Promise<boolean> {
-        return false;
+        try {
+            // Obtener los datos del POI que se va a borrar
+            const poiRef = doc(this.firestore, `items/${user.currentUser?.uid}/pois/${geohash}`);
+            const poiSnap = await getDoc(poiRef);
+
+            // Si no existe, se lanza un error
+            if (!poiSnap.exists()) throw new MissingPOIError();
+
+            // Borrar documento
+            // TODO: PROPAGAR A RUTAS
+            await deleteDoc(poiRef);
+            return true;
+        }
+
+        catch (error: any) {
+            // Si el error es de Firebase, loguearlo
+            if (error.code) {
+                console.error("ERROR de Firebase: " + error);
+                return false;
+            }
+            // Si no, es un error propio y se puede propagar
+            throw error;
+        }
     }
 
     async getPOIList(user: Auth): Promise<POIModel[]> {

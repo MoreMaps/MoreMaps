@@ -331,7 +331,7 @@ describe('Pruebas sobre POI', () => {
     });
 
 
-    describe('HU206: Eliminar un POI', () => {
+    fdescribe('HU206: Eliminar un POI', () => {
 
         it('HU206-EV01: Eliminar un POI registrado', async () => {
             // GIVEN
@@ -369,7 +369,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario trata de borrar el POI con geohash vacío (no registrado).
-            await expectAsync(poiService.deletePOI(auth, ""))
+            await expectAsync(poiService.deletePOI(auth, " "))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError

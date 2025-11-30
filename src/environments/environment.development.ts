@@ -9,5 +9,8 @@ export const environment = {
     measurementId: "G-GFWFZZB87Q",
     projectNumber: "958769758011",
     version: "2"
-  }
+  },
+  openrouteservice: {
+    apiKey: "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjFlN2I1NTUzZGM5OTQxYTk4YWIyNWQ3ZDc2ZDliZTk5IiwiaCI6Im11cm11cjY0In0="
+  },
 };

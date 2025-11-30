@@ -12,12 +12,15 @@ import {MissingPOIError} from '../../errors/MissingPOIError';
     providedIn: 'root'
 })
 export class POIDB implements POIRepository {
-    private firestore = inject(Firestore);
     private auth = inject(Auth);
+    private firestore = inject(Firestore);
 
-    async createPOI(lat: number, lon: number, placeName: string): Promise<POIModel> {
-        // geohash de 7 decimales se crea aquí
-        return new POIModel(0, 0, "", "");
+    async createPOI(poi: POIModel): Promise<POIModel> {
+        const userUid = this.auth.currentUser?.uid;
+        const poiDocRef = doc(this.firestore, `items/${userUid}/pois/${poi.geohash}`);
+        await setDoc(poiDocRef, poi.toJSON());
+
+        return poi;
     }
 
     async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {

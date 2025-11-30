@@ -4,7 +4,7 @@ import * as L from 'leaflet';
 import {MapMarker, MapUpdateService} from '../../services/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
 import {doc, Firestore, getDoc} from '@angular/fire/firestore';
 import {Auth, authState} from '@angular/fire/auth';
@@ -12,9 +12,15 @@ import {Router} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
-import { MapSearchService } from '../../services/map-search-service/map-search.service';
-import { MAP_SEARCH_REPOSITORY } from '../../services/map-search-service/MapSearchRepository';
-import { MapSearchAPI } from '../../services/map-search-service/MapSearchAPI';
+import {MapSearchService} from '../../services/map-search-service/map-search.service';
+import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
+import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
+import {POISearchModel} from '../../data/POISearchModel';
+import {RegisterDialogComponent} from '../mainPage/register-dialog/register-dialog.component';
+import {PoiDetailsDialog} from './poi-details-dialog/poi-details-dialog';
+import {POIService} from '../../services/POI/poi.service';
+import {POI_REPOSITORY} from '../../services/POI/POIRepository';
+import {POIDB} from '../../services/POI/POIDB';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -60,19 +66,24 @@ export interface UserData {
     ],
     providers: [
         MapSearchService,
-        { provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI }
+        POIService,
+        {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
+        {provide: POI_REPOSITORY, useClass: POIDB},
     ],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
     private router = inject(Router);
     private map!: L.Map;
+    protected listMarkers: L.Marker[] | null = null;
     protected currentMarker: L.Marker | null = null;
+    protected currentPOI = signal<POISearchModel | null>(null);
     private snackBar = inject(MatSnackBar);
     private elementRef = inject(ElementRef);
     private userLocationMarker: L.Marker | null = null;
     private dialog = inject(MatDialog);
     private authSubscription: Subscription | null = null;
     private mapSearchService = inject(MapSearchService);
+    private poiService = inject(POIService);
 
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
@@ -84,7 +95,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         profileImage: 'assets/images/pfp.png'
     });
 
-    constructor(private mapUpdateService: MapUpdateService, private firestore: Firestore, private auth: Auth ) {
+    constructor(private mapUpdateService: MapUpdateService, private firestore: Firestore, private auth: Auth) {
     }
 
     async ngOnInit() {
@@ -102,7 +113,10 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                     if (this.mapUpdateService.lastKnownLocation) {
                         console.log('Finding location by cache');
                         this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
-                    } else {console.log('Finding location by API');this.startLocating();}
+                    } else {
+                        console.log('Finding location by API');
+                        this.startLocating();
+                    }
                 }
             } else {
                 console.warn("No hay sesión, redirigiendo...");
@@ -111,7 +125,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
 
         this.mapUpdateService.marker$.subscribe((marker: MapMarker) => {
-            this.addMarker(marker.lat, marker.lon, marker.name);
+            this.addMarker(new POISearchModel(marker.lat, marker.lon, marker.name));
             if (this.map) {
                 this.map.panTo([marker.lat, marker.lon]);
             }
@@ -128,7 +142,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         }
     }
 
-    ngAfterViewInit() {  }
+    ngAfterViewInit() {
+    }
 
     private async loadUserData(): Promise<void> {
         const user = this.auth.currentUser;
@@ -271,15 +286,39 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
     }
 
-    private addMarker(lat: number, lng: number, name: string): void {
+    private deleteCurrentMarker(): void {
         if (this.currentMarker) {
-            this.map.removeLayer(this.currentMarker);
+            this.currentMarker.remove();
+            this.currentMarker = null;
         }
+        if (this.currentPOI()) {
+            this.currentPOI.set(null);
+        }
+    }
 
-        this.currentMarker = L.marker([lat, lng], {icon: customIcon})
+    private deleteMarkers(): void {
+        if (this.listMarkers) {
+            for (const item of this.listMarkers) {
+                this.map.removeLayer(item);
+                this.listMarkers = [];
+            }
+        }
+    }
+
+    private addListMarkers(list: POISearchModel[]): void {
+        for (const marker of list) this.addMarker(marker);
+    }
+
+    private addMarker(poi: POISearchModel): L.Marker {
+        let marker = L.marker([poi.lat, poi.lon], {icon: customIcon})
             .addTo(this.map)
-            .bindPopup("Encontrado: " + name)
+            .bindPopup("Encontrado: " + poi.placeName)
             .openPopup();
+        this.listMarkers?.push(marker);
+        if (this.map) {
+            this.map.flyTo([poi.lat, poi.lon], this.map.getZoom(), {animate: true, duration: 0.8});
+        }
+        return marker;
     }
 
     private showSnackbar(msg: string): void {
@@ -306,25 +345,24 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 });
 
                 // Realizar búsqueda por coordenadas
-                const poiSearchResult = await this.mapSearchService.searchPOIByCoords(lat, lon);
+                const poiSearchResult: POISearchModel = await this.mapSearchService.searchPOIByCoords(lat, lon);
 
                 // Cerrar spinner
                 if (this.loadingSnackBarRef) {
                     this.loadingSnackBarRef.dismiss();
                 }
 
+                // Borrar el marker anterior
+                this.deleteCurrentMarker();
+                this.closePOIDetailsDialog();
+
                 // Mostrar el POI en el mapa
-                this.addMarker(poiSearchResult.lat, poiSearchResult.lon, poiSearchResult.placeName);
+                this.currentMarker = this.addMarker(poiSearchResult);
+                this.currentPOI.set(poiSearchResult);
 
-                // Mostrar notificación
-                this.showSnackbar(`Lugar encontrado: ${poiSearchResult.placeName}`);
+                // Abrir el diálogo
+                this.openPOIDetailsDialog();
 
-                // Opcional: Emitir evento para que otros componentes sepan del nuevo POI
-                this.mapUpdateService.sendMarker({
-                    name: poiSearchResult.placeName,
-                    lat: poiSearchResult.lat,
-                    lon: poiSearchResult.lon
-                });
 
             } catch (error: any) {
                 // Cerrar spinner si hay error
@@ -352,6 +390,56 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
     }
 
+    openPOIDetailsDialog(): void {
+        // esconder el navbar (añadir clase o estilo display:none)
+
+        // abrir el diálogo con información y botones
+        const dialogRef = this.dialog.open(PoiDetailsDialog, {
+            position: {bottom: '20px'},
+            width: '50vw',
+            maxWidth: '500px',
+            height: 'auto',
+            maxHeight: '15vh',
+            hasBackdrop: false,                   // que no oscurezca la pantalla
+            disableClose: true,                   // no se puede borrar presionando fuera
+            autoFocus: true,
+            restoreFocus: true,
+            enterAnimationDuration: '300ms',
+            exitAnimationDuration: '200ms',
+            data: this.currentPOI()
+        });
+
+        // función cuando se pulsa el botón de guardar
+        dialogRef.componentInstance.save.subscribe(() => {
+            dialogRef.close({savePOI: true});
+
+        });
+
+        // Subscribe to dialog close to check if registration was successful
+        dialogRef.afterClosed().subscribe(result => {
+            if (result?.savePOI && result.savePOI && this.currentPOI()) {
+                // Llamada a guardar POI del poiService
+                this.poiService.createPOI(<POISearchModel>this.currentPOI());
+                // si la busqueda tiene un elemento, se borra ese elemento.
+                this.deleteCurrentMarker();
+                // si tiene varios elementos, se deben borrar también
+                this.deleteMarkers();
+                // TODO en integración, snackbar de confirmación
+            } else if (result?.ignore) {
+            } else {
+                // si la busqueda tiene un elemento, se borra ese elemento.
+                this.deleteCurrentMarker();
+                // si tiene varios elementos, se deben borrar también
+                this.deleteMarkers();
+            }
+        });
+    }
+
+    closePOIDetailsDialog(): void {
+        const openDialogArray = this.dialog.openDialogs;
+        openDialogArray.at(0)?.close({ignore: true});
+    }
+
     // Open profile menu with preloaded user data
     openProfileMenu(): void {
         this.dialog.open(ProfileMenuComponent, {
@@ -359,7 +447,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             hasBackdrop: true,
             panelClass: 'profile-menu-dialog',
 
-            position: { top: '16px', right: '16px' },
+            position: {top: '16px', right: '16px'},
 
             maxWidth: 'none',
             enterAnimationDuration: '200ms',

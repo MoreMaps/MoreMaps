@@ -13,17 +13,12 @@ export class POIDB implements POIRepository {
     private auth = inject(Auth);
     private firestore = inject(Firestore);
 
-    async createPOI(poi: POISearchModel): Promise<POIModel> {
-        // geohash de 7 caracteres en base a las coordenadas
-        const geohash: Geohash = geohashForLocation([poi.lat, poi.lon], 7);
-
-        const poiRegistrado: POIModel = new POIModel(poi.lat, poi.lon, poi.placeName, geohash);
-
+    async createPOI(poi: POIModel): Promise<POIModel> {
         const userUid = this.auth.currentUser?.uid;
-        const poiDocRef = doc(this.firestore, `items/${userUid}/pois/${geohash}`);
-        await setDoc(poiDocRef, poiRegistrado.toJSON());
+        const poiDocRef = doc(this.firestore, `items/${userUid}/pois/${poi.geohash}`);
+        await setDoc(poiDocRef, poi.toJSON());
 
-        return poiRegistrado;
+        return poi;
     }
 
     async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {

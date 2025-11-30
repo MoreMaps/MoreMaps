@@ -3,18 +3,24 @@ import {inject, Injectable} from '@angular/core';
 import {POIModel} from '../../data/POIModel';
 import {Auth} from '@angular/fire/auth';
 import {Geohash} from 'geofire-common';
-import {doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {collection, doc, Firestore, getDocs, query, setDoc, updateDoc} from '@angular/fire/firestore';
+import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
 import {MissingPOIError} from '../../errors/MissingPOIError';
 
 @Injectable({
     providedIn: 'root'
 })
 export class POIDB implements POIRepository {
+    private auth = inject(Auth);
     private firestore = inject(Firestore);
 
-    async createPOI(lat: number, lon: number, placeName: string): Promise<POIModel> {
-        // geohash de 7 decimales se crea aquí
-        return new POIModel(0, 0, "", "");
+    async createPOI(poi: POIModel): Promise<POIModel> {
+        const userUid = this.auth.currentUser?.uid;
+        const poiDocRef = doc(this.firestore, `items/${userUid}/pois/${poi.geohash}`);
+        await setDoc(poiDocRef, poi.toJSON());
+
+        return poi;
     }
 
     async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {
@@ -46,11 +52,75 @@ export class POIDB implements POIRepository {
     }
 
     async getPOIList(user: Auth): Promise<POIModel[]> {
-        // el orden es pinned (desc), alias (asc) y placeName (asc)
-        return [];
+        this.safetyChecks(user);
+
+        // Referencia a la colección
+        let collectionPath: string;
+        // El if-else es necesario para evitar errores al compilar. Se comprueba en safetyChecks()
+        if (user.currentUser) collectionPath = `/items/${user.currentUser.uid}/pois`;
+        else throw new SessionNotActiveError();
+
+        // Obtener items de la colección
+        const itemsRef = collection(this.firestore, collectionPath);
+        const q = query(itemsRef);
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            return [];
+        }
+        else {
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return new POIModel(
+                    data['lat'],
+                    data['lon'],
+                    data['placeName'],
+                    data['geohash'],
+                    data['pinned'] ?? false,
+                    data['alias'],
+                    data['description']
+                );
+            });
+        }
     }
 
     async pinPOI(user: Auth, poi: POIModel): Promise<boolean> {
-        return false;
+        this.safetyChecks(user);
+
+        // Referencia a la colección
+        let docPath: string;
+        // El if-else es necesario para evitar errores al compilar. Se comprueba en safetyChecks()
+        if (user.currentUser) docPath = `/items/${user.currentUser.uid}/pois/${poi.geohash}`;
+        else throw new SessionNotActiveError();
+
+        // Actualiza el documento para que invertir el boolean pinned del POI
+        try {
+            await updateDoc(doc(this.firestore, docPath), {pinned: !poi.pinned});
+            poi.pinned = !poi.pinned;
+            console.log(`Cambiado pinned de POI ${poi.geohash} a: ${poi.pinned}`)
+            return true;
+        } catch (error: any) {
+            console.log(`Error al cambiar pinned del POI: ${error}`);
+            switch(error.code) {
+                case 'invalid-argument':
+                case 'not-found':
+                    throw new MissingPOIError();
+            }
+            throw error;
+        }
+    }
+
+    private safetyChecks(user: Auth) {
+        const authUser = this.auth.currentUser;
+
+        // si el usuario pasado por argumento o el de auth no existen...
+        if (!authUser || !user.currentUser) {
+            throw new SessionNotActiveError();
+        }
+
+        // si el usuario pasado por argumento y el de auth no coinciden
+        if (authUser.uid !== user.currentUser?.uid) {
+            throw new ForbiddenContentError();
+        }
     }
 }

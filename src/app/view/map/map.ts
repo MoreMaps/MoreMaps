@@ -4,14 +4,13 @@ import * as L from 'leaflet';
 import {MapUpdateService} from '../../services/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatDialog, MatDialogModule} from '@angular/material/dialog';
-import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
-import {doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {MatDialogModule} from '@angular/material/dialog';
 import {Auth, authState} from '@angular/fire/auth';
 import {Router} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
+import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {MapSearchService} from '../../services/map-search-service/map-search.service';
 import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
 import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
@@ -42,12 +41,6 @@ const customIcon = L.icon({
     popupAnchor: [0, -32]
 });
 
-export interface UserData {
-    fullName: string;
-    email: string;
-    profileImage: string;
-}
-
 @Component({
     selector: 'app-map',
     templateUrl: './map.html',
@@ -62,6 +55,7 @@ export interface UserData {
         NgOptimizedImage,
         NavbarComponent,
         ThemeToggleComponent,
+        ProfileButtonComponent
     ],
     providers: [
         MapSearchService,
@@ -98,12 +92,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     async ngOnInit() {
-
         this.authSubscription = authState(this.auth).subscribe(async (user) => {
             if (user) {
-                // El usuario existe, cargamos sus datos
-                await this.loadUserData();
-
                 const mapContainer = this.elementRef.nativeElement.querySelector('#map');
                 if (mapContainer && !this.map) {
                     this.initMap();
@@ -149,37 +139,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         }
     }
 
-    private async loadUserData(): Promise<void> {
-        const user = this.auth.currentUser;
-        if (!user) return;
-
-        try {
-            const userDoc = doc(this.firestore, `users/${user.uid}`);
-            const docSnap = await getDoc(userDoc);
-
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                this.userData.set({
-                    fullName: `${data['nombre'] || ''} ${data['apellidos'] || ''}`.trim(),
-                    email: data['email'] || user.email || '',
-                    profileImage: 'assets/images/pfp.png'
-                });
-            } else {
-                this.userData.set({
-                    fullName: '',
-                    email: user.email || '',
-                    profileImage: 'assets/images/pfp.png'
-                });
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-            this.userData.set({
-                fullName: '',
-                email: user.email || '',
-                profileImage: 'assets/images/pfp.png'
-            });
-        }
-    }
+    ngAfterViewInit() {  }
 
     private initMap() {
         // Standard OpenStreetMap URL

@@ -16,50 +16,6 @@
     }
 }
 
-// Profile Button
-.profile-button {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-full);
-    border: 3px solid var(--color-white);
-    background: var(--color-white);
-    padding: 0;
-    cursor: pointer;
-    box-shadow: var(--shadow-md);
-    z-index: 1000;
-    overflow: hidden;
-    transition: all var(--transition-fast);
-    outline: none; // Remove ugly square outline
-
-    &:hover {
-        box-shadow: var(--shadow-lg);
-        transform: scale(1.05);
-    }
-
-    &:active {
-        transform: scale(0.98);
-    }
-
-    &:focus {
-        outline: none; // Remove focus outline
-    }
-
-    &:focus-visible {
-        outline: 2px solid var(--mat-sys-primary);
-        outline-offset: 2px;
-    }
-
-    .profile-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-}
-
 // El contenedor del marcador
 .pulsing-beacon {
     position: relative;

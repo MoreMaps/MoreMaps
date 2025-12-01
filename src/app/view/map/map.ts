@@ -1,4 +1,13 @@
-import {AfterViewInit, Component, ElementRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {
+    AfterViewInit,
+    Component,
+    ElementRef,
+    inject,
+    OnInit,
+    signal,
+    ViewChild,
+    ViewEncapsulation
+} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import * as L from 'leaflet';
 import {MapUpdateService} from '../../services/map-update-service/map-updater';
@@ -46,6 +55,13 @@ const customIcon = L.icon({
     popupAnchor: [0, -32]
 });
 
+const selectedIcon = L.icon({
+    iconUrl: 'assets/images/poi_active.png',
+    iconSize: [27, 35],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+})
+
 @Component({
     selector: 'app-map',
     templateUrl: './map.html',
@@ -72,15 +88,15 @@ const customIcon = L.icon({
     ],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
+    @ViewChild('mapContainer') private mapContainer!: ElementRef<HTMLDivElement>;
     private router = inject(Router);
     private map!: L.Map;
-    protected listMarkers: L.Marker[] | null = null;
+    protected listMarkers: L.Marker[] = [];
     protected currentMarker: L.Marker | null = null;
     protected currentPOI = signal<POISearchModel | null>(null);
-    protected listPOIs: POISearchModel[] = [];
+    protected listPOIs = signal<POISearchModel[]>([]);
     protected currentIndex = signal<number>(-1);
     private snackBar = inject(MatSnackBar);
-    private elementRef = inject(ElementRef);
     private userLocationMarker: L.Marker | null = null;
     private dialog = inject(MatDialog);
     private authSubscription: Subscription | null = null;
@@ -94,12 +110,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
 
-    // Signal for user data
-    userData = signal<UserData>({
+    protected userData = signal<UserData>({
         fullName: '',
         email: '',
         profileImage: 'assets/images/pfp.png'
-    });
+    })
 
     constructor(private mapUpdateService: MapUpdateService, private auth: Auth) {
     }
@@ -107,8 +122,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     async ngOnInit() {
         this.authSubscription = authState(this.auth).subscribe(async (user) => {
             if (user) {
-                const mapContainer = this.elementRef.nativeElement.querySelector('#map');
-                if (mapContainer && !this.map) {
+                if (this.mapContainer && !this.map) {
                     this.initMap();
                     this.setupLocationEventHandlers();
                     this.route.queryParams.subscribe(params => {
@@ -137,7 +151,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
                             this.map.setView([latNum, lonNum], 15);
 
-                            if (name){
+                            if (name) {
                                 const savedPoi = new POISearchModel(latNum, lonNum, name);
                                 this.selectPOI(savedPoi);
                             } else {
@@ -158,10 +172,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
 
         this.mapUpdateService.marker$.subscribe((marker: POISearchModel) => {
-            this.addMarker(new POISearchModel(marker.lat, marker.lon, marker.placeName));
-            if (this.map) {
-                this.map.panTo([marker.lat, marker.lon]);
-            }
+            this.selectPOI(new POISearchModel(marker.lat, marker.lon, marker.placeName));
         });
 
         this.mapUpdateService.snackbar$.subscribe((message: string) => {
@@ -193,31 +204,41 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         if (this.loadingSnackBarRef) {
             this.loadingSnackBarRef.dismiss()
         }
+
+        if (this.map) {
+            this.map.remove();
+        }
     }
 
     private initMap() {
-        // Standard OpenStreetMap URL
-        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        if (this.map) return; // extra prevention
 
+        // Limit config
         const southWest = L.latLng(-90, -180);
         const northEast = L.latLng(90, 180);
         const bounds = L.latLngBounds(southWest, northEast);
 
-        this.map = L.map('map', {
+        // Initialize map
+        this.map = L.map(this.mapContainer.nativeElement, {
             maxBounds: bounds,
             maxBoundsViscosity: 1.0,
+            zoomControl: false
         });
 
-        this.map.whenReady(() => {
-            this.map.invalidateSize();
-        });
-
+        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
         L.tileLayer(osmUrl, {
             maxZoom: 19,
             minZoom: 3,
             noWrap: true,
             attribution: '© OpenStreetMap contributors'
         }).addTo(this.map);
+
+        // Make sure Leaflet recalculates the container's size
+        this.map.whenReady(() => {
+            setTimeout(() => {
+                this.map.invalidateSize();
+            }, 100);
+        });
 
         this.setupMapClickHandler();
     }
@@ -315,12 +336,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private deleteMarkers(): void {
-        if (this.listMarkers && this.listMarkers.length > 0) {
-            for (const item of this.listMarkers) {
-                item.remove();
-            }
-            this.listMarkers = [];
-        }
+        this.listMarkers!.forEach(marker => marker.remove());
+        this.listMarkers = [];
     }
 
     private resetMapState(): void {
@@ -329,7 +346,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.deleteMarkers();
 
         // Borrando el estado interno
-        this.listPOIs = [];
+        this.listPOIs.set([]);
         this.currentIndex.set(-1);
         this.poiDialogRef = null;
     }
@@ -342,21 +359,45 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         }
     }
 
-    private addListMarkers(list: POISearchModel[]): void {
-        for (const marker of list) this.addMarker(marker);
-    }
-
     private addMarker(poi: POISearchModel): L.Marker {
+        // 1. Solo crea y añade el marcador, NO mueve el mapa
         let marker = L.marker([poi.lat, poi.lon], {icon: customIcon})
             .addTo(this.map)
-            .bindPopup("Encontrado: " + poi.placeName)
-            .openPopup();
-        if (!this.listMarkers) this.listMarkers = [marker];
-        else this.listMarkers.push(marker);
-        if (this.map) {
-            this.map.flyTo([poi.lat, poi.lon], this.map.getZoom(), {animate: true, duration: 0.8});
-        }
+            .bindPopup("Encontrado: " + poi.placeName);
+
+        // 2. Lo guardamos en el array local
+        this.listMarkers!.push(marker);
+
         return marker;
+    }
+
+    private addListMarkers(list: POISearchModel[]): void {
+        for (const marker of list) {
+            this.addMarker(marker);
+        }
+    }
+
+    private fitMapToMarkers(): void {
+        if (!this.listMarkers || this.listMarkers.length === 0) return;
+
+        // Caso 1: Solo hay un marcador
+        if (this.listMarkers.length === 1) {
+            const marker = this.listMarkers[0];
+            this.map.flyTo(marker.getLatLng(), 16, {animate: true, duration: 1});
+            marker.openPopup();
+            return;
+        }
+
+        // Caso 2: Hay múltiples marcadores
+        const group = L.featureGroup(this.listMarkers);
+
+        // fitBounds hace el zoom automático para que quepan todos
+        this.map.fitBounds(group.getBounds(), {
+            padding: [50, 50], // Margen en píxeles alrededor de los marcadores
+            maxZoom: 16,       // Evita que haga demasiado zoom si los puntos están muy cerca
+            animate: true,
+            duration: 1
+        });
     }
 
     private showSnackbar(msg: string, action: string, geohash?: Geohash): void {
@@ -461,7 +502,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             exitAnimationDuration: '200ms',
             data: {
                 currentPOI: this.currentPOI(),
-                totalPOIs: this.listPOIs.length,
+                totalPOIs: this.listPOIs().length,
                 currentIndex: this.currentIndex(),
                 savedPOIs: this.savedPOIs,
             },
@@ -523,26 +564,29 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private goToPOIIndex(index: number): void {
-        if (!this.listPOIs.length || index < 0 || index >= this.listPOIs.length) return;
+        const list = this.listPOIs();
+        if (!list.length || index < 0 || index >= list.length) return;
 
-        const nextPoi = this.listPOIs[index];
+        const nextPoi = list[index];
         this.currentIndex.set(index);
         this.currentPOI.set(nextPoi);
 
-        this.currentMarker = this.addMarker(nextPoi);
+        this.highlightMarker(index);
 
         if (this.poiDialogRef && this.poiDialogRef.componentInstance) {
             this.poiDialogRef.componentInstance.updatePOI(nextPoi, index, this.savedPOIs);
-        } else this.openPOIDetailsDialog();
+        }
+
+        this.map.panTo([nextPoi.lat, nextPoi.lon], {animate: true, duration: 0.5});
     }
 
     public goToPreviousPOI(): void {
-        this.currentIndex.set((this.currentIndex() - 1 + this.listPOIs.length) % this.listPOIs.length);
+        this.currentIndex.set((this.currentIndex() - 1 + this.listPOIs().length) % this.listPOIs().length);
         this.goToPOIIndex(this.currentIndex());
     }
 
     public goToNextPOI(): void {
-        this.currentIndex.set((this.currentIndex() + 1) % this.listPOIs.length);
+        this.currentIndex.set((this.currentIndex() + 1) % this.listPOIs().length);
         this.goToPOIIndex(this.currentIndex());
     }
 
@@ -553,30 +597,29 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.closePOIDetailsDialog();
 
         const isList = Array.isArray(poi);
+        const newData = isList ? poi : [poi];
 
         // 2. Actualizar estado interno
-        this.listPOIs = isList ? poi : [poi];
+        this.listPOIs.set(newData)
         this.currentIndex.set(0);
-
-        // Seleccionamos el primero para el diálogo y marcador actual
-        const firstPOI = isList ? poi[0] : poi;
-        this.currentPOI.set(firstPOI);
+        this.currentPOI.set(newData[0]);
 
         // 3. Gestión de Marcadores
         if (isList) {
             // Si es una lista, añadimos TODOS los marcadores al mapa
-            this.addListMarkers(poi);
-            // Y definimos el marcador actual como el primero de la lista visualmente
-            // (Asumiendo que addListMarkers rellena this.listMarkers en orden)
-            if (this.listMarkers && this.listMarkers.length > 0) {
-                this.currentMarker = this.listMarkers[0];
-            }
+            this.addListMarkers(newData); // usa customicon internamente
+            this.currentMarker = this.listMarkers![0];
         } else {
             // Si es único, añadimos solo ese
-            this.currentMarker = this.addMarker(poi);
+            this.currentMarker = this.addMarker(poi as POISearchModel);
         }
 
-        // 4. Abrir diálogo
+        this.highlightMarker(0);
+
+        // 4. Ajustar el zoom una sola vez, al final
+        this.fitMapToMarkers();
+
+        // 5. Abrir diálogo
         this.openPOIDetailsDialog();
     }
 
@@ -595,5 +638,22 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
     public refreshLocation(): void {
         this.startLocating();
+    }
+
+    private highlightMarker(index: number): void {
+        if (!this.listMarkers || this.listMarkers.length === 0) return;
+
+        // 1. Resetear TODOS los marcadores al estado normal
+        this.listMarkers.forEach(marker => {
+            marker.setIcon(customIcon);
+            marker.setZIndexOffset(0);
+        });
+
+        const activeMarker = this.listMarkers[index];
+        if (activeMarker) {
+            activeMarker.setIcon(selectedIcon);
+            activeMarker.setZIndexOffset(700);
+        }
+        activeMarker.openPopup();
     }
 }

@@ -230,6 +230,17 @@ export class SavedItemsComponent implements OnDestroy{
                 console.log('Route');
                 this.deselectItem();
                 break;
+            case 'showOnMap':
+                if (this.selectedItem) {
+                    this.router.navigate(['/map'], {
+                        queryParams: {
+                            lat: this.selectedItem.lat,
+                            lon: this.selectedItem.lon,
+                            name: this.selectedItem.alias
+                        }
+                    });
+                }
+                break;
         }
     }
 

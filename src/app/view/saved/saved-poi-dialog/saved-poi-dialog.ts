@@ -120,6 +120,10 @@ export class SavedItemDialog implements OnInit {
         this.handleAction('route');
     }
 
+    onShowOnMap(): void {
+        this.handleAction('showOnMap');
+    }
+
     // ---- Edit Mode ----
 
     onEdit(): void {

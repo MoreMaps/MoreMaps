@@ -6,7 +6,7 @@ import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {Auth, authState} from '@angular/fire/auth';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
@@ -82,6 +82,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private poiService = inject(POIService);
     private poiDialogRef: MatDialogRef<PoiDetailsDialog> | null = null
     private savedPOIs: Geohash[] = []
+    private route = inject(ActivatedRoute);
+    private shouldCenterOnLocation = true;
 
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
@@ -103,19 +105,46 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 if (mapContainer && !this.map) {
                     this.initMap();
                     this.setupLocationEventHandlers();
+                    this.route.queryParams.subscribe(params => {
+                        const lat = params['lat'];
+                        const lon = params['lon'];
+                        const name = params['name'];
 
-                    if (this.mapUpdateService.lastKnownLocation) {
-                        console.info('Finding location by cache');
-                        this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
-                    } else {
-                        console.info('Finding location by API');
-                        this.startLocating();
-                    }
+                        const hasPoiParams = lat && lon;
+                        this.shouldCenterOnLocation = !hasPoiParams;
+
+                        if (this.mapUpdateService.lastKnownLocation) {
+                            // Comportamiento por defecto si no hay params
+                            console.info('Finding location by cache');
+                            this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
+                        } else {
+                            // Comportamiento por defecto
+                            console.info('Finding location by API');
+                            this.startLocating();
+                        }
+
+                        if (hasPoiParams) {
+                            console.info('Cargando mapa con coordenadas específicas:', lat, lon);
+                            // Convertimos a número porque los params vienen como string
+                            const latNum = Number(lat);
+                            const lonNum = Number(lon);
+
+                            this.map.setView([latNum, lonNum], 15);
+
+                            if (name){
+                                const savedPoi = new POISearchModel(latNum, lonNum, name);
+                                this.selectPOI(savedPoi);
+                            } else {
+                                this.searchByCoords(latNum, lonNum);
+                            }
+                        }
+                    });
                 }
                 let currentList = await this.poiService.getPOIList(this.auth);
                 for (const item of currentList) {
                     this.savedPOIs.push(item.geohash);
                 }
+
             } else {
                 console.warn("No hay sesión, redirigiendo...");
                 await this.router.navigate(['']);
@@ -151,6 +180,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     ngOnDestroy(): void {
         if (this.authSubscription) {
             this.authSubscription.unsubscribe();
+        }
+        if (this.poiDialogRef) {
+            this.poiDialogRef.close({ignore: true});
+        }
+        if (this.loadingSnackBarRef) {
+            this.loadingSnackBarRef.dismiss()
         }
     }
 
@@ -354,21 +389,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 this.loadingSnackBarRef.dismiss();
             }
 
-            // Limpiar estado anterior
-            this.deleteCurrentMarker();
-            this.deleteMarkers();
-            this.closePOIDetailsDialog();
-
-            // Actualizar lista
-            this.listPOIs = [poiSearchResult];
-            this.currentIndex.set(0);
-
-            // Actualizar mapa y estado
-            this.currentMarker = this.addMarker(poiSearchResult);
-            this.currentPOI.set(poiSearchResult);
-
-            // Abrir diálogo de detalles
-            this.openPOIDetailsDialog();
+            this.selectPOI(poiSearchResult);
 
         } catch (error: any) {
             // Manejo de errores
@@ -397,19 +418,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 this.loadingSnackBarRef.dismiss();
             }
 
-            // Limpiar estado anterior
-            this.deleteCurrentMarker();
-            this.deleteMarkers();
-            this.closePOIDetailsDialog();
-
-            // Actualizar mapa y estado
-            this.addListMarkers(poiSearchResult);
-            this.currentPOI.set(poiSearchResult.at(0)!);
-            this.listPOIs = poiSearchResult;
-            this.currentIndex.set(0);
-
-            // Abrir diálogo de detalles
-            this.openPOIDetailsDialog();
+            this.selectPOI(poiSearchResult);
 
         } catch (error: any) {
             // Manejo de errores
@@ -529,5 +538,39 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     public goToNextPOI(): void {
         this.currentIndex.set((this.currentIndex() + 1) % this.listPOIs.length);
         this.goToPOIIndex(this.currentIndex());
+    }
+
+    private selectPOI(poi: POISearchModel | POISearchModel[]): void {
+        // 1. Limpiar estado anterior
+        this.deleteCurrentMarker();
+        this.deleteMarkers();
+        this.closePOIDetailsDialog();
+
+        const isList = Array.isArray(poi);
+
+        // 2. Actualizar estado interno
+        this.listPOIs = isList ? poi : [poi];
+        this.currentIndex.set(0);
+
+        // Seleccionamos el primero para el diálogo y marcador actual
+        const firstPOI = isList ? poi[0] : poi;
+        this.currentPOI.set(firstPOI);
+
+        // 3. Gestión de Marcadores
+        if (isList) {
+            // Si es una lista, añadimos TODOS los marcadores al mapa
+            this.addListMarkers(poi);
+            // Y definimos el marcador actual como el primero de la lista visualmente
+            // (Asumiendo que addListMarkers rellena this.listMarkers en orden)
+            if (this.listMarkers && this.listMarkers.length > 0) {
+                this.currentMarker = this.listMarkers[0];
+            }
+        } else {
+            // Si es único, añadimos solo ese
+            this.currentMarker = this.addMarker(poi);
+        }
+
+        // 4. Abrir diálogo
+        this.openPOIDetailsDialog();
     }
 }

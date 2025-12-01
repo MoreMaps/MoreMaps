@@ -21,6 +21,9 @@ import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
 import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
 import {Geohash, geohashForLocation} from 'geofire-common';
+import {MatIcon} from '@angular/material/icon';
+import {MatFabButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -56,7 +59,10 @@ const customIcon = L.icon({
         MatDialogModule,
         NavbarComponent,
         ThemeToggleComponent,
-        ProfileButtonComponent
+        ProfileButtonComponent,
+        MatIcon,
+        MatFabButton,
+        MatTooltip
     ],
     providers: [
         MapSearchService,
@@ -572,5 +578,22 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         // 4. Abrir diálogo
         this.openPOIDetailsDialog();
+    }
+
+    public centerOnUser(): void {
+        if (this.userLocationMarker) {
+            this.map.flyTo(this.userLocationMarker.getLatLng(), 16, {
+                animate: true,
+                duration: 1
+            });
+        } else if (this.mapUpdateService.lastKnownLocation) {
+            this.map.flyTo(this.mapUpdateService.lastKnownLocation, 16);
+        } else {
+            this.startLocating();
+        }
+    }
+
+    public refreshLocation(): void {
+        this.startLocating();
     }
 }

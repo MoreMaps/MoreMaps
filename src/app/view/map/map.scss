@@ -174,3 +174,68 @@
     box-shadow: 0 0 0 100000vmax var(--color-teal-dark);
     filter: hue-rotate(170deg) saturate(140%) brightness(140%);
 }
+
+/* =========================================
+   LOCATION CONTROLS (FABs)
+   ========================================= */
+.location-controls {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    z-index: 600;
+}
+
+/* ESTILO BASE (TEMA CLARO) */
+/* Combinamos clases para asegurar que sobrescribimos a Material */
+.map-fab.mat-mdc-fab {
+    width: 48px;
+    height: 48px;
+
+    /* Forma de la imagen (Cuadrado redondeado) */
+    border-radius: 14px !important;
+
+    /* Colores Tema Claro (Según tus variables) */
+    background-color: var(--color-white) !important;
+    color: var(--color-purple-dark) !important; /* Color del icono */
+
+    /* Sombra suave */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+
+    /* Reset de bordes y padding */
+    border: 2px solid var(--color-lavender) !important;
+    padding: 0;
+
+    /* Asegurar centrado del icono */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Icono interno */
+    mat-icon {
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+        color: currentColor; /* Hereda el color definido arriba */
+    }
+
+    &:hover {
+        background-color: #f8f8f8 !important;
+        transform: translateY(-1px);
+    }
+}
+
+/* ESTILO TEMA OSCURO */
+/* Al estar en ViewEncapsulation.None, esto detectará la clase en el body */
+.dark-theme .map-fab.mat-mdc-fab {
+    background-color: var(--color-teal-dark) !important; /* #1B4141 */
+    color: var(--color-white) !important;                /* Icono blanco */
+    border: 1px solid rgba(255,255,255,0.1) !important;             /* Borde sutil */
+
+    &:hover {
+        background-color: lighten(#1B4141, 5%) !important;
+    }
+}

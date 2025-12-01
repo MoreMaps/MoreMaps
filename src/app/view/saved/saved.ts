@@ -210,6 +210,7 @@ export class SavedItemsComponent implements OnDestroy{
 
         dialogRef.afterClosed().subscribe((result) => {
             if (result) this.handleDialogActions(result);
+            this.deselectItem();
         });
     }
 

@@ -83,7 +83,9 @@
                                 <p class="item-place-if-alias">{{ item.placeName }}</p>
                             }
                             <p class="item-description">({{ item.lat || 'Dummy' }}, {{ item.lon || 'Dummy' }})</p>
-                            <p class="item-description">{{ item.description || 'Sin descripción' }}</p>
+                            <p class="item-description"
+                               style="white-space: nowrap;
+                                      overflow:hidden; text-overflow:ellipsis;">{{ item.description || 'Sin descripción' }}</p>
                         </div>
                         <button
                             mat-icon-button
@@ -107,13 +109,20 @@
     </div>
 
     <!-- Panel de detalles (Desktop: lado derecho, Mobile: overlay) -->
-    <!-- TODO Show details HU204-->
-    <div class="details-not-selected">
+    <div class="details-container">
         @if (!selectedItem) {
-            <p>Selecciona un elemento para ver sus detalles.</p>
+            <div class="empty-selection-placeholder">
+                <p>Selecciona un elemento para ver sus detalles.</p>
+            </div>
         } @else {
-            <p>Seleccionaste algo, pero esto no está implementado aún.</p>
+            @if (isDesktop()) {
+                <app-saved-item-dialog
+                    [item]="selectedItem"
+                    [displayName]="getDisplayName(selectedItem)"
+                    (actionEvent)="handleDialogActions($event)"
+                    (closeEvent)="deselectItem()">
+                </app-saved-item-dialog>
+            }
         }
     </div>
-
 </div>

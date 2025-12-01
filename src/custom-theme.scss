@@ -109,7 +109,6 @@ body {
 
     .dialog-container {
         background-color: var(--color-purple-dark) !important;
-        color: var(--color-white) !important;
     }
 
     .close-button {
@@ -658,6 +657,8 @@ body {
     // Estilos del contenedor del diálogo
     .custom-dialog-container {
         .mat-mdc-dialog-container {
+            color: transparent;
+            background-color: transparent;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-lg);
             padding: 0;

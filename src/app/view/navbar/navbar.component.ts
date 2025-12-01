@@ -21,7 +21,7 @@ export class NavbarComponent {
     private mapUpdateService = inject(MapUpdateService);
 
     isActive(route: string): boolean {
-        return this.router.url === route;
+        return this.router.url.split(/[?#]/)[0] === route;
     }
 
     navigateTo(route: string): void {

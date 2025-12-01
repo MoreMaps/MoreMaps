@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, inject, OnInit, OnDestroy, signal, ViewEncapsulation} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import * as L from 'leaflet';
 import {MapUpdateService} from '../../services/map-update-service/map-updater';
@@ -7,7 +7,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {Auth, authState} from '@angular/fire/auth';
 import {Router} from '@angular/router';
-import {mapTo, Subscription} from 'rxjs';
+import {Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 import {ProfileButtonComponent, UserData} from '../profileButton/profileButton';
@@ -20,7 +20,6 @@ import {POIService} from '../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
 import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
-import {POIModel} from '../../data/POIModel';
 import {Geohash, geohashForLocation} from 'geofire-common';
 
 // --- MINI-COMPONENTE SPINNER ---
@@ -106,10 +105,10 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                     this.setupLocationEventHandlers();
 
                     if (this.mapUpdateService.lastKnownLocation) {
-                        console.log('Finding location by cache');
+                        console.info('Finding location by cache');
                         this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
                     } else {
-                        console.log('Finding location by API');
+                        console.info('Finding location by API');
                         this.startLocating();
                     }
                 }
@@ -135,12 +134,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
 
         this.mapUpdateService.searchCoords$.subscribe((coords) => {
-            console.log('Recibidas coordenadas externas:', coords);
+            console.info('Recibidas coordenadas externas:', coords);
             this.searchByCoords(coords.lat, coords.lon);
         });
 
         this.mapUpdateService.searchPlaceName$.subscribe((placeName) => {
-            console.log('Recibido topónimo:', placeName);
+            console.info('Recibido topónimo:', placeName);
             this.searchByPlaceName(placeName);
         });
     }
@@ -275,11 +274,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private deleteMarkers(): void {
-        console.log(`La función se ha llamado :)`);
         if (this.listMarkers && this.listMarkers.length > 0) {
-            console.log(`La función ha entrado en el if, biennn`);
             for (const item of this.listMarkers) {
-                console.log(`Borrando el elemento ${item}`);
                 item.remove();
             }
             this.listMarkers = [];
@@ -315,7 +311,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             .bindPopup("Encontrado: " + poi.placeName)
             .openPopup();
         if (!this.listMarkers) this.listMarkers = [marker];
-        else                   this.listMarkers.push(marker);
+        else this.listMarkers.push(marker);
         if (this.map) {
             this.map.flyTo([poi.lat, poi.lon], this.map.getZoom(), {animate: true, duration: 0.8});
         }
@@ -330,10 +326,10 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
 
         snackBarRef.onAction().subscribe(() => {
-            switch(action){
+            switch (action) {
                 case 'Ver':
                     snackBarRef.dismiss();
-                    this.router.navigate(['/saved'], {queryParams: {id: geohash} });
+                    this.router.navigate(['/saved'], {queryParams: {id: geohash}});
                     break;
                 default:
                     snackBarRef.dismiss();
@@ -380,7 +376,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 this.loadingSnackBarRef.dismiss();
             }
             console.error(`Error al buscar por coordenadas: ${error}`);
-            this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', { duration: 5000 });
+            this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', {duration: 5000});
         }
     }
 
@@ -421,7 +417,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 this.loadingSnackBarRef.dismiss();
             }
             console.error(`Error al buscar por topónimo: ${error}`);
-            this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', { duration: 5000 });
+            this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', {duration: 5000});
         }
     }
 
@@ -429,9 +425,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.map.on('click', async (e: L.LeafletMouseEvent) => {
             const lat = e.latlng.lat;
             const lon = e.latlng.lng;
-
-            // todo: borrar log
-            console.log(`Click en coordenadas: ${lat}, ${lon}`);
 
             await this.searchByCoords(lat, lon);
         });
@@ -487,7 +480,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 this.updateSaved();
                 this.showSnackbar('El punto de interés se ha guardado correctamente.', 'Ver', geohash);
             } else {
-                console.log('Cerrando el diálogo sin guardar...')
+                console.info('Cerrando el diálogo sin guardar...')
                 this.resetMapState();
             }
         });
@@ -514,8 +507,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
     }
 
-    private goToPOIIndex(index:number): void {
-        if(!this.listPOIs.length || index < 0 || index >= this.listPOIs.length) return;
+    private goToPOIIndex(index: number): void {
+        if (!this.listPOIs.length || index < 0 || index >= this.listPOIs.length) return;
 
         const nextPoi = this.listPOIs[index];
         this.currentIndex.set(index);

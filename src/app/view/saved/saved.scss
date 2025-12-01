@@ -15,6 +15,10 @@
     overflow-y: auto;
     transition: all var(--transition-normal);
 
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+
     @media (max-width: 1024px) {
         flex: 1;
         width: 100%;
@@ -130,17 +134,17 @@
     height: 44px;
     border-radius: var(--radius-md);
     flex-shrink: 0;
+}
 
-    .poi-icon-img {
-        display: none;
-        object-fit: contain;
+.poi-icon-img {
+    display: none;
+    object-fit: contain;
 
-        &.visible {
-            display: block;
-            animation: fadeIn var(--transition-fast) ease-in;
-        }
-
+    &.visible {
+        display: block;
+        animation: fadeIn var(--transition-fast) ease-in;
     }
+
 }
 
 .item-info {
@@ -215,28 +219,48 @@
     opacity: 0.6;
 }
 
+
 /* ===== PANEL DE DETALLES ===== */
-/* TODO: Show details HU204 */
+.details-container {
+    /* Mobile Default: Hidden or overlay (handled by logic/dialog) */
+    display: none;
 
-.details-not-selected {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
-    overflow-y: auto;
-    transition: all var(--transition-normal);
+    @media (min-width: 1025px) {
+        /* Desktop Layout */
+        display: flex;              /* Enable Flexbox */
+        flex-direction: column;     /* Stack children vertically */
+        justify-content: center;    /* Center content Vertically (Y-Axis) */
+        align-items: center;        /* Center content Horizontally (X-Axis) */
 
-    @media (max-width: 800px) {
-        display: none;
+        p {
+            opacity: 0.5;
+        }
+
+        flex: 1;
+        height: 100%;
+        padding: 2rem;
+        background-color: transparent;
+
+        /* Ensure the embedded dialog component doesn't stretch weirdly */
+        app-saved-item-dialog {
+            width: 100%;
+            max-width: 450px;       /* Constrain width so it looks like a card */
+
+            /* Add shadow/border to look like a card in embedded mode */
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;       /* Ensure rounded corners clip content */
+        }
     }
+}
 
-    p {
-        opacity: 0.6;
-        color: var(--color-purple-dark);
+.saved-item-dialog-panel {
+    background: transparent !important;
+    box-shadow: none !important;
+
+    @media (max-width:1024px) {
+        background: transparent !important;
     }
-
 }
 
 /* ===== TEMA OSCURO ===== */
@@ -291,7 +315,7 @@
         color: var(--color-mint-green-light) !important;
     }
 
-    .details-not-selected p {
+    .details-container p {
         color: var(--color-white);
     }
 
@@ -325,6 +349,14 @@
             border-color: var(--color-mint-green-light);
             background-color: rgba(161, 231, 197, 0.3);
         }
+    }
+
+    .details-selected {
+        background-color: var(--color-purple-dark);
+    }
+
+    .details-container {
+        background-color: var(--color-teal-dark);
     }
 
 }

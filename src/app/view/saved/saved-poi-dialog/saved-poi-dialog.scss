@@ -1,0 +1,369 @@
+:host {
+    display: block;
+}
+
+.dialog-container {
+    padding: 1.5rem;
+    position: relative;
+    box-shadow: none !important;
+    color: transparent !important;
+}
+
+/* Header Section */
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.header-content {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.poi-icon-wrapper {
+    flex-shrink: 0;
+}
+
+.header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    color: var(--color-teal-dark);
+    text-align: left;
+}
+
+.dialog-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: left;
+}
+
+.dialog-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.dialog-coords {
+    margin: 0.25rem 0 0;
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+/* Close Button */
+.close-btn {
+    flex-shrink: 0;
+}
+
+/* Body Section */
+.dialog-body {
+    padding-bottom: 0.5rem;
+}
+
+.description {
+    margin: 0 0 2rem 0;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: var(--color-teal-dark);
+}
+
+/* Action Buttons */
+.actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.2s ease;
+
+    &:hover {
+        transform: translateX(4px);
+
+        .icon-circle {
+            filter: brightness(1.1);
+        }
+    }
+}
+
+.icon-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+
+    /* Targeting the new SVG element */
+    .action-svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Green variant (New Route, Edit) */
+    &.green {
+        border: 2px solid var(--color-gray-blue);
+        color: var(--color-gray-blue);
+
+        /* If the arrow needs an adjustment, use this block */
+        .action-svg {
+            /* Adjust icon fill/stroke if needed */
+        }
+    }
+}
+
+/* Styling for the standalone Trash SVG (ELIMINAR) */
+.trash-svg {
+    width: 40px;
+    height: 40px;
+    color: var(--color-orange);
+    flex-shrink: 0;
+}
+
+/* Text Labels */
+.action-label {
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.green-text {
+    color: var(--color-gray-blue);
+    font-weight: 1000;
+}
+
+.orange-text {
+    color: var(--color-orange);
+    font-weight: 1000;
+}
+
+:host-context(.dark-theme) {
+    .green-text {
+        color: var(--color-mint-green-light);
+    }
+
+    .header-text {
+        color: var(--color-lavender);
+    }
+
+    .description {
+        color: var(--color-lavender);
+    }
+
+
+    .icon-circle {
+        &.green {
+            border: 2px solid var(--color-mint-green);
+            color: var(--color-mint-green);
+        }
+    }
+
+    .dialog-container {
+        background-color: var(--color-purple-dark) !important;
+    }
+
+    .close-btn mat-icon {
+        color: white;
+    }
+
+}
+
+/* ===== EDIT FORM STYLES ===== */
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 0.5rem;
+
+    // La animación ya se aplica a través de .edit-mode-content, pero la dejo aquí para referencia.
+    // animation: fadeIn 0.3s ease-out forwards;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--color-teal-dark);
+    }
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    input, textarea {
+        width: 100%;
+        padding: 12px 40px 12px 12px;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        font-family: inherit;
+        background-color: var(--color-lavender);
+        color: var(--color-black);
+        transition: border-color 0.2s;
+
+        &:focus {
+            outline: none;
+            border-color: var(--color-purple);
+            background-color: var(--color-white);
+        }
+    }
+
+    textarea {
+        resize: none;
+        min-height: 80px;
+    }
+}
+
+/* Clear (X) button inside inputs */
+.clear-input-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+
+    mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+    }
+
+    &:hover {
+        color: var(--color-orange);
+    }
+
+    &.textarea-clear {
+        top: 15px;
+        transform: none;
+    }
+}
+
+.char-count-wrapper {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.char-count {
+    font-size: 0.75rem;
+    color: rgba(0,0,0,0.4);
+}
+
+/* Edit Mode Buttons */
+.edit-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.btn-save {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: var(--color-mint-green); /* Using your green */
+    color: var(--color-teal-dark);
+    transition: filter 0.2s;
+
+    &:hover:not(:disabled) {
+        filter: brightness(0.95);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.btn-cancel {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--color-orange);
+    border-radius: 8px;
+    color: var(--color-orange);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+        background-color: rgba(255, 140, 66, 0.1);
+    }
+}
+
+/* Dark Theme Overrides for Form */
+:host-context(.dark-theme) {
+    .form-group label {
+        color: var(--color-lavender);
+    }
+
+    .input-wrapper input,
+    .input-wrapper textarea {
+        background-color: rgba(0,0,0,0.2);
+        color: var(--color-white);
+        border-color: rgba(255,255,255,0.1);
+
+        &:focus {
+            border-color: var(--color-mint-green);
+        }
+    }
+
+    .clear-input-btn {
+        color: rgba(255,255,255,0.4);
+        &:hover { color: var(--color-white); }
+    }
+
+    .char-count {
+        color: rgba(255,255,255,0.4);
+    }
+}
+
+/* Animation helper */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* -------------------------------------
+   APLICAR A LAS VISTAS
+   ------------------------------------- */
+
+.view-mode-content,
+.edit-mode-content,
+.edit-form {
+    // Aseguramos que la animación se ejecute solo al aparecer
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Nota: Los navegadores modernos gestionarán automáticamente la salida
+   (desaparición instantánea) cuando se retire el elemento del DOM.
+   La animación se aplicará justo al ingresar al DOM. */

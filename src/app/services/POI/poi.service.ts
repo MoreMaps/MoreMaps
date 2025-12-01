@@ -5,13 +5,14 @@ import {Auth} from '@angular/fire/auth';
 import {Geohash, geohashForLocation} from 'geofire-common';
 import {POISearchModel} from '../../data/POISearchModel';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class POIService {
-    private poiDb : POIRepository = inject(POI_REPOSITORY);
+    private poiDb: POIRepository = inject(POI_REPOSITORY);
 
     // HU201 y HU202 Crear POI
     async createPOI(poi: POISearchModel): Promise<POIModel> {
-        return this.poiDb.createPOI(poi);
+        let poiForDB : POIModel = new POIModel(poi.lat, poi.lon, poi.placeName, geohashForLocation([poi.lat, poi.lon], 7));
+        return this.poiDb.createPOI(poiForDB);
     }
 
     // HU203 Consultar lista de POI

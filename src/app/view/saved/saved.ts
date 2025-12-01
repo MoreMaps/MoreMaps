@@ -2,7 +2,7 @@ import {Component, computed, effect, inject, OnDestroy, signal} from '@angular/c
 import {CommonModule, NgOptimizedImage} from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {MatDialogModule} from '@angular/material/dialog';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {Auth} from '@angular/fire/auth';
 import {POIModel} from '../../data/POIModel';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
@@ -19,6 +19,8 @@ import {SavedVehiclesStrategy} from '../../services/saved-items/savedVehiclesStr
 import {SavedItemsStrategy} from '../../services/saved-items/savedItemsStrategy';
 import {SpinnerSnackComponent} from '../map/map';
 import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
+import {SavedItemDialog} from './saved-poi-dialog/saved-poi-dialog';
+import {BreakpointObserver} from '@angular/cdk/layout';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -33,7 +35,8 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
         ThemeToggleComponent,
         NavbarComponent,
         ProfileButtonComponent,
-        NgOptimizedImage
+        NgOptimizedImage,
+        SavedItemDialog,
     ],
     templateUrl: './saved.html',
     styleUrls: ['./saved.scss'],
@@ -47,6 +50,10 @@ export class SavedItemsComponent implements OnDestroy{
     private activeSnackRef: MatSnackBarRef<any> | null = null;
     private loadingTimeout: any = null;
     private route = inject(ActivatedRoute);
+    private dialog = inject(MatDialog);
+    private breakpointObserver = inject(BreakpointObserver);
+
+    isDesktop = signal(false);
 
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
@@ -56,7 +63,7 @@ export class SavedItemsComponent implements OnDestroy{
 
     selectedType = signal<ItemType>('lugares');
     items = signal<any[] | null>(null);
-    selectedItem: any;
+    selectedItem: POIModel | null = null;
 
     // Paginación
     currentPage = signal(1);
@@ -82,6 +89,17 @@ export class SavedItemsComponent implements OnDestroy{
         effect(() => {
             const currentType = this.selectedType();
             localStorage.setItem('user_preference_saved_tab', currentType);
+        });
+
+        this.breakpointObserver.observe('(min-width: 1025px)').subscribe(result => {
+            const isDesktopNow = result.matches
+            this.isDesktop.set(isDesktopNow);
+
+            if (!isDesktopNow && this.selectedItem) {
+                this.openDialogForItem(this.selectedItem);
+            } else if (isDesktopNow) {
+                this.dialog.closeAll();
+            }
         });
     }
 
@@ -124,7 +142,7 @@ export class SavedItemsComponent implements OnDestroy{
             const foundItem = items.find(item => item.geohash === target);
 
             if (foundItem) {
-                this.selectedItem = foundItem;
+                this.selectItem(foundItem);
 
                 const index = items.indexOf(foundItem);
                 const page = Math.floor(index / this.itemsPerPage()) + 1;
@@ -132,6 +150,7 @@ export class SavedItemsComponent implements OnDestroy{
             }
         }
     }
+
 
     selectType(type: ItemType): void {
         if (this.selectedType() === type) return;
@@ -167,6 +186,55 @@ export class SavedItemsComponent implements OnDestroy{
 
     selectItem(item: POIModel): void {
         this.selectedItem = item;
+
+        // No need for the dialog on desktop
+        if (!this.isDesktop()) {
+            this.openDialogForItem(item);
+        }
+    }
+
+    private openDialogForItem(item: POIModel): void {
+        if (this.dialog.openDialogs.length > 0) return;
+
+        // Open the Dialog
+        const dialogRef = this.dialog.open(SavedItemDialog, {
+            data: {
+                item: item,
+                displayName: this.getDisplayName(item)
+            },
+            panelClass: 'saved-item-dialog-panel',
+            autoFocus: false,
+            width: '400px',
+            maxWidth: '90vw'
+        });
+
+        dialogRef.afterClosed().subscribe((result) => {
+            if (result) this.handleDialogActions(result);
+        });
+    }
+
+    handleDialogActions(action: string | undefined): void {
+        switch (action) {
+            case 'delete':
+                console.log('Delete');
+                this.deselectItem()
+                this.loadItems()
+                break;
+            case 'edit':
+                console.log('Edit');
+                break;
+            case 'update':
+                this.loadItems();
+                break;
+            case 'route':
+                console.log('Route');
+                this.deselectItem();
+                break;
+        }
+    }
+
+    deselectItem(): void {
+        this.selectedItem = null;
     }
 
     getDisplayName(item: POIModel): string {
@@ -204,6 +272,7 @@ export class SavedItemsComponent implements OnDestroy{
         const success = await this.currentStrategy().toggleFavorite(this.auth, item);
         if (success) {
             this.showSnackbar(`${item.pinned ? 'Se ha fijado' : ''} POI "${this.getDisplayName(item)}"${!item.pinned ? ' ya no está fijado.' : '.'}`)
+            this.loadItems();
         }
     }
 

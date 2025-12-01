@@ -16,7 +16,7 @@ import {POIDB} from '../../services/POI/POIDB';
     styleUrls: ['./editPOI.css'],
     providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB}],
 })
-export class PoiDetailMenuComponent implements OnInit {
+export class PoiDetailEdit implements OnInit {
     @Input() poi: POIModel | null = null;
     // Sería mejor obtener esto de un contexto global...
     @Input() auth: Auth | null = null;

@@ -16,22 +16,19 @@ import {POIDB} from '../../services/POI/POIDB';
 })
 export class DeleteConfirmationPopupComponent {
     @Input() geohash: Geohash = " ";
-    // REFACTORIZAR EN IT03, ESTO LO LLEVA AUTHGUARD
-    @Input() auth: Auth | null = null;
+    @Input() auth: Auth;
+    @Input() poiName: string = '';
     @Output() success = new EventEmitter<boolean>();
     @Output() close = new EventEmitter<void>();
 
-    constructor(private service: POIService) {}
+    constructor(private service: POIService, a: Auth) {this.auth = a}
 
     // Ejecuta el borrado (y cierra el popup, si procede)
     // Propaga el valor obtenido al padre, que es quien muestra el snackbar
     // Si se ha borrado el POI, debería ser undefined y el padre se cerrará también
     async onConfirm(): Promise<void> {
-        // BORRAR IF EN IT03
-        if (this.auth) {
-            this.success.emit(await this.service.deletePOI(this.auth, this.geohash));
-            this.close.emit();
-        }
+        this.success.emit(await this.service.deletePOI(this.auth, this.geohash));
+        this.close.emit();
     }
 
     // Envía una señal de cierre

@@ -4,11 +4,20 @@ import {POIModel} from '../../data/POIModel';
 import {Auth} from '@angular/fire/auth';
 import {Geohash} from 'geofire-common';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
-import {collection, doc, Firestore, getDocs, query, getDoc, setDoc, updateDoc, deleteDoc} from '@angular/fire/firestore';
+import {
+    collection,
+    deleteDoc,
+    doc,
+    Firestore,
+    getDoc,
+    getDocs,
+    query,
+    setDoc,
+    updateDoc
+} from '@angular/fire/firestore';
 import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
 import {MissingPOIError} from '../../errors/MissingPOIError';
 import {DescriptionLengthError} from '../../errors/DescriptionLengthError';
-import {POISearchModel} from '../../data/POISearchModel';
 
 @Injectable({
     providedIn: 'root'
@@ -20,7 +29,7 @@ export class POIDB implements POIRepository {
     async createPOI(poi: POIModel): Promise<POIModel> {
         const userUid = this.auth.currentUser?.uid;
         const poiDocRef = doc(this.firestore, `items/${userUid}/pois/${poi.geohash}`);
-        await setDoc(poiDocRef, poi.toJSON());
+        if (poi) await setDoc(poiDocRef, poi.toJSON());
 
         return poi;
     }
@@ -61,9 +70,7 @@ export class POIDB implements POIRepository {
             // Actualizar documento (únicamente los campos enviados)
             await setDoc(poiRef, update, {merge: true});
             return true;
-        }
-
-        catch (error: any) {
+        } catch (error: any) {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
@@ -87,9 +94,7 @@ export class POIDB implements POIRepository {
             // TODO: PROPAGAR A RUTAS
             await deleteDoc(poiRef);
             return true;
-        }
-
-        catch (error: any) {
+        } catch (error: any) {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
@@ -116,8 +121,7 @@ export class POIDB implements POIRepository {
 
         if (snapshot.empty) {
             return [];
-        }
-        else {
+        } else {
             return snapshot.docs.map(doc => {
                 const data = doc.data();
                 return new POIModel(
@@ -150,7 +154,7 @@ export class POIDB implements POIRepository {
             return true;
         } catch (error: any) {
             console.log(`Error al cambiar pinned del POI: ${error}`);
-            switch(error.code) {
+            switch (error.code) {
                 case 'invalid-argument':
                 case 'not-found':
                     throw new MissingPOIError();

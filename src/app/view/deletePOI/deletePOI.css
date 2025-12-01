@@ -13,7 +13,7 @@
 }
 
 .popup {
-    background: white;
+    background-color: var(--color-white);
     border-radius: 20px;
     padding: 40px 32px 32px;
     max-width: 400px;
@@ -60,7 +60,7 @@
 .title {
     font-size: 20px;
     font-weight: 500;
-    color: #333;
+    color: var(--color-teal-dark);
     text-align: center;
     margin: 0 0 12px 0;
     line-height: 1.4;
@@ -68,7 +68,7 @@
 
 .subtitle {
     font-size: 14px;
-    color: #666;
+    color: var(--color-gray-blue);
     text-align: center;
     margin: 0 0 32px 0;
 }
@@ -92,24 +92,25 @@
 }
 
 .btn-confirm {
-    background-color: #4CAF50;
-    color: white;
+    background-color: var(--color-white);
+    border: 2px solid var(--color-gray-blue);
+    color: var(--color-mint-green);
 }
 
 .btn-confirm:hover {
-    background-color: #45a049;
+    filter: brightness(0.9);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 .btn-cancel {
-    background-color: transparent;
-    color: #FF6B35;
+    background-color: var(--color-white);
+    color: var(--color-orange);
     border: 2px solid transparent;
 }
 
 .btn-cancel:hover {
-    background-color: #FFF5F2;
+    filter: brightness(0.9);
 }
 
 .snackbar {
@@ -175,4 +176,38 @@
         right: 16px;
         min-width: auto;
     }
+}
+
+:host-context(.dark-theme) {
+    .popup {
+        background: var(--color-purple-dark);
+    }
+
+    .title {
+        color: var(--color-white);
+    }
+    .subtitle {
+        color: var(--color-lavender);
+    }
+
+    .btn-confirm {
+        background-color: var(--color-purple-dark);
+        border: 2px solid var(--color-mint-green);
+        color: var(--color-mint-green);
+    }
+
+
+    .btn-confirm:hover {
+        filter: brightness(1.4);
+        box-shadow: 0 4px 12px rgba(161, 231, 197, 0.5);
+    }
+
+    .btn-cancel {
+        background-color: var(--color-purple-dark);
+    }
+
+    .btn-cancel:hover {
+        filter: brightness(1.4);
+    }
+
 }

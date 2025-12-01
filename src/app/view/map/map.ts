@@ -97,6 +97,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     protected listPOIs = signal<POISearchModel[]>([]);
     protected currentIndex = signal<number>(-1);
     private snackBar = inject(MatSnackBar);
+    private elementRef = inject(ElementRef);
     private userLocationMarker: L.Marker | null = null;
     private dialog = inject(MatDialog);
     private authSubscription: Subscription | null = null;
@@ -114,7 +115,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         fullName: '',
         email: '',
         profileImage: 'assets/images/pfp.png'
-    })
+    });
 
     constructor(private mapUpdateService: MapUpdateService, private auth: Auth) {
     }
@@ -223,7 +224,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.map = L.map(this.mapContainer.nativeElement, {
             maxBounds: bounds,
             maxBoundsViscosity: 1.0,
-            zoomControl: false
+            zoomControl: false // Opcional: si quieres mover los controles de zoom
         });
 
         const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';

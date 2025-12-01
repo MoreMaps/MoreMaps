@@ -1,17 +1,26 @@
 import {AfterViewInit, Component, ElementRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
-import {CommonModule, NgOptimizedImage} from '@angular/common';
+import {CommonModule} from '@angular/common';
 import * as L from 'leaflet';
-import {MapMarker, MapUpdateService} from '../../services/map-update-service/map-updater';
+import {MapUpdateService} from '../../services/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatDialog, MatDialogModule} from '@angular/material/dialog';
-import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
-import {doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {Auth, authState} from '@angular/fire/auth';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
+import {ProfileButtonComponent, UserData} from '../profileButton/profileButton';
+import {MapSearchService} from '../../services/map-search-service/map-search.service';
+import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
+import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
+import {POISearchModel} from '../../data/POISearchModel';
+import {PoiDetailsDialog} from './poi-details-dialog/poi-details-dialog';
+import {POIService} from '../../services/POI/poi.service';
+import {POI_REPOSITORY} from '../../services/POI/POIRepository';
+import {POIDB} from '../../services/POI/POIDB';
+import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
+import {Geohash, geohashForLocation} from 'geofire-common';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -28,17 +37,11 @@ export class SpinnerSnackComponent {
 }
 
 const customIcon = L.icon({
-    iconUrl: 'image_0.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -25]
+    iconUrl: 'assets/images/poi/customMarker.png',
+    iconSize: [27, 35],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
 });
-
-export interface UserData {
-    fullName: string;
-    email: string;
-    profileImage: string;
-}
 
 @Component({
     selector: 'app-map',
@@ -46,19 +49,41 @@ export interface UserData {
     styleUrl: './map.scss',
     standalone: true,
     encapsulation: ViewEncapsulation.None,
-    imports: [CommonModule, MatSnackBarModule, MatProgressSpinnerModule, MatDialogModule, NgOptimizedImage, NavbarComponent, ThemeToggleComponent],
+    imports: [
+        CommonModule,
+        MatSnackBarModule,
+        MatProgressSpinnerModule,
+        MatDialogModule,
+        NavbarComponent,
+        ThemeToggleComponent,
+        ProfileButtonComponent
+    ],
+    providers: [
+        MapSearchService,
+        POIService,
+        {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
+        {provide: POI_REPOSITORY, useClass: POIDB},
+    ],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
     private router = inject(Router);
     private map!: L.Map;
+    protected listMarkers: L.Marker[] | null = null;
     protected currentMarker: L.Marker | null = null;
+    protected currentPOI = signal<POISearchModel | null>(null);
+    protected listPOIs: POISearchModel[] = [];
+    protected currentIndex = signal<number>(-1);
     private snackBar = inject(MatSnackBar);
     private elementRef = inject(ElementRef);
     private userLocationMarker: L.Marker | null = null;
     private dialog = inject(MatDialog);
-    private firestore = inject(Firestore);
-    private auth = inject(Auth);
     private authSubscription: Subscription | null = null;
+    private mapSearchService = inject(MapSearchService);
+    private poiService = inject(POIService);
+    private poiDialogRef: MatDialogRef<PoiDetailsDialog> | null = null
+    private savedPOIs: Geohash[] = []
+    private route = inject(ActivatedRoute);
+    private shouldCenterOnLocation = true;
 
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
@@ -70,79 +95,97 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         profileImage: 'assets/images/pfp.png'
     });
 
-    constructor(private mapUpdateService: MapUpdateService) {
+    constructor(private mapUpdateService: MapUpdateService, private auth: Auth) {
     }
 
     async ngOnInit() {
-
         this.authSubscription = authState(this.auth).subscribe(async (user) => {
             if (user) {
-                // El usuario existe, cargamos sus datos
-                await this.loadUserData();
-
                 const mapContainer = this.elementRef.nativeElement.querySelector('#map');
                 if (mapContainer && !this.map) {
                     this.initMap();
                     this.setupLocationEventHandlers();
+                    this.route.queryParams.subscribe(params => {
+                        const lat = params['lat'];
+                        const lon = params['lon'];
+                        const name = params['name'];
 
-                    if (this.mapUpdateService.lastKnownLocation) {
-                        console.log('Finding location by cache');
-                        this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
-                    } else {console.log('Finding location by API');this.startLocating();}
+                        const hasPoiParams = lat && lon;
+                        this.shouldCenterOnLocation = !hasPoiParams;
+
+                        if (this.mapUpdateService.lastKnownLocation) {
+                            // Comportamiento por defecto si no hay params
+                            console.info('Finding location by cache');
+                            this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
+                        } else {
+                            // Comportamiento por defecto
+                            console.info('Finding location by API');
+                            this.startLocating();
+                        }
+
+                        if (hasPoiParams) {
+                            console.info('Cargando mapa con coordenadas específicas:', lat, lon);
+                            // Convertimos a número porque los params vienen como string
+                            const latNum = Number(lat);
+                            const lonNum = Number(lon);
+
+                            this.map.setView([latNum, lonNum], 15);
+
+                            if (name){
+                                const savedPoi = new POISearchModel(latNum, lonNum, name);
+                                this.selectPOI(savedPoi);
+                            } else {
+                                this.searchByCoords(latNum, lonNum);
+                            }
+                        }
+                    });
                 }
+                let currentList = await this.poiService.getPOIList(this.auth);
+                for (const item of currentList) {
+                    this.savedPOIs.push(item.geohash);
+                }
+
             } else {
                 console.warn("No hay sesión, redirigiendo...");
-                this.router.navigate(['']);
+                await this.router.navigate(['']);
             }
         });
 
-        this.mapUpdateService.marker$.subscribe((marker: MapMarker) => {
-            this.addMarker(marker.lat, marker.lon, marker.name);
-            if (this.map) this.map.setView([marker.lat, marker.lon], 14);
+        this.mapUpdateService.marker$.subscribe((marker: POISearchModel) => {
+            this.addMarker(new POISearchModel(marker.lat, marker.lon, marker.placeName));
+            if (this.map) {
+                this.map.panTo([marker.lat, marker.lon]);
+            }
         });
+
         this.mapUpdateService.snackbar$.subscribe((message: string) => {
-            this.showSnackbar(message);
+            this.showSnackbar(message, 'Ok');
         });
+
+        this.mapUpdateService.searchCoords$.subscribe((coords) => {
+            console.info('Recibidas coordenadas externas:', coords);
+            this.searchByCoords(coords.lat, coords.lon);
+        });
+
+        this.mapUpdateService.searchPlaceName$.subscribe((placeName) => {
+            console.info('Recibido topónimo:', placeName);
+            this.searchByPlaceName(placeName);
+        });
+    }
+
+    ngAfterViewInit() {
     }
 
     // Es buena práctica desuscribirse
-    ngOnDestroy() {
+    ngOnDestroy(): void {
         if (this.authSubscription) {
             this.authSubscription.unsubscribe();
         }
-    }
-
-    ngAfterViewInit() {  }
-
-    private async loadUserData(): Promise<void> {
-        const user = this.auth.currentUser;
-        if (!user) return;
-
-        try {
-            const userDoc = doc(this.firestore, `users/${user.uid}`);
-            const docSnap = await getDoc(userDoc);
-
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                this.userData.set({
-                    fullName: `${data['nombre'] || ''} ${data['apellidos'] || ''}`.trim(),
-                    email: data['email'] || user.email || '',
-                    profileImage: 'assets/images/pfp.png'
-                });
-            } else {
-                this.userData.set({
-                    fullName: '',
-                    email: user.email || '',
-                    profileImage: 'assets/images/pfp.png'
-                });
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-            this.userData.set({
-                fullName: '',
-                email: user.email || '',
-                profileImage: 'assets/images/pfp.png'
-            });
+        if (this.poiDialogRef) {
+            this.poiDialogRef.close({ignore: true});
+        }
+        if (this.loadingSnackBarRef) {
+            this.loadingSnackBarRef.dismiss()
         }
     }
 
@@ -150,7 +193,14 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         // Standard OpenStreetMap URL
         const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-        this.map = L.map('map').setView([39.9864, -0.0513], 6);
+        const southWest = L.latLng(-90, -180);
+        const northEast = L.latLng(90, 180);
+        const bounds = L.latLngBounds(southWest, northEast);
+
+        this.map = L.map('map', {
+            maxBounds: bounds,
+            maxBoundsViscosity: 1.0,
+        });
 
         this.map.whenReady(() => {
             this.map.invalidateSize();
@@ -158,8 +208,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         L.tileLayer(osmUrl, {
             maxZoom: 19,
+            minZoom: 3,
+            noWrap: true,
             attribution: '© OpenStreetMap contributors'
         }).addTo(this.map);
+
+        this.setupMapClickHandler();
     }
 
     private setupLocationEventHandlers() {
@@ -172,7 +226,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
             this.handleLocationSuccess(e.latlng);
 
-            this.showSnackbar('Ubicación encontrada');
+            this.showSnackbar('Ubicación encontrada.', '¡Bien!');
         });
 
         this.map.on('locationerror', (e: L.ErrorEvent) => {
@@ -244,23 +298,206 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
     }
 
-    private addMarker(lat: number, lng: number, name: string): void {
+    private deleteCurrentMarker(): void {
         if (this.currentMarker) {
-            this.map.removeLayer(this.currentMarker);
+            this.currentMarker.remove();
+            this.currentMarker = null;
         }
-
-        this.currentMarker = L.marker([lat, lng], {icon: customIcon})
-            .addTo(this.map)
-            .bindPopup("Encontrado: " + name)
-            .openPopup();
+        if (this.currentPOI()) {
+            this.currentPOI.set(null);
+        }
     }
 
-    private showSnackbar(msg: string): void {
-        this.snackBar.open(msg, 'Ok', {
+    private deleteMarkers(): void {
+        if (this.listMarkers && this.listMarkers.length > 0) {
+            for (const item of this.listMarkers) {
+                item.remove();
+            }
+            this.listMarkers = [];
+        }
+    }
+
+    private resetMapState(): void {
+        // Borrando elementos visuales
+        this.deleteCurrentMarker();
+        this.deleteMarkers();
+
+        // Borrando el estado interno
+        this.listPOIs = [];
+        this.currentIndex.set(-1);
+        this.poiDialogRef = null;
+    }
+
+    private async updateSaved(): Promise<void> {
+        this.savedPOIs = [];
+        let currentList = await this.poiService.getPOIList(this.auth);
+        for (const item of currentList) {
+            this.savedPOIs.push(item.geohash);
+        }
+    }
+
+    private addListMarkers(list: POISearchModel[]): void {
+        for (const marker of list) this.addMarker(marker);
+    }
+
+    private addMarker(poi: POISearchModel): L.Marker {
+        let marker = L.marker([poi.lat, poi.lon], {icon: customIcon})
+            .addTo(this.map)
+            .bindPopup("Encontrado: " + poi.placeName)
+            .openPopup();
+        if (!this.listMarkers) this.listMarkers = [marker];
+        else this.listMarkers.push(marker);
+        if (this.map) {
+            this.map.flyTo([poi.lat, poi.lon], this.map.getZoom(), {animate: true, duration: 0.8});
+        }
+        return marker;
+    }
+
+    private showSnackbar(msg: string, action: string, geohash?: Geohash): void {
+        const snackBarRef = this.snackBar.open(msg, action, {
             duration: 5000,
             horizontalPosition: 'left',
             verticalPosition: 'bottom',
         });
+
+        snackBarRef.onAction().subscribe(() => {
+            switch (action) {
+                case 'Ver':
+                    snackBarRef.dismiss();
+                    this.router.navigate(['/saved'], {queryParams: {id: geohash}});
+                    break;
+                default:
+                    snackBarRef.dismiss();
+            }
+        });
+    }
+
+    async searchByCoords(lat: number, lon: number): Promise<void> {
+        try {
+            // Mostrar spinner de carga
+            this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
+                horizontalPosition: 'left',
+                verticalPosition: 'bottom',
+                duration: 0
+            });
+
+            // Realizar búsqueda en la API (Reverse Geocoding)
+            const poiSearchResult: POISearchModel = await this.mapSearchService.searchPOIByCoords(lat, lon);
+
+            // Cerrar spinner de carga
+            if (this.loadingSnackBarRef) {
+                this.loadingSnackBarRef.dismiss();
+            }
+
+            this.selectPOI(poiSearchResult);
+
+        } catch (error: any) {
+            // Manejo de errores
+            if (this.loadingSnackBarRef) {
+                this.loadingSnackBarRef.dismiss();
+            }
+            console.error(`Error al buscar por coordenadas: ${error}`);
+            this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', {duration: 5000});
+        }
+    }
+
+    async searchByPlaceName(placeName: string): Promise<void> {
+        try {
+            // Mostrar spinner de carga
+            this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
+                horizontalPosition: 'left',
+                verticalPosition: 'bottom',
+                duration: 0
+            });
+
+            // Realizar búsqueda en la API (Geocode Search)
+            const poiSearchResult: POISearchModel[] = await this.mapSearchService.searchPOIByPlaceName(placeName);
+
+            // Cerrar spinner de carga
+            if (this.loadingSnackBarRef) {
+                this.loadingSnackBarRef.dismiss();
+            }
+
+            this.selectPOI(poiSearchResult);
+
+        } catch (error: any) {
+            // Manejo de errores
+            if (this.loadingSnackBarRef) {
+                this.loadingSnackBarRef.dismiss();
+            }
+            console.error(`Error al buscar por topónimo: ${error}`);
+            this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', {duration: 5000});
+        }
+    }
+
+    private setupMapClickHandler(): void {
+        this.map.on('click', async (e: L.LeafletMouseEvent) => {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+
+            await this.searchByCoords(lat, lon);
+        });
+    }
+
+    openPOIDetailsDialog(): void {
+        // abrir el diálogo con información y botones
+        this.poiDialogRef = this.dialog.open(PoiDetailsDialog, {
+            position: {bottom: '20px', left: '20px'},
+            width: '50vw',
+            maxWidth: '500px',
+            height: 'auto',
+            maxHeight: '15vh',
+            hasBackdrop: false,                   // que no oscurezca la pantalla
+            disableClose: true,                   // no se puede borrar presionando fuera
+            autoFocus: true,
+            restoreFocus: true,
+            enterAnimationDuration: '300ms',
+            exitAnimationDuration: '200ms',
+            data: {
+                currentPOI: this.currentPOI(),
+                totalPOIs: this.listPOIs.length,
+                currentIndex: this.currentIndex(),
+                savedPOIs: this.savedPOIs,
+            },
+        });
+
+        // función cuando se pulsa el botón de guardar
+        this.poiDialogRef.componentInstance.save.subscribe(() => {
+            this.poiDialogRef!.close({savePOI: true});
+        });
+
+        // función cuando se pulsa el botón de siguiente POI
+        this.poiDialogRef.componentInstance.next.subscribe(() => {
+            this.goToNextPOI();
+        });
+        // función cuando se pulsa el botón de POI anterior
+        this.poiDialogRef.componentInstance.prev.subscribe(() => {
+            this.goToPreviousPOI();
+        });
+
+        // Suscribirse al cierre de diálogo si se va a registrar el POI
+        this.poiDialogRef.afterClosed().subscribe(result => {
+            if (result?.ignore) return;
+            if (result?.savePOI && result.savePOI && this.currentPOI()) {
+                // llamada a guardar POI del poiService
+                let curPOI = <POISearchModel>this.currentPOI();
+                this.poiService.createPOI(curPOI);
+                let lat = curPOI.lat;
+                let lon = curPOI.lon;
+                let geohash = geohashForLocation([lat, lon], 7);
+                this.resetMapState();
+                this.updateSaved();
+                this.showSnackbar('El punto de interés se ha guardado correctamente.', 'Ver', geohash);
+            } else {
+                console.info('Cerrando el diálogo sin guardar...')
+                this.resetMapState();
+            }
+        });
+    }
+
+    closePOIDetailsDialog(): void {
+        const openDialogArray = this.dialog.openDialogs;
+        openDialogArray.at(0)?.close({ignore: true});
     }
 
     // Open profile menu with preloaded user data
@@ -270,12 +507,70 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             hasBackdrop: true,
             panelClass: 'profile-menu-dialog',
 
-            position: { top: '16px', right: '16px' },
+            position: {top: '16px', right: '16px'},
 
             maxWidth: 'none',
             enterAnimationDuration: '200ms',
             exitAnimationDuration: '200ms',
             data: this.userData()
         });
+    }
+
+    private goToPOIIndex(index: number): void {
+        if (!this.listPOIs.length || index < 0 || index >= this.listPOIs.length) return;
+
+        const nextPoi = this.listPOIs[index];
+        this.currentIndex.set(index);
+        this.currentPOI.set(nextPoi);
+
+        this.currentMarker = this.addMarker(nextPoi);
+
+        if (this.poiDialogRef && this.poiDialogRef.componentInstance) {
+            this.poiDialogRef.componentInstance.updatePOI(nextPoi, index, this.savedPOIs);
+        } else this.openPOIDetailsDialog();
+    }
+
+    public goToPreviousPOI(): void {
+        this.currentIndex.set((this.currentIndex() - 1 + this.listPOIs.length) % this.listPOIs.length);
+        this.goToPOIIndex(this.currentIndex());
+    }
+
+    public goToNextPOI(): void {
+        this.currentIndex.set((this.currentIndex() + 1) % this.listPOIs.length);
+        this.goToPOIIndex(this.currentIndex());
+    }
+
+    private selectPOI(poi: POISearchModel | POISearchModel[]): void {
+        // 1. Limpiar estado anterior
+        this.deleteCurrentMarker();
+        this.deleteMarkers();
+        this.closePOIDetailsDialog();
+
+        const isList = Array.isArray(poi);
+
+        // 2. Actualizar estado interno
+        this.listPOIs = isList ? poi : [poi];
+        this.currentIndex.set(0);
+
+        // Seleccionamos el primero para el diálogo y marcador actual
+        const firstPOI = isList ? poi[0] : poi;
+        this.currentPOI.set(firstPOI);
+
+        // 3. Gestión de Marcadores
+        if (isList) {
+            // Si es una lista, añadimos TODOS los marcadores al mapa
+            this.addListMarkers(poi);
+            // Y definimos el marcador actual como el primero de la lista visualmente
+            // (Asumiendo que addListMarkers rellena this.listMarkers en orden)
+            if (this.listMarkers && this.listMarkers.length > 0) {
+                this.currentMarker = this.listMarkers[0];
+            }
+        } else {
+            // Si es único, añadimos solo ese
+            this.currentMarker = this.addMarker(poi);
+        }
+
+        // 4. Abrir diálogo
+        this.openPOIDetailsDialog();
     }
 }

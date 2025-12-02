@@ -1,15 +1,33 @@
 // Revisar estos datos conforme avance el proyecto para que reflejen un objeto real
-import {UserModel} from '../data/UserModel'
+import {POIModel} from '../data/POIModel';
+import {geohashForLocation} from 'geofire-common';
 
 export const USER_TEST_DATA = [
     {email: "ramonejemplo@gmail.com", pwd: "Passw0rd!", nombre: "Ramón", apellidos: "García García"},
     {email: "mariaejemplo@gmail.com", pwd: "P4ssword!", nombre: "María", apellidos: "De Los Campos"},
 ]
 
-export const POI_TEST_DATA = [
-    {latitud: 38.345170, longitud: -0.481490, toponimo: "Alicante", alias: "", descripcion: "Ciudad que no frecuento"},
-    {latitud: 39.473910, longitud: -0.376388, toponimo: "Valencia", alias: "València", descripcion: "Ciudad que frecuento"},
-    {latitud: 39.985980, longitud: -0.037438, toponimo: "Castellón de la Plana", alias: "Castellón", descripcion: "Mi ciudad que no frecuento"},
+export const POI_TEST_DATA: POIModel[] = [
+    // POI A: Alicante
+    new POIModel(
+        38.345170,
+        -0.481490,
+        "Alicante",
+        geohashForLocation([38.345170, -0.481490], 7),
+        false,
+        "",
+        "Ciudad que no frecuento",
+    ),
+    // POI B: Valencia
+    new POIModel(
+        39.473910,
+        -0.376388,
+        "Valencia",
+        geohashForLocation([39.473910, -0.376388], 7),
+        false,
+        "València",
+        "Ciudad que frecuento",
+    ),
 ]
 
 export const VEHICLE_TEST_DATA = [

@@ -37,7 +37,7 @@ describe('Pruebas sobre POI', () => {
     const poiA: POIModel = POI_TEST_DATA[0];
     const poiB: POIModel = POI_TEST_DATA[1];
 
-    beforeEach(async () => {
+    beforeAll(async () => {
         await TestBed.configureTestingModule({
             providers: [
                 UserService,
@@ -60,7 +60,10 @@ describe('Pruebas sobre POI', () => {
 
         // iniciar sesión con ramón para todos los test
         await userService.login(ramon.email, ramon.pwd);
+    })
 
+    beforeEach(async () => {
+        TestBed.resetTestEnvironment();
         try {
             // 1. Referencia al documento
             const poiRef = doc(firestore,

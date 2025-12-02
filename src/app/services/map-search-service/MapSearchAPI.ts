@@ -1,15 +1,14 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import {firstValueFrom} from 'rxjs';
 import {GeoJSON} from 'leaflet';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
-import { MapSearchRepository } from './MapSearchRepository';
-import { POISearchModel } from "../../data/POISearchModel";
-import { LatitudeRangeError } from '../../errors/LatitudeRangeError';
-import { LongitudeRangeError } from '../../errors/LongitudeRangeError';
-import { CoordsNotFoundError } from '../../errors/CoordsNotFoundError';
-import { environment } from '../../../environments/environment';
+import {MapSearchRepository} from './MapSearchRepository';
+import {POISearchModel} from "../../data/POISearchModel";
+import {LatitudeRangeError} from '../../errors/LatitudeRangeError';
+import {LongitudeRangeError} from '../../errors/LongitudeRangeError';
+import {CoordsNotFoundError} from '../../errors/CoordsNotFoundError';
+import {environment} from '../../../environments/environment';
 import {PlaceNameNotFoundError} from '../../errors/PlaceNameNotFoundError';
-import {DBAccessError} from '../../errors/DBAccessError';
 import {APIAccessError} from '../../errors/APIAccessError';
 
 @Injectable({
@@ -22,7 +21,8 @@ export class MapSearchAPI implements MapSearchRepository {
         'Accept': 'application/json',
     });
 
-    constructor(private http: HttpClient) {}
+    constructor(private http: HttpClient) {
+    }
 
     async searchPOIByCoords(lat: number, lon: number): Promise<POISearchModel> {
         // Validar rangos
@@ -37,7 +37,8 @@ export class MapSearchAPI implements MapSearchRepository {
         const size = 1;
 
         // Parámetros para la llamada a la API de Geocode.
-        const params: HttpParams = new HttpParams({ fromObject: {
+        const params: HttpParams = new HttpParams({
+            fromObject: {
                 api_key: this.apiKey,
                 'point.lat': lat.toString(),
                 'point.lon': lon.toString(),
@@ -103,8 +104,6 @@ export class MapSearchAPI implements MapSearchRepository {
 
         // Lista de POI recibidos (de tamaño "size")
         const listaPOI: POISearchModel[] = this.obtainDataFromGeoJsonFeatures(respuesta, size);
-
-        console.log(listaPOI);
         if (listaPOI.length === 0) {
             throw new PlaceNameNotFoundError(placeName);
         }
@@ -120,7 +119,7 @@ export class MapSearchAPI implements MapSearchRepository {
      * @returns Respuesta de la API
      */
     private async getDataFromAPI<T>(url: string, headers: HttpHeaders, params: HttpParams): Promise<T> {
-        return firstValueFrom(this.http.get<T>(url, { headers, params }));
+        return firstValueFrom(this.http.get<T>(url, {headers, params}));
     }
 
     /**
@@ -153,7 +152,7 @@ export class MapSearchAPI implements MapSearchRepository {
             // Validar datos del feature actual
             if (!placeName || placeName.trim() === '' || !coords || coords.length < 2) {
                 continue; // Salta este feature
-                }
+            }
 
             // Añadir al resultado
             result.push(new POISearchModel(coords[1], coords[0], placeName));

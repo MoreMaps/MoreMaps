@@ -46,24 +46,40 @@ describe('Pruebas sobre POI', () => {
                 {provide: USER_REPOSITORY, useClass: UserDB},
                 {provide: POI_REPOSITORY, useClass: POIDB},
                 {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
-                appConfig.providers]
+                appConfig.providers],
+
+            // 👇 THIS IS THE KEY FIX 👇
+            // This prevents Angular from destroying the injector after the first test,
+            // allowing your 'userService' and 'auth' variables to survive the whole suite.
+            teardown: { destroyAfterEach: false }
         }).compileComponents();
 
-        // inyección de los servicios
+        // Injection (Done once)
         userService = TestBed.inject(UserService);
         poiService = TestBed.inject(POIService);
         mapSearchService = TestBed.inject(MapSearchService);
-
-        // inyección de Firestore, Auth
         firestore = TestBed.inject(Firestore);
         auth = TestBed.inject(Auth);
 
-        // iniciar sesión con ramón para todos los test
+        // Login (Done once - saves you from Rate Limiting!)
         await userService.login(ramon.email, ramon.pwd);
-    })
+    });
+
+    // Keep your beforeEach for data setup only
+    beforeEach(async () => {
+        // Do NOT configure TestBed here.
+        // Just do your data setup (creating the POI document).
+        try {
+            const poiRef = doc(firestore, `/items/${auth.currentUser?.uid}/pois/${poiA.geohash}`);
+            poiRegistrado = new POIModel(poiA.lat, poiA.lon, poiA.placeName, poiA.geohash, false, poiA.alias, poiA.description);
+            await setDoc(poiRef, poiRegistrado.toJSON(), {merge: true});
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    });
 
     beforeEach(async () => {
-        TestBed.resetTestEnvironment();
         try {
             // 1. Referencia al documento
             const poiRef = doc(firestore,

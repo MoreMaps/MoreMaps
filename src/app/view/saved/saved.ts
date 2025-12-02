@@ -98,7 +98,9 @@ export class SavedItemsComponent implements OnDestroy{
             if (!isDesktopNow && this.selectedItem) {
                 this.openDialogForItem(this.selectedItem);
             } else if (isDesktopNow) {
-                this.dialog.closeAll();
+                if (this.dialog.openDialogs.length>0)
+                    for (const dialogRef of this.dialog.openDialogs)
+                        dialogRef.close({ignore: true});
             }
         });
     }
@@ -210,6 +212,8 @@ export class SavedItemsComponent implements OnDestroy{
 
         dialogRef.afterClosed().subscribe((result) => {
             if (result) this.handleDialogActions(result);
+            if (result?.ignore) return;
+            else this.deselectItem();
         });
     }
 

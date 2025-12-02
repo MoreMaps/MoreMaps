@@ -1,4 +1,13 @@
-import {AfterViewInit, Component, ElementRef, inject, OnInit, signal, ViewEncapsulation} from '@angular/core';
+import {
+    AfterViewInit,
+    Component,
+    ElementRef,
+    inject,
+    OnInit,
+    signal,
+    ViewChild,
+    ViewEncapsulation
+} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import * as L from 'leaflet';
 import {MapUpdateService} from '../../services/map-update-service/map-updater';
@@ -21,6 +30,9 @@ import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
 import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
 import {Geohash, geohashForLocation} from 'geofire-common';
+import {MatIcon} from '@angular/material/icon';
+import {MatFabButton} from '@angular/material/button';
+import {MatTooltip} from '@angular/material/tooltip';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -43,6 +55,13 @@ const customIcon = L.icon({
     popupAnchor: [0, -32]
 });
 
+const selectedIcon = L.icon({
+    iconUrl: 'assets/images/poi_active.png',
+    iconSize: [27, 35],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+})
+
 @Component({
     selector: 'app-map',
     templateUrl: './map.html',
@@ -56,7 +75,10 @@ const customIcon = L.icon({
         MatDialogModule,
         NavbarComponent,
         ThemeToggleComponent,
-        ProfileButtonComponent
+        ProfileButtonComponent,
+        MatIcon,
+        MatFabButton,
+        MatTooltip
     ],
     providers: [
         MapSearchService,
@@ -66,12 +88,13 @@ const customIcon = L.icon({
     ],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
+    @ViewChild('mapContainer') private mapContainer!: ElementRef<HTMLDivElement>;
     private router = inject(Router);
-    private map!: L.Map;
-    protected listMarkers: L.Marker[] | null = null;
+    private map: L.Map | null = null;
+    protected listMarkers: L.Marker[] = [];
     protected currentMarker: L.Marker | null = null;
     protected currentPOI = signal<POISearchModel | null>(null);
-    protected listPOIs: POISearchModel[] = [];
+    protected listPOIs = signal<POISearchModel[]>([]);
     protected currentIndex = signal<number>(-1);
     private snackBar = inject(MatSnackBar);
     private elementRef = inject(ElementRef);
@@ -88,8 +111,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
 
-    // Signal for user data
-    userData = signal<UserData>({
+    protected userData = signal<UserData>({
         fullName: '',
         email: '',
         profileImage: 'assets/images/pfp.png'
@@ -100,10 +122,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
     async ngOnInit() {
         this.mapUpdateService.marker$.subscribe((marker: POISearchModel) => {
-            this.addMarker(new POISearchModel(marker.lat, marker.lon, marker.placeName));
-            if (this.map) {
-                this.map.panTo([marker.lat, marker.lon]);
-            }
+            this.selectPOI(new POISearchModel(marker.lat, marker.lon, marker.placeName));
         });
 
         this.mapUpdateService.snackbar$.subscribe((message: string) => {
@@ -155,31 +174,42 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         if (this.loadingSnackBarRef) {
             this.loadingSnackBarRef.dismiss()
         }
+
+        if (this.map) {
+            this.map.remove();
+            this.map = null;
+        }
     }
 
     private initMap() {
-        // Standard OpenStreetMap URL
-        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        if (this.map) return; // extra prevention
 
+        // Limit config
         const southWest = L.latLng(-90, -180);
         const northEast = L.latLng(90, 180);
         const bounds = L.latLngBounds(southWest, northEast);
 
-        this.map = L.map('map', {
+        // Initialize map
+        this.map = L.map(this.mapContainer.nativeElement, {
             maxBounds: bounds,
             maxBoundsViscosity: 1.0,
+            zoomControl: false // Opcional: si quieres mover los controles de zoom
         });
 
-        this.map.whenReady(() => {
-            this.map.invalidateSize();
-        });
-
+        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
         L.tileLayer(osmUrl, {
             maxZoom: 19,
             minZoom: 3,
             noWrap: true,
             attribution: '© OpenStreetMap contributors'
         }).addTo(this.map);
+
+        // Make sure Leaflet recalculates the container's size
+        this.map.whenReady(() => {
+            setTimeout(() => {
+                if (this.map) this.map.invalidateSize();
+            }, 100);
+        });
 
         this.setupMapClickHandler();
         this.setupLocationEventHandlers();
@@ -206,8 +236,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             }
 
             // Cuando el mapa esté listo, empiezo la búsqueda
-            this.map.whenReady(() => {
-                this.map.invalidateSize();
+            this.map!.whenReady(() => {
+                this.map!.invalidateSize();
 
                 // si tengo lan y lon...
                 if (hasPoiParams) {
@@ -233,7 +263,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private setupLocationEventHandlers() {
-        this.map.on('locationfound', (e: L.LocationEvent) => {
+        if (this.map) this.map.on('locationfound', (e: L.LocationEvent) => {
             this.mapUpdateService.lastKnownLocation = e.latlng;
 
             if (this.loadingSnackBarRef) {
@@ -245,7 +275,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.showSnackbar('Ubicación encontrada.', '¡Bien!');
         });
 
-        this.map.on('locationerror', (e: L.ErrorEvent) => {
+        if (this.map) this.map.on('locationerror', (e: L.ErrorEvent) => {
             if (this.loadingSnackBarRef) {
                 this.loadingSnackBarRef.dismiss();
             }
@@ -276,7 +306,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         // 2. Limpiar marcador anterior
         if (this.userLocationMarker) {
-            this.map.removeLayer(this.userLocationMarker);
+            if (this.map) this.map.removeLayer(this.userLocationMarker);
         }
 
         // 3. Crear icono
@@ -292,10 +322,10 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.userLocationMarker = L.marker(latlng, {
             icon: pulsingIcon,
             zIndexOffset: 1000
-        }).addTo(this.map);
+        }).addTo(this.map!);
 
         // 5. Centrar mapa
-        this.map.setView(latlng, 15);
+        if (this.map) this.map.setView(latlng, 15);
     }
 
     private startLocating() {
@@ -305,7 +335,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             duration: 0
         });
 
-        this.map.locate({
+        if (this.map) this.map.locate({
             setView: false,
             maxZoom: 16,
             watch: false,
@@ -325,12 +355,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private deleteMarkers(): void {
-        if (this.listMarkers && this.listMarkers.length > 0) {
-            for (const item of this.listMarkers) {
-                item.remove();
-            }
-            this.listMarkers = [];
-        }
+        this.listMarkers!.forEach(marker => marker.remove());
+        this.listMarkers = [];
     }
 
     private resetMapState(): void {
@@ -339,7 +365,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.deleteMarkers();
 
         // Borrando el estado interno
-        this.listPOIs = [];
+        this.listPOIs.set([]);
         this.currentIndex.set(-1);
         this.poiDialogRef = null;
     }
@@ -352,21 +378,47 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         }
     }
 
-    private addListMarkers(list: POISearchModel[]): void {
-        for (const marker of list) this.addMarker(marker);
-    }
-
     private addMarker(poi: POISearchModel): L.Marker {
+        if (!this.map) throw new Error("El mapa no está inicializado");
+
+        // 1. Solo crea y añade el marcador, NO mueve el mapa
         let marker = L.marker([poi.lat, poi.lon], {icon: customIcon})
             .addTo(this.map)
-            .bindPopup("Encontrado: " + poi.placeName)
-            .openPopup();
-        if (!this.listMarkers) this.listMarkers = [marker];
-        else this.listMarkers.push(marker);
-        if (this.map) {
-            this.map.flyTo([poi.lat, poi.lon], this.map.getZoom(), {animate: true, duration: 0.8});
-        }
+            .bindPopup("Encontrado: " + poi.placeName);
+
+        // 2. Lo guardamos en el array local
+        this.listMarkers!.push(marker);
+
         return marker;
+    }
+
+    private addListMarkers(list: POISearchModel[]): void {
+        for (const marker of list) {
+            this.addMarker(marker);
+        }
+    }
+
+    private fitMapToMarkers(): void {
+        if (!this.listMarkers || this.listMarkers.length === 0) return;
+
+        // Caso 1: Solo hay un marcador
+        if (this.listMarkers.length === 1) {
+            const marker = this.listMarkers[0];
+            if (this.map) this.map.flyTo(marker.getLatLng(), 16, {animate: true, duration: 1});
+            marker.openPopup();
+            return;
+        }
+
+        // Caso 2: Hay múltiples marcadores
+        const group = L.featureGroup(this.listMarkers);
+
+        // fitBounds hace el zoom automático para que quepan todos
+        if (this.map) this.map.fitBounds(group.getBounds(), {
+            padding: [50, 50], // Margen en píxeles alrededor de los marcadores
+            maxZoom: 16,       // Evita que haga demasiado zoom si los puntos están muy cerca
+            animate: true,
+            duration: 1
+        });
     }
 
     private showSnackbar(msg: string, action: string, geohash?: Geohash): void {
@@ -448,7 +500,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private setupMapClickHandler(): void {
-        this.map.on('click', async (e: L.LeafletMouseEvent) => {
+        if (this.map) this.map.on('click', async (e: L.LeafletMouseEvent) => {
             const lat = e.latlng.lat;
             const lon = e.latlng.lng;
 
@@ -472,7 +524,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             exitAnimationDuration: '200ms',
             data: {
                 currentPOI: this.currentPOI(),
-                totalPOIs: this.listPOIs.length,
+                totalPOIs: this.listPOIs().length,
                 currentIndex: this.currentIndex(),
                 savedPOIs: this.savedPOIs,
             },
@@ -534,26 +586,29 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private goToPOIIndex(index: number): void {
-        if (!this.listPOIs.length || index < 0 || index >= this.listPOIs.length) return;
+        const list = this.listPOIs();
+        if (!list.length || index < 0 || index >= list.length) return;
 
-        const nextPoi = this.listPOIs[index];
+        const nextPoi = list[index];
         this.currentIndex.set(index);
         this.currentPOI.set(nextPoi);
 
-        this.currentMarker = this.addMarker(nextPoi);
+        this.highlightMarker(index);
 
         if (this.poiDialogRef && this.poiDialogRef.componentInstance) {
             this.poiDialogRef.componentInstance.updatePOI(nextPoi, index, this.savedPOIs);
-        } else this.openPOIDetailsDialog();
+        }
+
+        if (this.map) this.map.panTo([nextPoi.lat, nextPoi.lon], {animate: true, duration: 0.5});
     }
 
     public goToPreviousPOI(): void {
-        this.currentIndex.set((this.currentIndex() - 1 + this.listPOIs.length) % this.listPOIs.length);
+        this.currentIndex.set((this.currentIndex() - 1 + this.listPOIs().length) % this.listPOIs().length);
         this.goToPOIIndex(this.currentIndex());
     }
 
     public goToNextPOI(): void {
-        this.currentIndex.set((this.currentIndex() + 1) % this.listPOIs.length);
+        this.currentIndex.set((this.currentIndex() + 1) % this.listPOIs().length);
         this.goToPOIIndex(this.currentIndex());
     }
 
@@ -564,30 +619,65 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.closePOIDetailsDialog();
 
         const isList = Array.isArray(poi);
+        const newData = isList ? poi : [poi];
 
         // 2. Actualizar estado interno
-        this.listPOIs = isList ? poi : [poi];
+        this.listPOIs.set(newData)
         this.currentIndex.set(0);
-
-        // Seleccionamos el primero para el diálogo y marcador actual
-        const firstPOI = isList ? poi[0] : poi;
-        this.currentPOI.set(firstPOI);
+        this.currentPOI.set(newData[0]);
 
         // 3. Gestión de Marcadores
         if (isList) {
             // Si es una lista, añadimos TODOS los marcadores al mapa
-            this.addListMarkers(poi);
-            // Y definimos el marcador actual como el primero de la lista visualmente
-            // (Asumiendo que addListMarkers rellena this.listMarkers en orden)
-            if (this.listMarkers && this.listMarkers.length > 0) {
-                this.currentMarker = this.listMarkers[0];
-            }
+            this.addListMarkers(newData); // usa customicon internamente
+            this.currentMarker = this.listMarkers![0];
         } else {
             // Si es único, añadimos solo ese
-            this.currentMarker = this.addMarker(poi);
+            this.currentMarker = this.addMarker(poi as POISearchModel);
         }
 
-        // 4. Abrir diálogo
+        this.highlightMarker(0);
+
+        // 4. Ajustar el zoom una sola vez, al final
+        this.fitMapToMarkers();
+
+        // 5. Abrir diálogo
         this.openPOIDetailsDialog();
+    }
+
+    public centerOnUser(): void {
+        if (!this.map) return;
+
+        if (this.userLocationMarker) {
+            this.map.flyTo(this.userLocationMarker.getLatLng(), 16, {
+                animate: true,
+                duration: 1
+            });
+        } else if (this.mapUpdateService.lastKnownLocation) {
+            this.map.flyTo(this.mapUpdateService.lastKnownLocation, 16);
+        } else {
+            this.startLocating();
+        }
+    }
+
+    public refreshLocation(): void {
+        this.startLocating();
+    }
+
+    private highlightMarker(index: number): void {
+        if (!this.listMarkers || this.listMarkers.length === 0) return;
+
+        // 1. Resetear TODOS los marcadores al estado normal
+        this.listMarkers.forEach(marker => {
+            marker.setIcon(customIcon);
+            marker.setZIndexOffset(0);
+        });
+
+        const activeMarker = this.listMarkers[index];
+        if (activeMarker) {
+            activeMarker.setIcon(selectedIcon);
+            activeMarker.setZIndexOffset(700);
+        }
+        activeMarker.openPopup();
     }
 }

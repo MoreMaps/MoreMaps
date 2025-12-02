@@ -65,11 +65,8 @@ export class NavbarComponent {
             if (result) {
                 // Se navega al mapa en caso de no estar ahí
                 if (this.router.url !== '/map') {
-                    this.navigateTo('/map');
+                    this.router.navigate(['/map'], {queryParams: {lat: result.lat, lon: result.lon}});
                 }
-
-                // Se envían las coordenadas al servicio
-                this.mapUpdateService.triggerCoordinateSearch(result.lat, result.lon);
             }
         });
     }
@@ -89,11 +86,8 @@ export class NavbarComponent {
             if (placeName) {
                 // Se navega al mapa en caso de no estar ahí
                 if (this.router.url !== '/map') {
-                    this.navigateTo('/map');
+                    this.router.navigate(['/map'], {queryParams: {name: placeName}});
                 }
-
-                // Se envían las coordenadas al servicio
-                this.mapUpdateService.triggerPlacenameSearch(placeName);
             }
         });
     }

@@ -99,58 +99,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     async ngOnInit() {
-        this.authSubscription = authState(this.auth).subscribe(async (user) => {
-            if (user) {
-                const mapContainer = this.elementRef.nativeElement.querySelector('#map');
-                if (mapContainer && !this.map) {
-                    this.initMap();
-                    this.setupLocationEventHandlers();
-                    this.route.queryParams.subscribe(params => {
-                        const lat = params['lat'];
-                        const lon = params['lon'];
-                        const name = params['name'];
-
-                        const hasPoiParams = lat && lon;
-                        this.shouldCenterOnLocation = !hasPoiParams;
-
-                        if (this.mapUpdateService.lastKnownLocation) {
-                            // Comportamiento por defecto si no hay params
-                            console.info('Finding location by cache');
-                            this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
-                        } else {
-                            // Comportamiento por defecto
-                            console.info('Finding location by API');
-                            this.startLocating();
-                        }
-
-                        if (hasPoiParams) {
-                            console.info('Cargando mapa con coordenadas específicas:', lat, lon);
-                            // Convertimos a número porque los params vienen como string
-                            const latNum = Number(lat);
-                            const lonNum = Number(lon);
-
-                            this.map.setView([latNum, lonNum], 15);
-
-                            if (name){
-                                const savedPoi = new POISearchModel(latNum, lonNum, name);
-                                this.selectPOI(savedPoi);
-                            } else {
-                                this.searchByCoords(latNum, lonNum);
-                            }
-                        }
-                    });
-                }
-                let currentList = await this.poiService.getPOIList(this.auth);
-                for (const item of currentList) {
-                    this.savedPOIs.push(item.geohash);
-                }
-
-            } else {
-                console.warn("No hay sesión, redirigiendo...");
-                await this.router.navigate(['']);
-            }
-        });
-
         this.mapUpdateService.marker$.subscribe((marker: POISearchModel) => {
             this.addMarker(new POISearchModel(marker.lat, marker.lon, marker.placeName));
             if (this.map) {
@@ -174,6 +122,26 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
+        this.authSubscription = authState(this.auth).subscribe(async (user) => {
+            if (user) {
+                const mapContainer = this.elementRef.nativeElement.querySelector('#map');
+                if (mapContainer && !this.map) {
+                    if (!this.map) {
+                        this.initMap();
+                        this.handleInitialLocationLogic();
+                    }
+
+                }
+                let currentList = await this.poiService.getPOIList(this.auth);
+                for (const item of currentList) {
+                    this.savedPOIs.push(item.geohash);
+                }
+
+            } else {
+                console.warn("No hay sesión, redirigiendo...");
+                await this.router.navigate(['']);
+            }
+        });
     }
 
     // Es buena práctica desuscribirse
@@ -214,6 +182,54 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         }).addTo(this.map);
 
         this.setupMapClickHandler();
+        this.setupLocationEventHandlers();
+    }
+
+    private handleInitialLocationLogic() {
+        this.route.queryParams.subscribe(params => {
+            const lat = params['lat'];
+            const lon = params['lon'];
+            const name = params['name'];
+
+            const latNum = parseFloat(lat);
+            const lonNum = parseFloat(lon);
+            const validCoords = !isNaN(latNum) && !isNaN(lonNum);
+
+            // Si tengo longitud y latitud, significa que tengo que hacer una búsqueda
+            const hasPoiParams = latNum && lonNum;
+            this.shouldCenterOnLocation = !hasPoiParams;
+
+            if (this.mapUpdateService.lastKnownLocation) {
+                this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
+            } else {
+                this.startLocating();
+            }
+
+            // Cuando el mapa esté listo, empiezo la búsqueda
+            this.map.whenReady(() => {
+                this.map.invalidateSize();
+
+                // si tengo lan y lon...
+                if (hasPoiParams) {
+                    console.info('Cargando mapa con coordenadas específicas:', lat, lon);
+                    // si tengo nombre también, significa que estoy mirando un POI guardado
+                    if (name) {
+                        const savedPoi = new POISearchModel(latNum, lonNum, name);
+                        this.selectPOI(savedPoi);
+                    } else { // si no, es una búsqueda
+                        console.log(latNum + ' - ' + lonNum);
+                        this.searchByCoords(latNum, lonNum);
+                    }
+                } else {
+                    // si no tengo lan y lon, pero tengo name, es búsqueda por topónimo
+                    if (name) {
+                        console.log(name);
+                        this.searchByPlaceName(name);
+                    }
+                }
+            })
+
+        });
     }
 
     private setupLocationEventHandlers() {
@@ -373,6 +389,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     async searchByCoords(lat: number, lon: number): Promise<void> {
+        if (isNaN(lat) || isNaN(lon)) return;
         try {
             // Mostrar spinner de carga
             this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {

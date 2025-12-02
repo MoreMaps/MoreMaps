@@ -1,0 +1,19 @@
+<div class="add-poi-container">
+    <h2 class="dialog-title">Añadir punto de interés</h2>
+    <p class="dialog-subtitle">Selecciona el método que prefieras</p>
+
+    <div class="actions-container">
+        <button class="method-btn" (click)="selectMethod('coords')">
+            <mat-icon>location_searching</mat-icon>
+            <span>Buscar por coordenadas</span>
+        </button>
+
+        <button class="method-btn" (click)="selectMethod('name')">
+            <mat-icon>search</mat-icon> <span>Buscar por topónimo</span>
+        </button>
+    </div>
+
+    <button class="cancel-btn" (click)="selectMethod(null)">
+        Cancelar
+    </button>
+</div>

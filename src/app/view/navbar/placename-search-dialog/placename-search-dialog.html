@@ -1,0 +1,34 @@
+<div class="placename-dialog-container">
+    <h2 class="dialog-title">Añadir punto de interés</h2>
+    <p class="dialog-subtitle">Introduce el topónimo.</p>
+
+    <form [formGroup]="placeForm" class="form-container" (ngSubmit)="onSearch()">
+
+        <mat-form-field appearance="fill" class="full-width custom-field">
+            <mat-label>Topónimo</mat-label>
+            <input matInput type="text" formControlName="placeName" placeholder="Texto">
+
+            @if (placeForm.get('placeName')?.value) {
+                <button mat-icon-button matSuffix type="button"
+                        (click)="clearField($event)" aria-label="Clear">
+                    <mat-icon>close</mat-icon>
+                </button>
+            }
+
+            @if (placeForm.get('placeName')?.hasError('required') && placeForm.get('placeName')?.touched) {
+                <mat-error>El nombre es obligatorio</mat-error>
+            }
+        </mat-form-field>
+
+    </form>
+
+    <div class="actions-container">
+        <button class="search-btn" (click)="onSearch()" [disabled]="placeForm.invalid">
+            Buscar
+        </button>
+
+        <button class="cancel-btn" (click)="onCancel()">
+            Cancelar
+        </button>
+    </div>
+</div>

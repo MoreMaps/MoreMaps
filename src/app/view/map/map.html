@@ -1,9 +1,38 @@
-<div id="map" style="height: 100%;width: 100vw;"></div>
+<div class="map-wrapper">
+    <div id="map" #mapContainer style="height: 100%;width: 100vw;"></div>
+</div>
+
+<div class="location-controls">
+    <button mat-fab class="map-fab small-fab"
+            (click)="refreshLocation()"
+            matTooltip="Actualizar mi ubicación">
+        <mat-icon>
+            <svg viewBox="0 0 24 24" width="24px" height="24px" focusable="false">
+                <defs>
+                    <mask id="refreshMask">
+                        <rect width="100%" height="100%" fill="white"/>
+
+                        <g fill="black">
+                            <path d="M12 6.5c1.93 0 3.5 1.57 3.5 3.5h-1.5l2.25 2.25 2.25-2.25h-1.5c0-2.76-2.24-5-5-5-.94 0-1.82.26-2.58.7l1.1 1.1c.44-.19.93-.3 1.48-.3z"/>
+                            <path d="M12 12.5c-1.93 0-3.5-1.57-3.5-3.5h1.5l-2.25-2.25-2.25 2.25h1.5c0 2.76 2.24 5 5 5 .94 0 1.82-.26 2.58-.7l-1.1-1.1c-.44.19-.93.3-1.48.3z"/>
+                        </g>
+                    </mask>
+                </defs>
+
+                <path d="M12 2C7.5 2 4 5.5 4 9.5c0 5.5 8 13.5 8 13.5s8-8 8-13.5C20 5.5 16.5 2 12 2z"
+                      fill="currentColor"
+                      mask="url(#refreshMask)"/>
+            </svg>
+        </mat-icon> </button>
+
+    <button mat-fab class="map-fab small-fab"
+            (click)="centerOnUser()"
+            matTooltip="Centrar mapa en mí">
+        <mat-icon>my_location</mat-icon> </button>
+</div>
 
 <!-- Profile Button -->
-<button class="profile-button" (click)="openProfileMenu()">
-    <img ngSrc="assets/images/pfp.png" alt="Profile" class="profile-img" height="75" width="75">
-</button>
+<profile-button></profile-button>
 
 <!-- Navbar -->
 <app-navbar></app-navbar>

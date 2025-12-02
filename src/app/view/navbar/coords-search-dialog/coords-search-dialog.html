@@ -1,0 +1,56 @@
+<div class="coords-dialog-container">
+    <h2 class="dialog-title">Añadir punto de interés</h2>
+    <p class="dialog-subtitle">Introduce las coordenadas.</p>
+
+    <form [formGroup]="coordsForm" class="form-container" (ngSubmit)="onSearch()" >
+
+        <mat-form-field appearance="fill" class="full-width custom-field">
+            <mat-label>Longitud</mat-label>
+            <input matInput type="number" formControlName="lon" placeholder="0.00" step="0.01">
+
+            @if (coordsForm.get('lon')?.value) {
+                <button mat-icon-button matSuffix type="button"
+                        (click)="clearField('lon', $event)" aria-label="Clear">
+                    <mat-icon>close</mat-icon>
+                </button>
+            }
+
+            <mat-hint>Número entre -180 y 180</mat-hint>
+            @if (coordsForm.get('lon')?.hasError('min') || coordsForm.get('lon')?.hasError('max')) {
+                <mat-error>
+                    Longitud inválida
+                </mat-error>
+            }
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width custom-field">
+            <mat-label>Latitud</mat-label>
+            <input matInput type="number" formControlName="lat" placeholder="0.00" step="0.01">
+
+            @if (coordsForm.get('lat')?.value) {
+                <button mat-icon-button matSuffix type="button"
+                        (click)="clearField('lat', $event)" aria-label="Clear">
+                    <mat-icon>close</mat-icon>
+                </button>
+            }
+
+            <mat-hint>Número entre -90 y 90</mat-hint>
+            @if (coordsForm.get('lat')?.hasError('min') || coordsForm.get('lat')?.hasError('max')) {
+                <mat-error>
+                    Latitud inválida
+                </mat-error>
+            }
+        </mat-form-field>
+
+        <div class="actions-container">
+            <button class="search-btn" type="submit" [disabled]="coordsForm.invalid">
+                Buscar
+            </button>
+
+            <button class="cancel-btn" type="button" (click)="onCancel()">
+                Cancelar
+            </button>
+        </div>
+
+    </form>
+</div>

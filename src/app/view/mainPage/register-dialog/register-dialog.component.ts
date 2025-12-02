@@ -33,7 +33,6 @@ import {UserDB} from '../../../services/User/UserDB';
     ],
     providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}],
     templateUrl: './register-dialog.component.html',
-    styleUrls: ['./register-dialog.component.css']
 })
 export class RegisterDialogComponent {
     @Output() switchToLogin = new EventEmitter<void>();

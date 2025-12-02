@@ -2,14 +2,14 @@
     <h2 class="dialog-title">Añadir punto de interés</h2>
     <p class="dialog-subtitle">Introduce el topónimo.</p>
 
-    <form [formGroup]="placeForm" class="form-container">
+    <form [formGroup]="placeForm" class="form-container" (ngSubmit)="onSearch()">
 
         <mat-form-field appearance="fill" class="full-width custom-field">
             <mat-label>Topónimo</mat-label>
             <input matInput type="text" formControlName="placeName" placeholder="Texto">
 
             @if (placeForm.get('placeName')?.value) {
-                <button mat-icon-button matSuffix
+                <button mat-icon-button matSuffix type="button"
                         (click)="clearField($event)" aria-label="Clear">
                     <mat-icon>close</mat-icon>
                 </button>

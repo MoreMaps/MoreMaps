@@ -63,10 +63,7 @@ export class NavbarComponent {
 
         coordsDialogRef.afterClosed().subscribe((result: { lat: number, lon: number } | null) => {
             if (result) {
-                // Se navega al mapa en caso de no estar ahí
-                if (this.router.url !== '/map') {
-                    this.router.navigate(['/map'], {queryParams: {lat: result.lat, lon: result.lon}});
-                }
+                this.router.navigate(['/map'], {queryParams: {lat: result.lat, lon: result.lon}});
             }
         });
     }
@@ -84,10 +81,7 @@ export class NavbarComponent {
 
         placeNameDialogRef.afterClosed().subscribe((placeName: string | null) => {
             if (placeName) {
-                // Se navega al mapa en caso de no estar ahí
-                if (this.router.url !== '/map') {
-                    this.router.navigate(['/map'], {queryParams: {name: placeName}});
-                }
+                this.router.navigate(['/map'], {queryParams: {name: placeName}});
             }
         });
     }

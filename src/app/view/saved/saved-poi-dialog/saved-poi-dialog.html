@@ -12,10 +12,10 @@
                         <p class="dialog-subtitle">{{ displayData.item.placeName }}</p>
                     }
                     <p class="dialog-coords">
-                        ({{ displayData.item.lat || '0.00' | number:'1.2-4' }}, {{ displayData.item.lon || '0.00' | number:'1.2-4' }})
+                        ({{ displayData.item.lat || '0.00' | number:'1.2-6' }}, {{ displayData.item.lon || '0.00' | number:'1.2-6' }})
                     </p>
                 } @else {
-                    <h2 class="dialog-title"> Editar POI</h2>
+                    <h2 class="dialog-title">Editar lugar</h2>
                     <p class="dialog-subtitle">Modifica los detalles</p>
                 }
             </div>

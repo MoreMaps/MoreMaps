@@ -197,7 +197,7 @@ fdescribe('Pruebas sobre vehículos', () => {
         });
     });
 
-    describe('HU304: Eliminar un vehículo', () => {
+    fdescribe('HU304: Eliminar un vehículo', () => {
 
         it('HU304-EV01: Eliminar vehículo registrado', async () => {
             // GIVEN

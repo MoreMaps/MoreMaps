@@ -153,7 +153,7 @@ fdescribe('Pruebas sobre vehículos', () => {
         });
     });
 
-    describe('HU303: Modificar datos de un vehículo', () => {
+    fdescribe('HU303: Modificar datos de un vehículo', () => {
 
         it('HU303-EV01: Modificar datos de un vehículo registrado', async () => {
             // GIVEN

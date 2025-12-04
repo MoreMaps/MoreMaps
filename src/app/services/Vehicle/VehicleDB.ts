@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {VehicleRepository} from './VehicleRepository';
 import {Auth} from '@angular/fire/auth';
 import {VehicleModel} from '../../data/VehicleModel';
-import {collection, doc, Firestore, getDoc, getDocs, setDoc} from '@angular/fire/firestore';
+import {collection, doc, Firestore, getDoc, getDocs, query, setDoc, where} from '@angular/fire/firestore';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 
@@ -21,6 +21,12 @@ export class VehicleDB implements VehicleRepository {
     }
 
     async updateVehicle(user: Auth, matricula: string, update: Partial<VehicleModel>): Promise<boolean> {
+        // TODO: DESCOMENTAR EN MERGE CON IT03
+        /*
+        this.safetyChecks(user);
+        this.properValues(vehiculo);
+         */
+
         try {
             // Obtener los datos del vehículo que se va a actualizar
             const vehicleRef = doc(this.firestore, `/items/${user.currentUser?.uid}/vehicles/${matricula}`);
@@ -31,10 +37,12 @@ export class VehicleDB implements VehicleRepository {
 
             // Comprobar reglas de negocio
             // Si la matrícula ya existe, lanzar un error
-            const allVehicles = await getDocs(collection(this.firestore, `/items/${user.currentUser?.uid}/vehicles`));
-            if (allVehicles.docs.some(d => d.data()["matricula"] === update?.matricula)) {
-                throw new VehicleAlreadyExistsError();
-            }
+            const vehiclesSnap =
+                await getDocs(collection(this.firestore, `/items/${user.currentUser?.uid}/vehicles`)
+            );
+            vehiclesSnap.forEach((vehicle) => {
+                if (vehicle.data()['matricula'] === matricula) throw new VehicleAlreadyExistsError();
+            })
 
             // Actualizar documento (únicamente los campos enviados)
             await setDoc(vehicleRef, update, {merge: true});

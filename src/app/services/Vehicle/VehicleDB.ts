@@ -25,7 +25,7 @@ export class VehicleDB implements VehicleRepository {
 
     async deleteVehicle(user: Auth, matricula: string): Promise<boolean> {
         try {
-            // Obtener los datos del POI que se va a borrar
+            // Obtener los datos del vehículo que se va a borrar
             const vehicleRef = doc(this.firestore, `items/${user.currentUser?.uid}/vehicles/${matricula}`);
             const vehicleSnap = await getDoc(vehicleRef);
 

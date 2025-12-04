@@ -2,10 +2,9 @@ import {inject, Injectable} from '@angular/core';
 import {VehicleRepository} from './VehicleRepository';
 import {Auth} from '@angular/fire/auth';
 import {VehicleModel} from '../../data/VehicleModel';
-import {collection, doc, Firestore, getDoc, getDocs, query, setDoc, where} from '@angular/fire/firestore';
+import {collection, doc, Firestore, getDoc, getDocs, updateDoc} from '@angular/fire/firestore';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
-import {DBAccessError} from '../../errors/DBAccessError';
 
 @Injectable({
     providedIn: 'root'
@@ -46,7 +45,7 @@ export class VehicleDB implements VehicleRepository {
             })
 
             // Actualizar documento (únicamente los campos enviados)
-            await setDoc(vehicleRef, update, {merge: true});
+            await updateDoc(vehicleRef, update);
             return true;
 
         } catch (error: any) {

@@ -5,6 +5,7 @@ import {VehicleModel} from '../../data/VehicleModel';
 import {collection, doc, Firestore, getDoc, getDocs, query, setDoc, where} from '@angular/fire/firestore';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
+import {DBAccessError} from '../../errors/DBAccessError';
 
 @Injectable({
     providedIn: 'root'
@@ -13,7 +14,7 @@ export class VehicleDB implements VehicleRepository {
     private firestore = inject(Firestore);
 
     async createVehicle(user: Auth, vehiculo: VehicleModel): Promise<VehicleModel> {
-        return new VehicleModel("", "12", "", "", 0, "", 0);
+        return new VehicleModel("", "", "", "", 1, "", 0)
     }
 
     async getVehicleList(user: Auth): Promise<VehicleModel[]> {
@@ -41,7 +42,7 @@ export class VehicleDB implements VehicleRepository {
                 await getDocs(collection(this.firestore, `/items/${user.currentUser?.uid}/vehicles`)
             );
             vehiclesSnap.forEach((vehicle) => {
-                if (vehicle.data()['matricula'] === matricula) throw new VehicleAlreadyExistsError();
+                if (vehicle.data()['matricula'] === update?.matricula) throw new VehicleAlreadyExistsError();
             })
 
             // Actualizar documento (únicamente los campos enviados)

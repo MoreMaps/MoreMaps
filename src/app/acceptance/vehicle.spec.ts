@@ -121,23 +121,23 @@ fdescribe('Pruebas sobre vehículos', () => {
 
     describe('HU302: Consultar lista de vehículos', () => {
 
-        it('HU203-EV01 Consultar el listado vacío de POI', async () => {
+        it('HU302-EV01: Consultar el listado vacío de vehículos', async () => {
             // GIVEN
             // El usuario maria se ha registrado y ha iniciado sesión
             await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
             // WHEN
-            // El usuario maria consulta su lista de POI registrados
+            // El usuario maria consulta su lista de vehículos registrados (vacía)
             let list: VehicleModel[] = await vehicleService.getVehicleList();
 
             // THEN
-            // Se devuelve una lista vacía y se indica que no hay POI registrados.
+            // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
             expect(list.length).toBe(0);
 
             // CLEANUP
             // borrar a maria
             await userService.deleteUser();
-            // volver a ramon
+            // volver a iniciar sesión con ramon
             await userService.login(ramon.email, ramon.pwd);
         });
 

@@ -26,8 +26,24 @@ fdescribe('Pruebas sobre vehículos', () => {
 
     const ramon = USER_TEST_DATA[0];
 
-    const datosFord: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
-    const datosAudi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
+    const datosFord: VehicleModel = new VehicleModel(
+        VEHICLE_TEST_DATA[0].alias,
+        VEHICLE_TEST_DATA[0].matricula,
+        VEHICLE_TEST_DATA[0].marca,
+        VEHICLE_TEST_DATA[0].modelo,
+        VEHICLE_TEST_DATA[0].anyo,
+        VEHICLE_TEST_DATA[0].tipoCombustible,
+        VEHICLE_TEST_DATA[0].consumoMedio,
+    );
+    const datosAudi: VehicleModel = new VehicleModel(
+        VEHICLE_TEST_DATA[1].alias,
+        VEHICLE_TEST_DATA[1].matricula,
+        VEHICLE_TEST_DATA[1].marca,
+        VEHICLE_TEST_DATA[1].modelo,
+        VEHICLE_TEST_DATA[1].anyo,
+        VEHICLE_TEST_DATA[1].tipoCombustible,
+        VEHICLE_TEST_DATA[1].consumoMedio,
+        );
 
     let vehiculoRegistrado: VehicleModel;
 

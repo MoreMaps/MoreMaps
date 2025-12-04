@@ -36,6 +36,8 @@ export class POIDB implements POIRepository {
 
     async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {
         try {
+            this.safetyChecks(user);
+
             const poiSnap = await getDoc(
                 doc(this.firestore, `items/${user.currentUser?.uid}/pois/${geohash}`)
             );
@@ -56,6 +58,8 @@ export class POIDB implements POIRepository {
 
     async updatePOI(user: Auth, geohash: Geohash, update: Partial<POIModel>): Promise<boolean> {
         try {
+            this.safetyChecks(user);
+
             // Obtener los datos del POI que se va a actualizar
             const poiRef = doc(this.firestore, `items/${user.currentUser?.uid}/pois/${geohash}`);
             const poiSnap = await getDoc(poiRef);
@@ -68,7 +72,7 @@ export class POIDB implements POIRepository {
             if (update.description && update.description?.length > 150) throw new DescriptionLengthError();
 
             // Actualizar documento (únicamente los campos enviados)
-            await setDoc(poiRef, update, {merge: true});
+            await updateDoc(poiRef, update);
             return true;
         } catch (error: any) {
             // Si el error es de Firebase, loguearlo
@@ -83,6 +87,8 @@ export class POIDB implements POIRepository {
 
     async deletePOI(user: Auth, geohash: Geohash): Promise<boolean> {
         try {
+            this.safetyChecks(user);
+
             // Obtener los datos del POI que se va a borrar
             const poiRef = doc(this.firestore, `items/${user.currentUser?.uid}/pois/${geohash}`);
             const poiSnap = await getDoc(poiRef);

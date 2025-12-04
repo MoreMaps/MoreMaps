@@ -24,8 +24,8 @@ export class VehicleService {
     }
 
     // HU304 Eliminar vehículo
-    async deleteVehicle(user: Auth, matricula: string): Promise<boolean> {
-        return this.vehicleDb.deleteVehicle(user, matricula);
+    async deleteVehicle(matricula: string): Promise<boolean> {
+        return this.vehicleDb.deleteVehicle(matricula);
     }
 
     // HU305 Consultar vehículo

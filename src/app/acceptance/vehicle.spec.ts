@@ -100,7 +100,7 @@ fdescribe('Pruebas sobre vehículos', () => {
             }));
 
             // CLEANUP
-            await vehicleService.deleteVehicle(auth, vehiculoCreado.matricula);
+            await vehicleService.deleteVehicle(vehiculoCreado.matricula);
         });
 
         it('HU301-EI01: Registrar vehículo ya existente', async () => {
@@ -193,7 +193,7 @@ fdescribe('Pruebas sobre vehículos', () => {
             // Estado esperado: no se modifica el estado.
 
             // CLEANUP
-            await vehicleService.deleteVehicle(auth, vehiculoAudi.matricula);
+            await vehicleService.deleteVehicle(vehiculoAudi.matricula);
         });
     });
 
@@ -206,7 +206,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
             // WHEN
             // El usuario trata de eliminar el vehículo.
-            const resultado = await vehicleService.deleteVehicle(auth, vehiculoAudi.matricula);
+            const resultado = await vehicleService.deleteVehicle(vehiculoAudi.matricula);
 
             // THEN
             // No se lanza ningún error. Se elimina el vehículo de la lista.
@@ -219,7 +219,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
             // WHEN
             // El usuario trata de eliminar el vehículo "Ford Fiesta" (que no existe).
-            await expectAsync(vehicleService.deleteVehicle(auth, datosAudi.matricula))
+            await expectAsync(vehicleService.deleteVehicle(datosAudi.matricula))
                 .toBeRejectedWith(new MissingVehicleError());
 
             // THEN
@@ -294,7 +294,7 @@ fdescribe('Pruebas sobre vehículos', () => {
             expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
 
             // Borrar el vehículo "Audi".
-            await vehicleService.deleteVehicle(auth, vehiculoAudi.matricula);
+            await vehicleService.deleteVehicle(vehiculoAudi.matricula);
         });
 
         it('HU501-EI02: Fijar un vehículo no registrado', async () => {

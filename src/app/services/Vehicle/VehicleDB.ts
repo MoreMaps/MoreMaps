@@ -10,6 +10,7 @@ import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 })
 export class VehicleDB implements VehicleRepository {
     private firestore = inject(Firestore);
+    private auth = inject(Auth);
 
     async createVehicle(user: Auth, vehiculo: VehicleModel): Promise<VehicleModel> {
         return new VehicleModel("", "12", "", "", 0, "", 0);
@@ -23,10 +24,10 @@ export class VehicleDB implements VehicleRepository {
         return false;
     }
 
-    async deleteVehicle(user: Auth, matricula: string): Promise<boolean> {
+    async deleteVehicle(matricula: string): Promise<boolean> {
         try {
             // Obtener los datos del vehículo que se va a borrar
-            const vehicleRef = doc(this.firestore, `items/${user.currentUser?.uid}/vehicles/${matricula}`);
+            const vehicleRef = doc(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`);
             const vehicleSnap = await getDoc(vehicleRef);
 
             // Si no existe, se lanza un error

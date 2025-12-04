@@ -1,0 +1,21 @@
+<!-- Overlay con filtro de fondo -->
+<div class="overlay" (click)="onClose()">
+    <!-- Popup -->
+    <div class="popup" (click)="$event.stopPropagation()">
+        <!-- Título -->
+        <h2 class="title">¿Desea eliminar el vehículo "{{alias}}"?</h2>
+
+        <!-- Subtítulo -->
+        <p class="subtitle">Esta acción es irreversible.</p>
+
+        <!-- Botones de acción -->
+        <div class="button-container">
+            <button class="btn btn-confirm" (click)="onConfirm()">
+                SÍ, ELIMINAR
+            </button>
+            <button class="btn btn-cancel" (click)="onClose()">
+                NO, CANCELAR
+            </button>
+        </div>
+    </div>
+</div>

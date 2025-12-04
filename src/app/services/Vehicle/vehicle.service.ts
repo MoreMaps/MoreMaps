@@ -6,7 +6,7 @@ import {Auth} from '@angular/fire/auth';
 
 @Injectable({ providedIn: 'root' })
 export class VehicleService {
-    privatevehicleDb: VehicleRepository = inject(VEHICLE_REPOSITORY);
+    vehicleDb: VehicleRepository = inject(VEHICLE_REPOSITORY);
 
     // HU301 Crear vehículo
     async createVehicle(auth: Auth, vehicle: VehicleModel): Promise<VehicleModel> {
@@ -14,7 +14,20 @@ export class VehicleService {
     }
 
     // HU302 Consultar lista de vehículos
-    async getVehicleList(user: Auth): Promise<VehicleModel[]> {
+    async getVehicleList(): Promise<VehicleModel[]> {
+        let vehicleList: VehicleModel[] = await this.vehicleDb.getVehicleList();
+        if (vehicleList.length > 0) {
+            vehicleList.sort((a, b) => {
+                // 1. Primero ordenar por pinned (true > false)
+                if (a.pinned !== b.pinned){
+                    return a.pinned ? -1 : 1;
+                }
+                // 2. Luego ordenar alfabéticamente por alias o placeName
+                return a.alias.localeCompare(b.alias, 'es', {sensitivity: 'base'});
+            });
+            return vehicleList;
+        }
+
         return [];
     }
 

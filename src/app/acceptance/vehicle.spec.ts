@@ -128,7 +128,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
             // WHEN
             // El usuario maria consulta su lista de POI registrados
-            let list = await vehicleService.getVehicleList(auth);
+            let list: VehicleModel[] = await vehicleService.getVehicleList();
 
             // THEN
             // Se devuelve una lista vacía y se indica que no hay POI registrados.
@@ -147,7 +147,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
             // WHEN
             // El usuario consulta su lista de vehículos registrados.
-            const listaVehiculos = await vehicleService.getVehicleList(auth);
+            const listaVehiculos = await vehicleService.getVehicleList();
 
             // THEN
             // Se muestra el listado de vehículos registrados (con al menos 1 resultado).
@@ -275,7 +275,7 @@ fdescribe('Pruebas sobre vehículos', () => {
             const vehiculoAudi: VehicleModel = await vehicleService.createVehicle(auth, datosAudi);
 
             // Ambos vehículos no son fijados, una consulta de vehículos devuelve ["Audi A6", "Ford Fiesta"].
-            let list = await vehicleService.getVehicleList(auth);
+            let list = await vehicleService.getVehicleList();
             expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
 
             // WHEN
@@ -287,13 +287,13 @@ fdescribe('Pruebas sobre vehículos', () => {
             expect(vehiculoFijado).toBeTrue();
 
             // El orden ahora es ["Ford Fiesta", "Audi A6"].
-            list = await vehicleService.getVehicleList(auth);
+            list = await vehicleService.getVehicleList();
             expect(list.at(0)?.matricula).toEqual('1234XYZ');
 
             // CLEANUP
             // Quitar el fijado de "Ford Fiesta".
             await vehicleService.pinVehicle(auth, datosFord.matricula);
-            list = await vehicleService.getVehicleList(auth);
+            list = await vehicleService.getVehicleList();
             expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
 
             // Borrar el vehículo "Audi".
@@ -331,7 +331,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
             // THEN
             //  Los datos de vehículos de la BD son los mismos que los introducidos previamente.
-            const listaVehicle = await vehicleService.getVehicleList(auth);
+            const listaVehicle = await vehicleService.getVehicleList();
             expect(listaVehicle).toEqual(listaVehiculosAntes);
         });
     });

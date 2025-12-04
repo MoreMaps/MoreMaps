@@ -1,0 +1,122 @@
+.registration-container {
+    background-color: var(--color-teal-dark);
+    min-height: 100%;
+    padding: 1.5rem;
+    color: var(--color-white);
+
+    @media (max-width: 600px) {
+        padding: 1rem;
+    }
+}
+
+.header-section {
+    margin-bottom: 2rem;
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 400;
+        margin: 0;
+        color: var(--color-white);
+    }
+}
+
+.form-section {
+    margin-bottom: 2rem;
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 400;
+        margin-bottom: 1rem;
+        color: var(--color-lavender);
+        opacity: 0.9;
+    }
+
+    .section-subtitle {
+        font-size: 0.875rem;
+        color: var(--color-gray-blue);
+        margin-top: -0.5rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+// === GRID SYSTEM ===
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    align-items: start;
+
+    @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 1200px) {
+        grid-template-columns: repeat(4, 1fr);
+
+        .item-matricula {
+            grid-column: span 1;
+        }
+    }
+}
+
+.fuel-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 800px;
+
+    @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+// === ACCIONES ===
+.actions-container {
+    margin-top: 3rem;
+    display: flex;
+    justify-content: flex-start;
+
+    .save-button {
+        background-color: var(--color-mint-green) !important;
+        color: var(--color-teal-dark) !important;
+        padding: 1.5rem 3rem;
+        border-radius: var(--radius-full);
+        font-weight: 500;
+        font-size: 1rem;
+        min-width: 160px;
+        box-shadow: var(--shadow-md);
+
+        &:disabled {
+            opacity: 0.6;
+            background-color: var(--color-gray-blue) !important;
+        }
+
+        ::ng-deep .mdc-button__label {
+            font-weight: 600;
+        }
+    }
+}
+
+// === OVERRIDES MATERIAL ===
+::ng-deep {
+    // Color de los iconos suffix (X) y textos suffix (L/km)
+    .mat-mdc-form-field-icon-suffix .mat-icon,
+    .mat-mdc-form-field-text-suffix {
+        color: var(--color-purple-dark);
+        opacity: 0.7;
+    }
+
+    .mat-mdc-form-field-text-suffix {
+        padding-left: 4px;
+        font-weight: 500;
+    }
+
+    // Spinner color
+    .mat-mdc-progress-spinner circle,
+    .mat-spinner circle {
+        stroke: var(--color-teal-dark) !important;
+    }
+}
+
+// Utilidades
+.text-white { color: var(--color-white) !important; }
+.text-lavender { color: var(--color-lavender) !important; }
+.text-gray-blue { color: var(--color-gray-blue) !important; }

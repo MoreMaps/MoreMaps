@@ -37,7 +37,7 @@ export const VEHICLE_TEST_DATA = [
         marca: "Ford",
         modelo: "Fiesta",
         anyo: 2022,
-        tipoCombustible: "Gasolina sin plomo",
+        tipoCombustible: "Gasolina",
         consumoMedio: 13.0,
     },
     {
@@ -46,7 +46,7 @@ export const VEHICLE_TEST_DATA = [
         marca: "Audi",
         modelo: "A6",
         anyo: 2019,
-        tipoCombustible: "Diesel",
+        tipoCombustible: "Diésel",
         consumoMedio: 6.0,
     },
 ]

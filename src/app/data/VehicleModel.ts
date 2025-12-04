@@ -28,4 +28,8 @@ export class VehicleModel {
             consumoMedio: this.consumoMedio,
         }
     }
+
+    static fromJSON(json: any): VehicleModel {
+        return new VehicleModel(json.alias, json.matricula, json.marca, json.modelo, json.anyo, json.tipoCombustible, json.consumoMedio);
+    }
 }

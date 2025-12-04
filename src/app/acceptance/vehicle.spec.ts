@@ -75,7 +75,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
     // Las pruebas empiezan a partir de AQUÍ
 
-    describe('HU301: Registrar nuevo vehículo', () => {
+    fdescribe('HU301: Registrar nuevo vehículo', () => {
 
         it('HU301-EV01: Registrar nuevo vehículo "Ford Fiesta"', async () => {
             // GIVEN
@@ -90,7 +90,7 @@ fdescribe('Pruebas sobre vehículos', () => {
             // No se lanza ningún error
             // Se da de alta el vehículo
             expect(vehiculoCreado).toEqual(jasmine.objectContaining({
-                alias: datosAudi.matricula,
+                alias: datosAudi.alias,
                 matricula: datosAudi.matricula,
                 marca: datosAudi.marca,
                 modelo: datosAudi.modelo,

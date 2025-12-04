@@ -1,0 +1,152 @@
+<div class="vehicle-edit-container">
+    <h1 class="title">Editar vehículo</h1>
+
+    <form [formGroup]="editForm" (ngSubmit)="onSave()">
+        <!-- Sección: Identificar el vehículo -->
+        <section class="form-section">
+            <h2 class="section-title">Identificar el vehículo</h2>
+
+            <!-- Campo Alias -->
+            <div class="form-field">
+                <label class="field-label">Alias</label>
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        formControlName="alias"
+                        placeholder="Texto"
+                    />
+                    @if (editForm.get('alias')?.value) {
+                        <button
+                            type="button"
+                            class="clear-btn"
+                            (click)="clearField('alias')"
+                        >
+                            ⊗
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Fila de selectores -->
+            <div class="selector-row">
+                <div class="form-field">
+                    <label class="field-label">Matrícula</label>
+                    <input
+                        type="text"
+                        formControlName="matricula"
+                    />
+                    @if (editForm.get('matricula')?.value) {
+                        <button
+                            type="button"
+                            class="clear-btn"
+                            (click)="clearField('matricula')"
+                        >
+                            ⊗
+                        </button>
+                    }
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Año</label>
+                    <input
+                        type="text"
+                        formControlName="anyo"
+                    />
+                    @if (editForm.get('anyo')?.value) {
+                        <button
+                            type="button"
+                            class="clear-btn"
+                            (click)="clearField('anyo')"
+                        >
+                            ⊗
+                        </button>
+                    }
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label">Marca</label>
+                    <input
+                        type="text"
+                        formControlName="marca"
+                    />
+                    @if (editForm.get('marca')?.value) {
+                        <button
+                            type="button"
+                            class="clear-btn"
+                            (click)="clearField('marca')"
+                        >
+                            ⊗
+                        </button>
+                    }
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label">Modelo</label>
+                    <input
+                        type="text"
+                        formControlName="modelo"
+                    />
+                    @if (editForm.get('modelo')?.value) {
+                        <button
+                            type="button"
+                            class="clear-btn"
+                            (click)="clearField('modelo')"
+                        >
+                            ⊗
+                        </button>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección: Datos de combustible -->
+        <section class="form-section">
+            <h2 class="section-title">Datos de combustible</h2>
+            <p class="section-description">Revisa que los datos sean correctos y corrige los que no lo sean.</p>
+
+            <div class="fuel-row">
+                <div class="form-field">
+                    <label class="field-label">Capacidad máxima</label>
+                    <div class="input-wrapper">
+                        <input
+                            type="text"
+                            formControlName="consumoMedio"
+                        />
+                        @if (editForm.get('consumoMedio')?.value) {
+                            <button
+                                type="button"
+                                class="clear-btn"
+                                (click)="clearField('consumoMedio')"
+                            >
+                                ⊗
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label">Tipo</label>
+                    <div class="input-wrapper">
+                        <input
+                            type="text"
+                            formControlName="consumoMedio"
+                        />
+                        @if (editForm.get('consumoMedio')?.value) {
+                            <button
+                                type="button"
+                                class="clear-btn"
+                                (click)="clearField('consumoMedio')"
+                            >
+                                ⊗
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Botón Guardar -->
+        <button type="submit" class="submit-btn" [disabled]="!vehicleForm.valid">
+            Guardar
+        </button>
+    </form>
+</div>

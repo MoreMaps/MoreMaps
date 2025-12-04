@@ -19,8 +19,8 @@ export class VehicleService {
     }
 
     // HU303 Modificar información de un vehículo
-    async updateVehicle(user: Auth, matricula: string, update: Partial<VehicleModel>): Promise<boolean> {
-        return this.vehicleDb.updateVehicle(user, matricula, update);
+    async updateVehicle(matricula: string, update: Partial<VehicleModel>): Promise<boolean> {
+        return this.vehicleDb.updateVehicle(matricula, update);
     }
 
     // HU304 Eliminar vehículo

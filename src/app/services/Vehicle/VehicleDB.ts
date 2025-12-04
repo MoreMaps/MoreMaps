@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {VehicleRepository} from './VehicleRepository';
 import {Auth} from '@angular/fire/auth';
 import {VehicleModel} from '../../data/VehicleModel';
-import {collection, doc, Firestore, getDoc, getDocs, updateDoc} from '@angular/fire/firestore';
+import {doc, Firestore, getDoc, updateDoc, writeBatch} from '@angular/fire/firestore';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 
@@ -29,23 +29,45 @@ export class VehicleDB implements VehicleRepository {
 
         try {
             // Obtener los datos del vehículo que se va a actualizar
-            const vehicleRef = doc(this.firestore, `/items/${this.auth.currentUser?.uid}/vehicles/${matricula}`);
-            const vehicleSnap = await getDoc(vehicleRef);
+            const oldVehicleRef = doc(this.firestore, `/items/${this.auth.currentUser?.uid}/vehicles/${matricula}`);
+            const oldVehicleSnap = await getDoc(oldVehicleRef);
 
-            // Si no existe, se lanza un error
-            if (!vehicleSnap.exists()) throw new MissingVehicleError();
+            // Si no existe el vehículo a modificar, se lanza un error
+            if (!oldVehicleSnap.exists()) throw new MissingVehicleError();
 
-            // Comprobar reglas de negocio
-            // Si la matrícula ya existe, lanzar un error
-            const vehiclesSnap =
-                await getDocs(collection(this.firestore, `/items/${this.auth.currentUser?.uid}/vehicles`)
-            );
-            vehiclesSnap.forEach((vehicle) => {
-                if (vehicle.data()['matricula'] === update?.matricula) throw new VehicleAlreadyExistsError();
-            })
+            // Detectar si estamos cambiando la matrícula (ID del doc)
+            const newMatricula = update.matricula;
+            const isRenaming = newMatricula && newMatricula !== matricula;
 
-            // Actualizar documento (únicamente los campos enviados)
-            await updateDoc(vehicleRef, update);
+            if (isRenaming) {
+                const newVehicleRef = doc(this.firestore, `/items/${this.auth.currentUser?.uid}/vehicles/${newMatricula}`);
+                const newVehicleSnap = await getDoc(newVehicleRef);
+                console.log(newVehicleRef.path)
+                if (newVehicleSnap.exists()) throw new VehicleAlreadyExistsError();
+
+                // lote atómico
+                const batch = writeBatch(this.firestore);
+
+                const oldData = oldVehicleSnap.data();
+                const newData = {
+                    ...oldData,     // datos originales
+                    ...update       // datos nuevos que sobreescriben a los originales
+                };
+
+                // Crear doc en la nueva ruta
+                batch.set(newVehicleRef, newData);
+
+                // Borrar doc en la ruta antigua
+                batch.delete(oldVehicleRef);
+
+                // ejecutar ambas operaciones en atómico
+                await batch.commit();
+
+            } else {
+                // Actualización simple, del mismo ID
+                await updateDoc(oldVehicleRef, update);
+            }
+
             return true;
 
         } catch (error: any) {

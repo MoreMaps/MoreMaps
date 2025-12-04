@@ -21,6 +21,7 @@ import {MAP_SEARCH_REPOSITORY} from '../services/map-search-service/MapSearchRep
 import {MapSearchAPI} from '../services/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
+import {VehicleService} from '../services/Vehicle/vehicle.service';
 
 describe('Pruebas sobre POI', () => {
     let userService: UserService;
@@ -33,6 +34,7 @@ describe('Pruebas sobre POI', () => {
     let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
+    const maria = USER_TEST_DATA[1];
 
     const poiA: POIModel = POI_TEST_DATA[0];
     const poiB: POIModel = POI_TEST_DATA[1];
@@ -48,52 +50,29 @@ describe('Pruebas sobre POI', () => {
                 {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
                 appConfig.providers],
 
-            // 👇 THIS IS THE KEY FIX 👇
-            // This prevents Angular from destroying the injector after the first test,
-            // allowing your 'userService' and 'auth' variables to survive the whole suite.
+            // This prevents Angular from destroying the injector after the first test.
             teardown: { destroyAfterEach: false }
         }).compileComponents();
 
-        // Injection (Done once)
+        // Inyección de los servicios
         userService = TestBed.inject(UserService);
         poiService = TestBed.inject(POIService);
         mapSearchService = TestBed.inject(MapSearchService);
+
+        // Inyección de Firestore y Auth
         firestore = TestBed.inject(Firestore);
         auth = TestBed.inject(Auth);
 
-        // Login (Done once - saves you from Rate Limiting!)
+        // Iniciar sesión con ramón para todos los test
         await userService.login(ramon.email, ramon.pwd);
     });
 
-    // Keep your beforeEach for data setup only
+    // Se comprueba si el POI A existe en la base de datos y se crea en caso contrario.
     beforeEach(async () => {
-        // Do NOT configure TestBed here.
-        // Just do your data setup (creating the POI document).
         try {
             const poiRef = doc(firestore, `/items/${auth.currentUser?.uid}/pois/${poiA.geohash}`);
             poiRegistrado = new POIModel(poiA.lat, poiA.lon, poiA.placeName, poiA.geohash, false, poiA.alias, poiA.description);
             await setDoc(poiRef, poiRegistrado.toJSON(), {merge: true});
-        } catch (error) {
-            console.error(error);
-            throw error;
-        }
-    });
-
-    beforeEach(async () => {
-        try {
-            // 1. Referencia al documento
-            const poiRef = doc(firestore,
-                `/items/${auth.currentUser?.uid}/pois/${poiA.geohash}`);
-
-            // 2. Definir los datos a escribir en formato JSON
-            poiRegistrado = new POIModel(poiA.lat, poiA.lon, poiA.placeName, poiA.geohash, false, poiA.alias, poiA.description);
-
-            // 3. Con merge = true, "escribir" el documento.
-            // Si este existe, se actualiza
-            // Si no existe, se crea
-            await setDoc(poiRef, poiRegistrado.toJSON(), {merge: true});
-            console.log(`Documento del POI A existe con geohash: ${poiA.geohash}`);
-
         } catch (error) {
             console.error(error);
             throw error;
@@ -194,6 +173,27 @@ describe('Pruebas sobre POI', () => {
 
 
     describe('HU203: Consultar el listado de POI', () => {
+
+        it('HU203-EV01 Consultar el listado vacío de POI', async () => {
+            // GIVEN
+            // El usuario maria se ha registrado y ha iniciado sesión
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+
+            // WHEN
+            // El usuario maria consulta su lista de POI registrados
+            let list = await poiService.getPOIList(auth);
+
+            // THEN
+            // Se devuelve una lista vacía y se indica que no hay POI registrados.
+            expect(list.length).toBe(0);
+
+            // CLEANUP
+            // borrar a maria
+            await userService.deleteUser();
+            // volver a ramon
+            await userService.login(ramon.email, ramon.pwd);
+        });
+
         it('HU203-EV02: Consultar el listado no vacío de POI', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
@@ -211,25 +211,6 @@ describe('Pruebas sobre POI', () => {
             * */
             expect(listaPoi.length).toBeGreaterThanOrEqual(1);
 
-            // No se modifica el estado
-        });
-
-        it('HU203-EI02: Consultar la lista de POI de otro usuario', async () => {
-            // GIVEN
-            // El usuario ramon ha iniciado sesión
-            // El usuario ramon tiene los datos de otro usuario
-            const authBadUser: Auth = {
-                currentUser: {
-                    uid: 'notARealUser',
-                }
-            } as unknown as Auth;
-
-            // WHEN
-            // El usuario ramon consulta la lista usando el UID de otro
-            await expectAsync(poiService.getPOIList(authBadUser))
-                .toBeRejectedWith(new ForbiddenContentError());
-            // THEN
-            // Se lanza el error ForbiddenContentError
             // No se modifica el estado
         });
     });

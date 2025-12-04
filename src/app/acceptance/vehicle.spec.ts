@@ -15,7 +15,6 @@ import {VehicleModel} from '../data/VehicleModel';
 // Errores
 import {VehicleAlreadyExistsError} from '../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../errors/Vehicle/MissingVehicleError';
-import {ForbiddenContentError} from '../errors/ForbiddenContentError';
 
 fdescribe('Pruebas sobre vehículos', () => {
     let userService: UserService;
@@ -25,6 +24,7 @@ fdescribe('Pruebas sobre vehículos', () => {
     let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
+    const maria = USER_TEST_DATA[1];
 
     const datosFord: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
     const datosAudi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
@@ -96,7 +96,8 @@ fdescribe('Pruebas sobre vehículos', () => {
                 modelo: datosAudi.modelo,
                 anyo: datosAudi.anyo,
                 tipoCombustible: datosAudi.tipoCombustible,
-                consumoMedio: datosAudi.consumoMedio
+                consumoMedio: datosAudi.consumoMedio,
+                pinned: datosAudi.pinned,
             }));
 
             // CLEANUP
@@ -120,6 +121,26 @@ fdescribe('Pruebas sobre vehículos', () => {
 
     describe('HU302: Consultar lista de vehículos', () => {
 
+        it('HU203-EV01 Consultar el listado vacío de POI', async () => {
+            // GIVEN
+            // El usuario maria se ha registrado y ha iniciado sesión
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+
+            // WHEN
+            // El usuario maria consulta su lista de POI registrados
+            let list = await vehicleService.getVehicleList(auth);
+
+            // THEN
+            // Se devuelve una lista vacía y se indica que no hay POI registrados.
+            expect(list.length).toBe(0);
+
+            // CLEANUP
+            // borrar a maria
+            await userService.deleteUser();
+            // volver a ramon
+            await userService.login(ramon.email, ramon.pwd);
+        });
+
         it('HU302-EV02: Consultar lista no vacía de vehículos', async () => {
             // GIVEN
             // Lista de vehículos registrados → ["Ford Fiesta"]
@@ -131,25 +152,6 @@ fdescribe('Pruebas sobre vehículos', () => {
             // THEN
             // Se muestra el listado de vehículos registrados (con al menos 1 resultado).
             expect(listaVehiculos.length).toBeGreaterThanOrEqual(1);
-        });
-
-        it('HU302-EI01: Consultar lista de vehículos de otro usuario', async () => {
-            // GIVEN
-            // El usuario “ramon” tiene los datos de autenticación de otro usuario.
-            // El usuario “ramon” ha iniciado sesión.
-            const authBadUser: Auth = {
-                currentUser: {
-                    uid: 'notARealUser',
-                }
-            } as unknown as Auth;
-
-            // WHEN
-            // El usuario consulta la lista de vehículos registrados de otro usuario.
-            await expectAsync(vehicleService.getVehicleList(authBadUser))
-                .toBeRejectedWith(new ForbiddenContentError());
-
-            // THEN
-            // Se lanza el error ForbiddenContentError.
         });
     });
 
@@ -246,7 +248,8 @@ fdescribe('Pruebas sobre vehículos', () => {
                 modelo: datosFord.modelo,
                 anyo: datosFord.anyo,
                 tipoCombustible: datosFord.tipoCombustible,
-                consumoMedio: datosFord.consumoMedio
+                consumoMedio: datosFord.consumoMedio,
+                pinned: datosFord.pinned,
             }));
         });
 

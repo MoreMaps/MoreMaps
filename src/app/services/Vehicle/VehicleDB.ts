@@ -33,8 +33,7 @@ export class VehicleDB implements VehicleRepository {
             if (docSnap.exists()) throw new VehicleAlreadyExistsError();
 
             // Si no existe, procedemos a guardar
-            const vehiculoInstance = vehiculo ? vehiculo : VehicleModel.fromJSON(vehiculo);
-            await setDoc(vehicleDocRef, vehiculoInstance);
+            if (vehiculo) await setDoc(vehicleDocRef, vehiculo.toJSON());
             return vehiculo;
         } catch (e) {
             if (e instanceof VehicleAlreadyExistsError) throw e;

@@ -1,8 +1,8 @@
 .registration-container {
-    background-color: var(--color-teal-dark);
+    background-color: var(--color-lavender);
     min-height: 100%;
     padding: 1.5rem;
-    color: var(--color-white);
+    color: var(--color-purple-dark);
 
     @media (max-width: 600px) {
         padding: 1rem;
@@ -16,7 +16,7 @@
         font-size: 1.75rem;
         font-weight: 400;
         margin: 0;
-        color: var(--color-white);
+        color: var(--color-purple-dark);
     }
 }
 
@@ -27,7 +27,7 @@
         font-size: 1.1rem;
         font-weight: 400;
         margin-bottom: 1rem;
-        color: var(--color-lavender);
+        color: var(--color-purple-dark);
         opacity: 0.9;
     }
 
@@ -97,6 +97,9 @@
 
 // === OVERRIDES MATERIAL ===
 ::ng-deep {
+    .mat-mdc-form-field {
+        filter: brightness(90%);
+    }
     // Color de los iconos suffix (X) y textos suffix (L/km)
     .mat-mdc-form-field-icon-suffix .mat-icon,
     .mat-mdc-form-field-text-suffix {
@@ -114,9 +117,115 @@
     .mat-spinner circle {
         stroke: var(--color-teal-dark) !important;
     }
+
+    // Dentro de ::ng-deep { ... }
+
+    // El panel flotante (el contenedor de las opciones)
+    .mat-mdc-select-panel {
+        background-color: var(--color-lavender) !important;
+
+        // Las opciones individuales
+        .mat-mdc-option {
+            color: var(--color-purple-dark) !important;
+
+            // Estado Hover (al pasar el ratón)
+            &:hover:not(.mdc-list-item--disabled) {
+                background-color: rgba(255, 255, 255, 0.5) !important;
+                .mdc-list-item__primary-text {
+                    color: var(--color-purple-dark) !important;
+                }
+            }
+
+            // Estado Seleccionado (el que se veía verde)
+            &.mdc-list-item--selected {
+                background-color: var(--color-purple-dark) !important;
+                .mdc-list-item__primary-text {
+                    color: var(--color-lavender) !important;
+                }
+            }
+
+            // Focus state (teclado)
+            &.mat-mdc-option-active {
+                background-color: var(--color-purple) !important;
+                .mdc-list-item__primary-text {
+                    color: var(--color-lavender) !important;
+                }
+            }
+        }
+    }
 }
 
-// Utilidades
-.text-white { color: var(--color-white) !important; }
 .text-lavender { color: var(--color-lavender) !important; }
 .text-gray-blue { color: var(--color-gray-blue) !important; }
+
+
+// DARK THEME
+:host-context(.dark-theme) {
+    .registration-container {
+        background-color: var(--color-teal-dark);
+        color: var(--color-white);
+    }
+    .header-section {
+        .page-title {
+            color: var(--color-white);
+        }
+    }
+
+    .form-section {
+        .section-title {
+            color: var(--color-lavender);
+        }
+        .section-subtitle {
+            color: var(--color-lavender);
+
+        }
+    }
+
+    ::ng-deep {
+        .mat-mdc-select {
+            color: var(--color-teal-dark) !important;
+        }
+        .mat-mdc-select-panel {
+            background-color: var(--color-lavender) !important;
+
+            // Las opciones individuales
+            .mat-mdc-option {
+                color: var(--color-purple-dark) !important;
+
+                // Estado Hover (al pasar el ratón)
+                &:hover:not(.mdc-list-item--disabled) {
+                    background-color: rgba(255, 255, 255, 0.5) !important;
+                    .mdc-list-item__primary-text {
+                        color: var(--color-purple-dark) !important;
+                    }
+                }
+
+                // Estado Seleccionado (el que se veía verde)
+                &.mdc-list-item--selected {
+                    background-color: var(--color-purple-dark) !important;
+                    .mdc-list-item__primary-text {
+                        color: var(--color-lavender) !important;
+                    }
+                }
+
+                // Focus state (teclado)
+                &.mat-mdc-option-active {
+                    background-color: var(--color-purple) !important;
+                    .mdc-list-item__primary-text {
+                        color: var(--color-lavender) !important;
+                    }
+                }
+            }
+        }
+    }
+
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    --webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield; /* Firefox */
+}

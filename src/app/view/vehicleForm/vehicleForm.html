@@ -5,13 +5,13 @@
 <div class="registration-container">
 
     <header class="header-section">
-        <h2 class="page-title text-white">Registrar nuevo vehículo</h2>
+        <h2 class="page-title">Registrar nuevo vehículo</h2>
     </header>
 
     <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()" class="vehicle-form">
 
         <section class="form-section">
-            <h3 class="section-title text-lavender">Identificar el vehículo</h3>
+            <h3 class="section-title">Identificar el vehículo</h3>
 
             <div class="form-grid">
                 <mat-form-field appearance="fill" class="item-matricula">
@@ -78,9 +78,9 @@
         </section>
 
         <section class="form-section mt-4">
-            <h3 class="section-title text-lavender">Datos de combustible</h3>
+            <h3 class="section-title">Datos de combustible</h3>
             <p class="section-subtitle text-gray-blue">
-                Revisa que los datos sean correctos y corrige los que no lo sean.
+                Con estos datos calculamos el coste de una ruta.
             </p>
 
             <div class="form-grid fuel-grid">

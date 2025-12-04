@@ -8,7 +8,7 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {VehicleModel} from '../../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
-import {MatError, MatFormField, MatLabel} from '@angular/material/form-field';
+import {MatError, MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
 import {MatIcon} from '@angular/material/icon';
 import {MatOption, MatSelect} from '@angular/material/select';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
@@ -39,13 +39,14 @@ const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
         MatIconButton,
         MatInput,
         MatButton,
+        MatSuffix,
         NavbarComponent,
         ProfileButtonComponent,
         ThemeToggleComponent
     ],
     templateUrl: './vehicleForm.html',
     styleUrl: './vehicleForm.scss',
-    providers: [VehicleService, {provide: VEHICLE_REPOSITORY, useValue: VehicleDB}],
+    providers: [VehicleService, {provide: VEHICLE_REPOSITORY, useClass: VehicleDB}],
 })
 export class VehicleForm {
     private fb = inject(FormBuilder);
@@ -91,6 +92,8 @@ export class VehicleForm {
             return 'kWh/100km';
         else if (fuel === 'Hidrógeno')
             return 'kg/100km';
+        else if (fuel === '' || !fuel)
+            return '';
         return 'L/100km';
     });
 
@@ -128,7 +131,6 @@ export class VehicleForm {
         const snackBarRef =
             this.snackBar.open(`Vehículo ${matricula} registrado correctamente`, 'VER', {
                 duration: 5000,
-                panelClass: 'success-snackbar',
                 horizontalPosition: 'left',
                 verticalPosition: 'bottom'
             });
@@ -155,7 +157,6 @@ export class VehicleForm {
 
         this.snackBar.open(msg, 'CERRAR', {
             duration: 5000,
-            panelClass: 'error-snackbar',
         });
     }
 

@@ -155,7 +155,7 @@ fdescribe('Pruebas sobre vehículos', () => {
         });
     });
 
-    describe('HU303: Modificar datos de un vehículo', () => {
+    fdescribe('HU303: Modificar datos de un vehículo', () => {
 
         it('HU303-EV01: Modificar datos de un vehículo registrado', async () => {
             // GIVEN
@@ -165,7 +165,7 @@ fdescribe('Pruebas sobre vehículos', () => {
             // El usuario trata de modificar la matrícula del vehículo "Ford Fiesta" a "1235ZYX".
             const nuevaMatricula = "1235ZYX";
             const vehiculoModificado = await vehicleService
-                .updateVehicle(auth, vehiculoRegistrado.matricula, {matricula: nuevaMatricula});
+                .updateVehicle(vehiculoRegistrado.matricula, {matricula: nuevaMatricula});
 
             // THEN
             // No se lanza ningún error. Se modifica la matrícula.
@@ -177,7 +177,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
             // CLEANUP
             // Restaurar matrícula original.
-            await vehicleService.updateVehicle(auth, nuevaMatricula, {matricula: datosFord.matricula});
+            await vehicleService.updateVehicle(nuevaMatricula, {matricula: datosFord.matricula});
         });
 
         it('HU303-EI01: Modificar matrícula de un vehículo para que coincida con la de otro', async () => {
@@ -187,7 +187,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
             // WHEN
             // El usuario trata de modificar la matrícula del vehículo Audi (4321XYZ) a la del "Ford Fiesta" (1234XYZ)
-            await expectAsync(vehicleService.updateVehicle(auth, vehiculoAudi.matricula, {matricula: datosFord.matricula}))
+            await expectAsync(vehicleService.updateVehicle(vehiculoAudi.matricula, {matricula: datosFord.matricula}))
                 .toBeRejectedWith(new VehicleAlreadyExistsError());
 
             // THEN

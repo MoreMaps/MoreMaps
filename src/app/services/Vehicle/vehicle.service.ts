@@ -6,7 +6,7 @@ import {Auth} from '@angular/fire/auth';
 
 @Injectable({ providedIn: 'root' })
 export class VehicleService {
-    vehicleDb: VehicleRepository = inject(VEHICLE_REPOSITORY);
+    private vehicleDb: VehicleRepository = inject(VEHICLE_REPOSITORY);
 
     // HU301 Crear vehículo
     async createVehicle(auth: Auth, vehicle: VehicleModel): Promise<VehicleModel> {
@@ -32,8 +32,8 @@ export class VehicleService {
     }
 
     // HU303 Modificar información de un vehículo
-    async updateVehicle(user: Auth, matricula: string, update: Partial<VehicleModel>): Promise<boolean> {
-        return false;
+    async updateVehicle(matricula: string, update: Partial<VehicleModel>): Promise<boolean> {
+        return this.vehicleDb.updateVehicle(matricula, update);
     }
 
     // HU304 Eliminar vehículo

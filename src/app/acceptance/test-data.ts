@@ -38,7 +38,7 @@ export const VEHICLE_TEST_DATA: VehicleModel[] = [
         "Ford",
         "Fiesta",
         2022,
-        "Gasolina sin plomo",
+        "Gasolina",
         13.0,
         false),
     new VehicleModel(
@@ -47,7 +47,7 @@ export const VEHICLE_TEST_DATA: VehicleModel[] = [
         "Audi",
         "A6",
         2019,
-        "Diesel",
+        "Diésel",
         6.0,
         false),
 ]

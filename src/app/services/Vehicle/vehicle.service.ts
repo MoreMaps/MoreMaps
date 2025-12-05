@@ -1,7 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {VEHICLE_REPOSITORY, VehicleRepository} from './VehicleRepository';
 import {VehicleModel} from '../../data/VehicleModel';
-import {Auth} from '@angular/fire/auth';
 
 
 @Injectable({ providedIn: 'root' })
@@ -9,8 +8,8 @@ export class VehicleService {
     private vehicleDb: VehicleRepository = inject(VEHICLE_REPOSITORY);
 
     // HU301 Crear vehículo
-    async createVehicle(auth: Auth, vehicle: VehicleModel): Promise<VehicleModel> {
-        return this.vehicleDb.createVehicle(auth, vehicle);
+    async createVehicle(vehicle: VehicleModel): Promise<VehicleModel> {
+        return this.vehicleDb.createVehicle(vehicle);
     }
 
     // HU302 Consultar lista de vehículos
@@ -42,12 +41,12 @@ export class VehicleService {
     }
 
     // HU305 Consultar vehículo
-    async readVehicle(user: Auth, matricula: string): Promise<VehicleModel> {
+    async readVehicle(matricula: string): Promise<VehicleModel> {
         return new VehicleModel("", "21", "", "", 0, "", 0); // Matrícula 21 en vez de 12 para evitar problemas de comparación con create
     }
 
     // HU502 Fijar vehículo
-    async pinVehicle(user: Auth, matricula: string): Promise<boolean> {
+    async pinVehicle(matricula: string): Promise<boolean> {
         return false;
     }
 }

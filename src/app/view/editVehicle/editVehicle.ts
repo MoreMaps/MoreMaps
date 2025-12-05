@@ -17,6 +17,7 @@ export class EditVehicleComponent implements OnInit {
     @Output() update = new EventEmitter<boolean>();
 
     editForm!: FormGroup;
+    vehicleForm!: FormGroup;
     constructor(private fb: FormBuilder, private service: VehicleService) {
     }
 

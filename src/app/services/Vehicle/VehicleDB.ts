@@ -3,10 +3,21 @@ import {VehicleRepository} from './VehicleRepository';
 import {Auth} from '@angular/fire/auth';
 import {VehicleModel} from '../../data/VehicleModel';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
-import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
-import {doc, collection, Firestore, getDoc, getDocs, updateDoc, writeBatch, query, deleteDoc} from '@angular/fire/firestore';
+import {DBAccessError} from '../../errors/DBAccessError';
+import {
+    collection,
+    deleteDoc,
+    doc,
+    Firestore,
+    getDoc,
+    getDocs,
+    query,
+    setDoc,
+    updateDoc,
+    writeBatch
+} from '@angular/fire/firestore';
 
 
 @Injectable({
@@ -16,8 +27,8 @@ export class VehicleDB implements VehicleRepository {
     private firestore = inject(Firestore);
     private auth = inject(Auth);
 
-    async createVehicle(user: Auth, vehiculo: VehicleModel): Promise<VehicleModel> {
-        this.safetyChecks(user);
+    async createVehicle(vehiculo: VehicleModel): Promise<VehicleModel> {
+        this.safetyChecks();
         this.properValues(vehiculo);
 
         try {
@@ -45,18 +56,16 @@ export class VehicleDB implements VehicleRepository {
     }
 
     async getVehicleList(): Promise<VehicleModel[]> {
-        if (!this.auth.currentUser){
-            throw new SessionNotActiveError();
-        }
+        this.safetyChecks();
 
         let list: VehicleModel[] = [];
-        const path: string = `/items/${this.auth.currentUser.uid}/vehicles`;
+        const path: string = `/items/${this.auth.currentUser!.uid}/vehicles`;
 
         // Obtener items de la colección
         const itemsRef = collection(this.firestore, path);
         const snapshot = await getDocs(query(itemsRef));
 
-        if(!snapshot.empty){
+        if (!snapshot.empty) {
             list = snapshot.docs.map(doc => {
                 const data = doc.data();
                 return new VehicleModel(
@@ -76,10 +85,8 @@ export class VehicleDB implements VehicleRepository {
     }
 
     async updateVehicle(matricula: string, update: Partial<VehicleModel>): Promise<boolean> {
-        // TODO: DESCOMENTAR EN MERGE CON IT03
-        /*
-        this.properValues(update);
-         */
+        this.safetyChecks();
+        this.properValues(update, false);
 
         try {
             // Obtener los datos del vehículo que se va a actualizar
@@ -136,6 +143,7 @@ export class VehicleDB implements VehicleRepository {
     }
 
     async deleteVehicle(matricula: string): Promise<boolean> {
+        this.safetyChecks();
         try {
             // Obtener los datos del vehículo que se va a borrar
             const vehicleRef = doc(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`);
@@ -159,23 +167,20 @@ export class VehicleDB implements VehicleRepository {
         }
     }
 
-    async readVehicle(user: Auth, matricula: string): Promise<VehicleModel> {
+    async readVehicle(matricula: string): Promise<VehicleModel> {
         return new VehicleModel("", "21", "", "", 0, "", 0);
     }
 
-    async pinVehicle(user: Auth, matricula: string): Promise<boolean> {
+    async pinVehicle(matricula: string): Promise<boolean> {
         return false;
     }
 
-    private safetyChecks(givenAuth: Auth) {
+    private safetyChecks() {
         const currentUser = this.auth.currentUser?.uid;
-        const givenUser = givenAuth.currentUser?.uid;
-
-        if (!currentUser || !givenUser) throw new SessionNotActiveError();
-        if (currentUser !== givenUser) throw new ForbiddenContentError();
+        if (!currentUser) throw new SessionNotActiveError();
     }
 
-    private properValues(vehiculo: Partial<VehicleModel>) {
+    private properValues(vehiculo: Partial<VehicleModel>, strictMode: boolean = true) {
         const year = vehiculo.anyo;
         const tipoCombustible = vehiculo.tipoCombustible;
         const consumoMedio = vehiculo.consumoMedio;
@@ -185,16 +190,23 @@ export class VehicleDB implements VehicleRepository {
             'Híbrido Enchufable (PHEV)', 'GLP', 'GNC', 'Hidrógeno'];
         const MIN_CONSUMO_MEDIO = 0.1; // Consumo mínimo razonable (0.1 L/100km)
 
-        if (typeof year !== 'number' || !Number.isInteger(year))
+        if (strictMode && (typeof year !== 'number' || !Number.isInteger(year)))
             throw new Error('El año del vehículo debe ser un número entero válido')
         // En la industria automotriz es común registrar vehículos a finales de año como del año siguiente
-        if (year < minYear || year > curYear + 1)
-            throw new Error(`El año debe estar entre ${minYear} y ${curYear + 1}`);
+        if (year) {
+            if (year < minYear || year > curYear + 1)
+                throw new Error(`El año debe estar entre ${minYear} y ${curYear + 1}`);
+        }
+        if (strictMode && typeof tipoCombustible !== 'string')
+            throw new Error(`El campo de combustible es obligatorio`)
+        if (tipoCombustible)
+            if (!TIPO_COMBUSTIBLE_VALIDOS.includes(tipoCombustible))
+                throw new Error(`Tipo de combustible "${tipoCombustible}" inválido.`)
 
-        if (typeof tipoCombustible !== 'string' || !TIPO_COMBUSTIBLE_VALIDOS.includes(tipoCombustible))
-            throw new Error(`Tipo de combustible inválido. Tipos permitidos: ${TIPO_COMBUSTIBLE_VALIDOS}`)
-
-        if (typeof consumoMedio !== 'number' || consumoMedio < MIN_CONSUMO_MEDIO)
-            throw new Error (`El consumo medio debe ser un número positivo y mayor o igual que ${MIN_CONSUMO_MEDIO}`)
+        if (strictMode && typeof consumoMedio !== 'number')
+            throw new Error(`El campo de consumo medio es obligatorio y debe ser un número positivo y mayor o igual que ${MIN_CONSUMO_MEDIO}`)
+        if (consumoMedio)
+            if (consumoMedio < MIN_CONSUMO_MEDIO)
+                throw new Error(`El consumo medio debe ser un número positivo y mayor o igual que ${MIN_CONSUMO_MEDIO}`)
     }
 }

@@ -116,7 +116,7 @@ export class VehicleForm {
                 f.tipoCombustible,
                 Number(f.consumoMedio)
             );
-            await this.vehicleService.createVehicle(this.auth, vehicleForService);
+            await this.vehicleService.createVehicle(vehicleForService);
 
             // Éxito
             this.showSuccessSnackBar(vehicleForService.matricula);

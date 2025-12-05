@@ -322,12 +322,15 @@ export class SavedItemsComponent implements OnDestroy{
     emptyMessage = computed(
         () => this.currentStrategy().getEmptyMessage());
 
-    // Poner los tipos VehicleModel y RouteModel cuando se vayan a implementar
-    async toggleFavorite(item: POIModel | any, event: Event): Promise<void> {
+    async toggleFavorite(item: POIModel | VehicleModel | any, event: Event): Promise<void> {
         event.stopPropagation();
         const success = await this.currentStrategy().toggleFavorite(this.auth, item);
         if (success) {
-            this.showSnackbar(`${item.pinned ? 'Se ha fijado' : ''} POI "${this.getDisplayName(item)}"${!item.pinned ? ' ya no está fijado.' : '.'}`)
+            const message = item.pinned
+                ? `Se ha fijado ${this.getDisplayName(item)}.`
+                : `${this.getDisplayName(item)} ya no está fijado.`;
+
+            this.showSnackbar(message);
             this.loadItems();
         }
     }

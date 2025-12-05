@@ -22,7 +22,7 @@ export class VehicleService {
                 if (a.pinned !== b.pinned){
                     return a.pinned ? -1 : 1;
                 }
-                // 2. Luego ordenar alfabéticamente por alias o placeName
+                // 2. Luego ordenar alfabéticamente por alias
                 return a.alias.localeCompare(b.alias, 'es', {sensitivity: 'base'});
             });
             return vehicleList;
@@ -48,6 +48,6 @@ export class VehicleService {
 
     // HU502 Fijar vehículo
     async pinVehicle(matricula: string): Promise<boolean> {
-        return false;
+        return this.vehicleDb.pinVehicle(matricula);
     }
 }

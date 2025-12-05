@@ -33,6 +33,7 @@ export class VehicleModel {
     }
 
     static fromJSON(json: any): VehicleModel {
-        return new VehicleModel(json.alias, json.matricula, json.marca, json.modelo, json.anyo, json.tipoCombustible, json.consumoMedio);
+        return new VehicleModel(json.alias, json.matricula, json.marca, json.modelo,
+            json.anyo, json.tipoCombustible, json.consumoMedio, json.pinned);
     }
 }

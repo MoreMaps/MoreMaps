@@ -13,7 +13,11 @@ export class SavedVehiclesStrategy implements SavedItemsStrategy {
     }
 
     async toggleFavorite(auth: Auth, item: VehicleModel): Promise<boolean> {
-        return false;
+        const res: boolean = await this.vehicleService.pinVehicle(item.matricula);
+        if(res){
+            item.pinned = !item.pinned;
+        }
+        return res;
     }
 
     getEmptyMessage(): string {

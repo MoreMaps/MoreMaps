@@ -67,17 +67,7 @@ export class VehicleDB implements VehicleRepository {
 
         if (!snapshot.empty) {
             list = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return new VehicleModel(
-                    data['alias'],
-                    data['matricula'],
-                    data['marca'],
-                    data['modelo'],
-                    data['anyo'],
-                    data['tipoCombustible'],
-                    data['consumoMedio'],
-                    data['pinned'],
-                );
+                return VehicleModel.fromJSON(doc.data());
             });
         }
 
@@ -191,7 +181,27 @@ export class VehicleDB implements VehicleRepository {
     }
 
     async pinVehicle(matricula: string): Promise<boolean> {
-        return false;
+        this.safetyChecks();
+
+        // Lectura del vehículo registrado.
+        const vehicle: VehicleModel = await this.readVehicle(matricula);
+
+        // Ruta para actualizar el vehículo
+        const path: string = `/items/${this.auth.currentUser!.uid}/vehicles/${matricula}`;
+
+        // Actualización del documento, invirtiendo "pinned".
+        try {
+            await updateDoc( doc(this.firestore, path), {pinned: !vehicle.pinned} );
+            return true;
+        } catch (error: any) {
+            console.error(`Error al intentar fijar vehículo con matrícula ${matricula}: ${error}`);
+            switch (error.code) {
+                case 'invalid-argument':
+                case 'not-found':
+                    throw new MissingVehicleError();
+            }
+            throw new DBAccessError();
+        }
     }
 
     private safetyChecks() {

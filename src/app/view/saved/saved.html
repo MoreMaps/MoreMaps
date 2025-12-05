@@ -52,40 +52,85 @@
         </div>
 
         <!-- Lista de items -->
-        @if (items() === null || items()!.length > 0) {
+        @if (items() === null || items().length > 0) {
+            <!-- Lista de POIs -->
+            @if (lugares().length > 0) {
+                <div class="items-list">
+                    @for (item of paginatedItems(); track item.geohash) {
+                        <div
+                            class="item-card"
+                            (click)="selectItem(item)"
+                            [class.selected]="selectedPOI?.geohash === item.geohash">
+                            <div class="item-icon">
+                                <img
+                                    ngSrc="assets/images/poi_active.png"
+                                    height="44"
+                                    width="33"
+                                    priority
+                                    alt="POI icon"
+                                    class="poi-icon-img"
+                                    [class.visible]="selectedPOI?.geohash === item.geohash">
+                                <img
+                                    ngSrc="assets/images/poi_inactive.png"
+                                    priority
+                                    height="44"
+                                    width="33"
+                                    alt="POI icon"
+                                    class="poi-icon-img"
+                                    [class.visible]="selectedPOI?.geohash !== item.geohash">
+                            </div>
+                            <div class="item-info">
+                                <h3 class="item-name">{{ getDisplayName(item) }}</h3>
+                                @if (getDisplayName(item) !== item.placeName) {
+                                    <p class="item-place-if-alias">{{ item.placeName }}</p>
+                                }
+                                <p class="item-description">({{ item.lat || 'Dummy' }}, {{ item.lon || 'Dummy' }})</p>
+                                <p class="item-description"
+                                   style="white-space: nowrap;
+                                      overflow:hidden; text-overflow:ellipsis;">{{ item.description || 'Sin descripción' }}</p>
+                            </div>
+                            <button
+                                mat-icon-button
+                                class="favorite-button"
+                                [class.pinned]="item.pinned"
+                                (click)="toggleFavorite(item, $event)">
+                                <mat-icon>{{ item.pinned ? 'star' : 'star_border' }}</mat-icon>
+                            </button>
+                        </div>
+                    }
+                </div>
+            } @else if (vehiculos().length > 0) {
             <div class="items-list">
-                @for (item of paginatedItems(); track item.geohash) {
+                @for (item of paginatedItems(); track item.matricula) {
                     <div
                         class="item-card"
                         (click)="selectItem(item)"
-                        [class.selected]="selectedItem?.geohash === item.geohash">
+                        [class.selected]="selectedVehicle?.matricula === item.matricula">
                         <div class="item-icon">
                             <img
-                                ngSrc="assets/images/poi_active.png"
-                                height="44"
-                                width="33"
+                                ngSrc="assets/images/vehicle/vehicle_active.svg"
+                                height="50"
+                                width="50"
                                 priority
                                 alt="POI icon"
                                 class="poi-icon-img"
-                                [class.visible]="selectedItem?.geohash === item.geohash">
+                                [class.visible]="selectedVehicle?.matricula === item.matricula">
                             <img
-                                ngSrc="assets/images/poi_inactive.png"
+                                ngSrc="assets/images/vehicle/vehicle_inactive.svg"
                                 priority
-                                height="44"
-                                width="33"
+                                height="50"
+                                width="50"
                                 alt="POI icon"
                                 class="poi-icon-img"
-                                [class.visible]="selectedItem?.geohash !== item.geohash">
+                                [class.visible]="selectedVehicle?.matricula !== item.matricula">
                         </div>
+                        <!-- Aqui cargamos los datos del vehículo -->
                         <div class="item-info">
                             <h3 class="item-name">{{ getDisplayName(item) }}</h3>
-                            @if (getDisplayName(item) !== item.placeName) {
-                                <p class="item-place-if-alias">{{ item.placeName }}</p>
-                            }
-                            <p class="item-description">({{ item.lat || 'Dummy' }}, {{ item.lon || 'Dummy' }})</p>
+                            <p class="item-description">{{item.matricula}}</p>
                             <p class="item-description"
                                style="white-space: nowrap;
-                                      overflow:hidden; text-overflow:ellipsis;">{{ item.description || 'Sin descripción' }}</p>
+                                      overflow:hidden; text-overflow:ellipsis;">{{ `${item.marca} ${item.modelo} ${item.anyo}` }}</p>
                         </div>
                         <button
                             mat-icon-button
@@ -97,6 +142,8 @@
                     </div>
                 }
             </div>
+            }
+
         } @else {
             <!-- Estado vacío -->
             <div class="empty-state">
@@ -116,12 +163,16 @@
             </div>
         } @else {
             @if (isDesktop()) {
-                <app-saved-item-dialog
-                    [item]="selectedItem"
-                    [displayName]="getDisplayName(selectedItem)"
-                    (actionEvent)="handleDialogActions($event)"
-                    (closeEvent)="deselectItem()">
-                </app-saved-item-dialog>
+                @if (selectedPOI) {
+                    <app-saved-item-dialog
+                        [item]="selectedPOI!"
+                        [displayName]="getDisplayName(selectedItem)"
+                        (actionEvent)="handleDialogActions($event)"
+                        (closeEvent)="deselectItem()">
+                    </app-saved-item-dialog>
+                } @else if (selectedVehicle) {
+                    <!--TODO app-saved-vehicle-data-->
+                }
             }
         }
     </div>

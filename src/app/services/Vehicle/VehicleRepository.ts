@@ -8,8 +8,8 @@ export const VEHICLE_REPOSITORY = new InjectionToken<VehicleRepository>('Vehicle
 export interface VehicleRepository {
     // CRUDE
     createVehicle(user: Auth, vehiculo: VehicleModel) : Promise<VehicleModel>;
-    getVehicleList(user: Auth) : Promise<VehicleModel[]>;
-    updateVehicle(user: Auth, matricula: string, vehicle: Partial<VehicleModel>) : Promise<boolean>;
+    getVehicleList() : Promise<VehicleModel[]>;
+    updateVehicle(matricula: string, vehicle: Partial<VehicleModel>) : Promise<boolean>;
     deleteVehicle(matricula : string) : Promise<boolean>;
     readVehicle(user: Auth, matricula: string): Promise<VehicleModel>;
     pinVehicle(user: Auth, matricula: string) : Promise<boolean>;

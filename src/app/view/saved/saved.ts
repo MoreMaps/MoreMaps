@@ -21,6 +21,10 @@ import {SpinnerSnackComponent} from '../map/map';
 import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
 import {SavedItemDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {BreakpointObserver} from '@angular/cdk/layout';
+import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
+import {VehicleDB} from '../../services/Vehicle/VehicleDB';
+import {VehicleService} from '../../services/Vehicle/vehicle.service';
+import {VehicleModel} from '../../data/VehicleModel';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -40,8 +44,14 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
     ],
     templateUrl: './saved.html',
     styleUrls: ['./saved.scss'],
-    providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB},
-        SavedPOIStrategy, SavedVehiclesStrategy, SavedRouteStrategy]
+    providers: [
+        POIService,
+        VehicleService,
+        {provide: POI_REPOSITORY, useClass: POIDB},
+        {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
+        SavedPOIStrategy,
+        SavedVehiclesStrategy,
+        SavedRouteStrategy]
 })
 export class SavedItemsComponent implements OnDestroy{
     private auth = inject(Auth);
@@ -58,12 +68,16 @@ export class SavedItemsComponent implements OnDestroy{
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
         'vehiculos': inject(SavedVehiclesStrategy),
-        'rutas': inject(SavedVehiclesStrategy)
+        'rutas': inject(SavedRouteStrategy)
     };
 
     selectedType = signal<ItemType>('lugares');
-    items = signal<any[] | null>(null);
-    selectedItem: POIModel | null = null;
+    items = signal<any[]>([]);
+    lugares = signal <POIModel[]>([]);
+    vehiculos = signal <VehicleModel[]>([]);
+    selectedItem: POIModel | VehicleModel | null = null;
+    selectedPOI: POIModel | null = null;
+    selectedVehicle: VehicleModel | null = null;
 
     // Paginación
     currentPage = signal(1);
@@ -90,6 +104,21 @@ export class SavedItemsComponent implements OnDestroy{
             const currentType = this.selectedType();
             localStorage.setItem('user_preference_saved_tab', currentType);
         });
+
+        effect(() => {
+            // al añadir rutas asegurarse de que se añaden en las 3 ramas
+            let first = this.items().at(0);
+            if (first instanceof POIModel) {
+                this.lugares.set(this.items());
+                this.vehiculos.set([]);
+            } else if (first instanceof VehicleModel) {
+                this.vehiculos.set(this.items());
+                this.lugares.set([]);
+            } else {
+                this.vehiculos.set([]);
+                this.lugares.set([]);
+            }
+        })
 
         this.breakpointObserver.observe('(min-width: 1025px)').subscribe(result => {
             const isDesktopNow = result.matches
@@ -122,9 +151,7 @@ export class SavedItemsComponent implements OnDestroy{
 
     async loadItems(): Promise<void> {
         try {
-            const loadedItems = await this.currentStrategy().loadItems(this.auth)
-            this.items.set(loadedItems);
-            this.checkAndSelectFromParams(loadedItems);
+            await this.checkAndSelectFromParams();
         } catch (error) {
             if (error instanceof SessionNotActiveError) {
                 this.router.navigate(['']);
@@ -135,13 +162,22 @@ export class SavedItemsComponent implements OnDestroy{
         }
     }
 
-    private checkAndSelectFromParams(items: any[]): void {
+    private async checkAndSelectFromParams(): Promise<void> {
         // Leo el geohash del elemento en el queryParam
         const params = this.route.snapshot.queryParams;
-        const target = params['id'];
+        const type: ItemType = params['type'];
+        const target: string = params['id'];
+
+        if (type) this.selectedType.set(type);
+        const items = await this.currentStrategy().loadItems(this.auth);
+        this.items.set(items);
 
         if(target && items) {
-            const foundItem = items.find(item => item.geohash === target);
+            let foundItem : POIModel | VehicleModel | null = null;
+            if (type === 'lugares')
+                foundItem = items.find(item => item.geohash === target);
+            else
+                foundItem = items.find(item => item.matricula === target);
 
             if (foundItem) {
                 this.selectItem(foundItem);
@@ -165,7 +201,7 @@ export class SavedItemsComponent implements OnDestroy{
     }
 
     private async fetchDataWithLoading(): Promise<void> {
-        this.items.set(null);
+        this.items.set([]);
 
         if (this.activeSnackRef) {this.activeSnackRef.dismiss();}
 
@@ -186,8 +222,11 @@ export class SavedItemsComponent implements OnDestroy{
         }
     }
 
-    selectItem(item: POIModel): void {
+    selectItem(item: POIModel | VehicleModel): void {
         this.selectedItem = item;
+        if(item instanceof POIModel) {this.selectedPOI = item; this.selectedVehicle = null;}
+        if(item instanceof VehicleModel) {this.selectedVehicle = item; this.selectedPOI = null;}
+        // acordarse bien de rutas despues
 
         // No need for the dialog on desktop
         if (!this.isDesktop()) {
@@ -195,26 +234,27 @@ export class SavedItemsComponent implements OnDestroy{
         }
     }
 
-    private openDialogForItem(item: POIModel): void {
+    private openDialogForItem(item: POIModel | VehicleModel): void {
         if (this.dialog.openDialogs.length > 0) return;
+        if(item instanceof POIModel) {
+            // Open the Dialog
+            const dialogRef = this.dialog.open(SavedItemDialog, {
+                data: {
+                    item: item,
+                    displayName: this.getDisplayName(item)
+                },
+                panelClass: 'saved-item-dialog-panel',
+                autoFocus: false,
+                width: '400px',
+                maxWidth: '90vw'
+            });
 
-        // Open the Dialog
-        const dialogRef = this.dialog.open(SavedItemDialog, {
-            data: {
-                item: item,
-                displayName: this.getDisplayName(item)
-            },
-            panelClass: 'saved-item-dialog-panel',
-            autoFocus: false,
-            width: '400px',
-            maxWidth: '90vw'
-        });
-
-        dialogRef.afterClosed().subscribe((result) => {
-            if (result) this.handleDialogActions(result);
-            if (result?.ignore) return;
-            else this.deselectItem();
-        });
+            dialogRef.afterClosed().subscribe((result) => {
+                if (result) this.handleDialogActions(result);
+                if (result?.ignore) return;
+                else this.deselectItem();
+            });
+        } // añadir dialogo de vehiculo en otra rama else-if
     }
 
     handleDialogActions(action: string | undefined): void {
@@ -234,13 +274,14 @@ export class SavedItemsComponent implements OnDestroy{
                 console.log('Route');
                 this.deselectItem();
                 break;
-            case 'showOnMap':
+            case 'showOnMap': // para pois. rutas será llamada navigateOnMap
                 if (this.selectedItem) {
+                    let poi : POIModel = <POIModel>this.selectedItem;
                     this.router.navigate(['/map'], {
                         queryParams: {
-                            lat: this.selectedItem.lat,
-                            lon: this.selectedItem.lon,
-                            name: this.selectedItem.alias
+                            lat: poi.lat,
+                            lon: poi.lon,
+                            name: poi.alias
                         }
                     });
                 }
@@ -252,7 +293,7 @@ export class SavedItemsComponent implements OnDestroy{
         this.selectedItem = null;
     }
 
-    getDisplayName(item: POIModel): string {
+    getDisplayName(item: POIModel | VehicleModel): string {
         return this.currentStrategy().getDisplayName(item);
     }
 
@@ -298,4 +339,6 @@ export class SavedItemsComponent implements OnDestroy{
             verticalPosition: 'bottom',
         });
     }
+
+    protected readonly POIModel = POIModel;
 }

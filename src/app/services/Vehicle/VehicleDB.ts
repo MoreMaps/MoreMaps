@@ -2,9 +2,13 @@ import {inject, Injectable} from '@angular/core';
 import {VehicleRepository} from './VehicleRepository';
 import {Auth} from '@angular/fire/auth';
 import {VehicleModel} from '../../data/VehicleModel';
-import {doc, Firestore, getDoc, updateDoc, writeBatch} from '@angular/fire/firestore';
-import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
+import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
+import {POIModel} from '../../data/POIModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
+import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
+import {doc, collection, Firestore, getDoc, getDocs, updateDoc, writeBatch, query} from '@angular/fire/firestore';
+
 
 @Injectable({
     providedIn: 'root'
@@ -14,11 +18,38 @@ export class VehicleDB implements VehicleRepository {
     private auth = inject(Auth);
 
     async createVehicle(user: Auth, vehiculo: VehicleModel): Promise<VehicleModel> {
-        return new VehicleModel("", "", "", "", 1, "", 0)
+        return new VehicleModel("", "12", "", "", 0, "", 0);
     }
 
-    async getVehicleList(user: Auth): Promise<VehicleModel[]> {
-        return [];
+    async getVehicleList(): Promise<VehicleModel[]> {
+        if (!this.auth.currentUser){
+            throw new SessionNotActiveError();
+        }
+
+        let list: VehicleModel[] = [];
+        const path: string = `/items/${this.auth.currentUser.uid}/vehicles`;
+
+        // Obtener items de la colección
+        const itemsRef = collection(this.firestore, path);
+        const snapshot = await getDocs(query(itemsRef));
+
+        if(!snapshot.empty){
+            list = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return new VehicleModel(
+                    data['alias'],
+                    data['matricula'],
+                    data['marca'],
+                    data['modelo'],
+                    data['anyo'],
+                    data['tipoCombustible'],
+                    data['consumoMedio'],
+                    data['pinned'],
+                );
+            });
+        }
+
+        return list;
     }
 
     async updateVehicle(matricula: string, update: Partial<VehicleModel>): Promise<boolean> {

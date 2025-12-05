@@ -15,7 +15,6 @@ import {VehicleModel} from '../data/VehicleModel';
 // Errores
 import {VehicleAlreadyExistsError} from '../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../errors/Vehicle/MissingVehicleError';
-import {ForbiddenContentError} from '../errors/ForbiddenContentError';
 
 fdescribe('Pruebas sobre vehículos', () => {
     let userService: UserService;
@@ -25,6 +24,7 @@ fdescribe('Pruebas sobre vehículos', () => {
     let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
+    const maria = USER_TEST_DATA[1];
 
     const datosFord: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
     const datosAudi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
@@ -96,7 +96,8 @@ fdescribe('Pruebas sobre vehículos', () => {
                 modelo: datosAudi.modelo,
                 anyo: datosAudi.anyo,
                 tipoCombustible: datosAudi.tipoCombustible,
-                consumoMedio: datosAudi.consumoMedio
+                consumoMedio: datosAudi.consumoMedio,
+                pinned: datosAudi.pinned,
             }));
 
             // CLEANUP
@@ -120,36 +121,37 @@ fdescribe('Pruebas sobre vehículos', () => {
 
     describe('HU302: Consultar lista de vehículos', () => {
 
+        it('HU302-EV01: Consultar el listado vacío de vehículos', async () => {
+            // GIVEN
+            // El usuario maria se ha registrado y ha iniciado sesión
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+
+            // WHEN
+            // El usuario maria consulta su lista de vehículos registrados (vacía)
+            let list: VehicleModel[] = await vehicleService.getVehicleList();
+
+            // THEN
+            // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
+            expect(list.length).toBe(0);
+
+            // CLEANUP
+            // borrar a maria
+            await userService.deleteUser();
+            // volver a iniciar sesión con ramon
+            await userService.login(ramon.email, ramon.pwd);
+        });
+
         it('HU302-EV02: Consultar lista no vacía de vehículos', async () => {
             // GIVEN
             // Lista de vehículos registrados → ["Ford Fiesta"]
 
             // WHEN
             // El usuario consulta su lista de vehículos registrados.
-            const listaVehiculos = await vehicleService.getVehicleList(auth);
+            const listaVehiculos = await vehicleService.getVehicleList();
 
             // THEN
             // Se muestra el listado de vehículos registrados (con al menos 1 resultado).
             expect(listaVehiculos.length).toBeGreaterThanOrEqual(1);
-        });
-
-        it('HU302-EI01: Consultar lista de vehículos de otro usuario', async () => {
-            // GIVEN
-            // El usuario “ramon” tiene los datos de autenticación de otro usuario.
-            // El usuario “ramon” ha iniciado sesión.
-            const authBadUser: Auth = {
-                currentUser: {
-                    uid: 'notARealUser',
-                }
-            } as unknown as Auth;
-
-            // WHEN
-            // El usuario consulta la lista de vehículos registrados de otro usuario.
-            await expectAsync(vehicleService.getVehicleList(authBadUser))
-                .toBeRejectedWith(new ForbiddenContentError());
-
-            // THEN
-            // Se lanza el error ForbiddenContentError.
         });
     });
 
@@ -246,7 +248,8 @@ fdescribe('Pruebas sobre vehículos', () => {
                 modelo: datosFord.modelo,
                 anyo: datosFord.anyo,
                 tipoCombustible: datosFord.tipoCombustible,
-                consumoMedio: datosFord.consumoMedio
+                consumoMedio: datosFord.consumoMedio,
+                pinned: datosFord.pinned,
             }));
         });
 
@@ -272,7 +275,7 @@ fdescribe('Pruebas sobre vehículos', () => {
             const vehiculoAudi: VehicleModel = await vehicleService.createVehicle(auth, datosAudi);
 
             // Ambos vehículos no son fijados, una consulta de vehículos devuelve ["Audi A6", "Ford Fiesta"].
-            let list = await vehicleService.getVehicleList(auth);
+            let list = await vehicleService.getVehicleList();
             expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
 
             // WHEN
@@ -284,13 +287,13 @@ fdescribe('Pruebas sobre vehículos', () => {
             expect(vehiculoFijado).toBeTrue();
 
             // El orden ahora es ["Ford Fiesta", "Audi A6"].
-            list = await vehicleService.getVehicleList(auth);
+            list = await vehicleService.getVehicleList();
             expect(list.at(0)?.matricula).toEqual('1234XYZ');
 
             // CLEANUP
             // Quitar el fijado de "Ford Fiesta".
             await vehicleService.pinVehicle(auth, datosFord.matricula);
-            list = await vehicleService.getVehicleList(auth);
+            list = await vehicleService.getVehicleList();
             expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
 
             // Borrar el vehículo "Audi".
@@ -328,7 +331,7 @@ fdescribe('Pruebas sobre vehículos', () => {
 
             // THEN
             //  Los datos de vehículos de la BD son los mismos que los introducidos previamente.
-            const listaVehicle = await vehicleService.getVehicleList(auth);
+            const listaVehicle = await vehicleService.getVehicleList();
             expect(listaVehicle).toEqual(listaVehiculosAntes);
         });
     });

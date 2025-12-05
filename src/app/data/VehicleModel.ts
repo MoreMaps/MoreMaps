@@ -6,8 +6,9 @@ export class VehicleModel {
     anyo: number
     tipoCombustible: string
     consumoMedio: number
+    pinned: boolean
 
-    constructor(alias: string, matricula: string, marca: string, modelo: string, anyo: number, tipoCombustible: string, consumoMedio: number) {
+    constructor(alias: string, matricula: string, marca: string, modelo: string, anyo: number, tipoCombustible: string, consumoMedio: number, pinned?: boolean) {
         this.alias = alias;
         this.matricula = matricula;
         this.marca = marca;
@@ -15,6 +16,7 @@ export class VehicleModel {
         this.anyo = anyo;
         this.tipoCombustible = tipoCombustible;
         this.consumoMedio = consumoMedio;
+        this.pinned = pinned !== undefined ? pinned : false;
     }
 
     toJSON() {
@@ -26,6 +28,7 @@ export class VehicleModel {
             anyo: this.anyo,
             tipoCombustible: this.tipoCombustible,
             consumoMedio: this.consumoMedio,
+            ...(this.pinned !== undefined ? {pinned: this.pinned} : {pinned: false}),
         }
     }
 

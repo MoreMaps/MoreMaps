@@ -432,7 +432,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             switch (action) {
                 case 'Ver':
                     snackBarRef.dismiss();
-                    this.router.navigate(['/saved'], {queryParams: {id: geohash}});
+                    this.router.navigate(['/saved'], {queryParams: {type: 'lugares', id: geohash}});
                     break;
                 default:
                     snackBarRef.dismiss();

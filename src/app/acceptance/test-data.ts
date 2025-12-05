@@ -1,6 +1,7 @@
 // Datos de prueba para los tests
 import {POIModel} from '../data/POIModel';
 import {geohashForLocation} from 'geofire-common';
+import {VehicleModel} from '../data/VehicleModel';
 
 export const USER_TEST_DATA = [
     {email: "ramonejemplo@gmail.com", pwd: "Passw0rd!", nombre: "Ramón", apellidos: "García García"},
@@ -30,23 +31,23 @@ export const POI_TEST_DATA: POIModel[] = [
     ),
 ]
 
-export const VEHICLE_TEST_DATA = [
-    {
-        alias: "Ford Fiesta",
-        matricula: "1234XYZ",
-        marca: "Ford",
-        modelo: "Fiesta",
-        anyo: 2022,
-        tipoCombustible: "Gasolina",
-        consumoMedio: 13.0,
-    },
-    {
-        alias: "Audi A6",
-        matricula: "4321XYZ",
-        marca: "Audi",
-        modelo: "A6",
-        anyo: 2019,
-        tipoCombustible: "Diésel",
-        consumoMedio: 6.0,
-    },
+export const VEHICLE_TEST_DATA: VehicleModel[] = [
+    new VehicleModel(
+        "Ford Fiesta",
+        "1234XYZ",
+        "Ford",
+        "Fiesta",
+        2022,
+        "Gasolina sin plomo",
+        13.0,
+        false),
+    new VehicleModel(
+        "Audi A6",
+        "4321XYZ",
+        "Audi",
+        "A6",
+        2019,
+        "Diesel",
+        6.0,
+        false),
 ]

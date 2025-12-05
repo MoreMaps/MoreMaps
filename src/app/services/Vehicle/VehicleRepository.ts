@@ -10,7 +10,7 @@ export interface VehicleRepository {
     createVehicle(user: Auth, vehiculo: VehicleModel) : Promise<VehicleModel>;
     getVehicleList() : Promise<VehicleModel[]>;
     updateVehicle(matricula: string, vehicle: Partial<VehicleModel>) : Promise<boolean>;
-    deleteVehicle(user: Auth, matricula : string) : Promise<boolean>;
+    deleteVehicle(matricula : string) : Promise<boolean>;
     readVehicle(user: Auth, matricula: string): Promise<VehicleModel>;
     pinVehicle(user: Auth, matricula: string) : Promise<boolean>;
 }

@@ -7,7 +7,7 @@ import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
 import {POIModel} from '../../data/POIModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
-import {doc, collection, Firestore, getDoc, getDocs, updateDoc, writeBatch, query} from '@angular/fire/firestore';
+import {doc, collection, Firestore, getDoc, getDocs, updateDoc, writeBatch, query, deleteDoc} from '@angular/fire/firestore';
 
 
 @Injectable({
@@ -112,8 +112,28 @@ export class VehicleDB implements VehicleRepository {
         }
     }
 
-    async deleteVehicle(user: Auth, matricula: string): Promise<boolean> {
-        return false;
+    async deleteVehicle(matricula: string): Promise<boolean> {
+        try {
+            // Obtener los datos del vehículo que se va a borrar
+            const vehicleRef = doc(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`);
+            const vehicleSnap = await getDoc(vehicleRef);
+
+            // Si no existe, se lanza un error
+            if (!vehicleSnap.exists()) throw new MissingVehicleError();
+
+            // Borrar documento
+            // TODO: PROPAGAR A RUTAS
+            await deleteDoc(vehicleRef);
+            return true;
+        } catch (error: any) {
+            // Si el error es de Firebase, loguearlo
+            if (error.code) {
+                console.error("ERROR de Firebase: " + error);
+                return false;
+            }
+            // Si no, es un error propio y se puede propagar
+            throw error;
+        }
     }
 
     async readVehicle(user: Auth, matricula: string): Promise<VehicleModel> {

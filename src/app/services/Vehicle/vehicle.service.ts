@@ -1,6 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {VEHICLE_REPOSITORY, VehicleRepository} from './VehicleRepository';
 import {VehicleModel} from '../../data/VehicleModel';
+import {Auth} from '@angular/fire/auth';
 
 
 @Injectable({ providedIn: 'root' })
@@ -42,7 +43,7 @@ export class VehicleService {
 
     // HU305 Consultar vehículo
     async readVehicle(matricula: string): Promise<VehicleModel> {
-        return new VehicleModel("", "21", "", "", 0, "", 0); // Matrícula 21 en vez de 12 para evitar problemas de comparación con create
+        return this.vehicleDb.readVehicle(matricula);
     }
 
     // HU502 Fijar vehículo

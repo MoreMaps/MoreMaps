@@ -31,4 +31,8 @@ export class VehicleModel {
             ...(this.pinned !== undefined ? {pinned: this.pinned} : {pinned: false}),
         }
     }
+
+    static fromJSON(json: any): VehicleModel {
+        return new VehicleModel(json.alias, json.matricula, json.marca, json.modelo, json.anyo, json.tipoCombustible, json.consumoMedio);
+    }
 }

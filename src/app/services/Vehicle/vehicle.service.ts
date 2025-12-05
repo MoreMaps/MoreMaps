@@ -10,7 +10,7 @@ export class VehicleService {
 
     // HU301 Crear vehículo
     async createVehicle(auth: Auth, vehicle: VehicleModel): Promise<VehicleModel> {
-        return new VehicleModel("", "12", "", "", 0, "", 0); // matricula no vacía para evitar problemas
+        return this.vehicleDb.createVehicle(auth, vehicle);
     }
 
     // HU302 Consultar lista de vehículos

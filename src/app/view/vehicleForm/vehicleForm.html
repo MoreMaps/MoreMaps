@@ -1,0 +1,128 @@
+<profile-button></profile-button>
+<app-navbar></app-navbar>
+<dev-theme-toggle></dev-theme-toggle>
+
+<div class="registration-container">
+
+    <header class="header-section">
+        <h2 class="page-title">Registrar nuevo vehículo</h2>
+    </header>
+
+    <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()" class="vehicle-form">
+
+        <section class="form-section">
+            <h3 class="section-title">Identificar el vehículo</h3>
+
+            <div class="form-grid">
+                <mat-form-field appearance="fill" class="item-matricula">
+                    <mat-label>Matrícula</mat-label>
+                    <input matInput formControlName="matricula" placeholder="1234 ABC" autocomplete="off">
+
+                    @if (vehicleForm.get('matricula')?.value && !isLoading()) {
+                        <button mat-icon-button matSuffix (click)="clearField('matricula')" type="button">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    }
+                    @if (vehicleForm.get('matricula')?.hasError('required')) {
+                        <mat-error>Requerido</mat-error>
+                    }
+                    @if (vehicleForm.get('matricula')?.hasError('alreadyExists')) {
+                        <mat-error>Ya registrada</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Alias</mat-label>
+                    <input matInput formControlName="alias" placeholder="Mi coche rojo">
+                    @if (vehicleForm.get('alias')?.value && !isLoading()) {
+                        <button mat-icon-button matSuffix (click)="clearField('alias')" type="button">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    }
+                    <mat-error>Requerido</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Marca</mat-label>
+                    <input matInput formControlName="marca" placeholder="Toyota">
+                    @if (vehicleForm.get('marca')?.value && !isLoading()) {
+                        <button mat-icon-button matSuffix (click)="clearField('marca')" type="button">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    }
+                    <mat-error>Requerido</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Modelo</mat-label>
+                    <input matInput formControlName="modelo" placeholder="Corolla">
+                    @if (vehicleForm.get('modelo')?.value && !isLoading()) {
+                        <button mat-icon-button matSuffix (click)="clearField('modelo')" type="button">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    }
+                    <mat-error>Requerido</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Año</mat-label>
+                    <input matInput type="number" formControlName="anyo">
+                    @if (vehicleForm.get('anyo')?.value && !isLoading()) {
+                        <button mat-icon-button matSuffix (click)="clearField('anyo')" type="button">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    }
+                    <mat-error>Año inválido</mat-error>
+                </mat-form-field>
+            </div>
+        </section>
+
+        <section class="form-section mt-4">
+            <h3 class="section-title">Datos de combustible</h3>
+            <p class="section-subtitle text-gray-blue">
+                Con estos datos calculamos el coste de una ruta.
+            </p>
+
+            <div class="form-grid fuel-grid">
+                <mat-form-field appearance="fill">
+                    <mat-label>Tipo de combustible</mat-label>
+                    <mat-select formControlName="tipoCombustible">
+                        @for (fuel of fuelTypes(); track fuel) {
+                            <mat-option [value]="fuel">{{ fuel }}</mat-option>
+                        }
+                    </mat-select>
+                    <mat-error>Requerido</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Consumo medio</mat-label>
+                    <input matInput type="number" formControlName="consumoMedio" placeholder="0.0">
+
+                    <span matTextSuffix style="padding-left: 5px;">{{ consumptionUnit() }}</span>
+
+                    @if (vehicleForm.get('consumoMedio')?.value && !isLoading()) {
+                        <button mat-icon-button matSuffix (click)="clearField('consumoMedio')">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    }
+                </mat-form-field>
+            </div>
+        </section>
+
+        <div class="actions-container">
+            <button
+                mat-raised-button
+                type="submit"
+                class="save-button"
+                [disabled]="vehicleForm.invalid || isLoading()">
+
+                @if (isLoading()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                } @else {
+                    Guardar
+                }
+            </button>
+        </div>
+
+    </form>
+</div>

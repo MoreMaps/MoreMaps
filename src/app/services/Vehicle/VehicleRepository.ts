@@ -1,4 +1,3 @@
-// por alguna razón pinPOI recibe el objeto entero en lugar del GeoHash, ¿enviamos aquí también el objeto vehículo entero?
 import {VehicleModel} from '../../data/VehicleModel';
 import {InjectionToken} from '@angular/core';
 

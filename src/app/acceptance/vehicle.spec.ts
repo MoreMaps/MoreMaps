@@ -16,7 +16,7 @@ import {VehicleModel} from '../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../errors/Vehicle/MissingVehicleError';
 
-fdescribe('Pruebas sobre vehículos', () => {
+describe('Pruebas sobre vehículos', () => {
     let userService: UserService;
     let vehicleService: VehicleService;
 
@@ -26,24 +26,8 @@ fdescribe('Pruebas sobre vehículos', () => {
     const ramon = USER_TEST_DATA[0];
     const maria = USER_TEST_DATA[1];
 
-    const datosFord: VehicleModel = new VehicleModel(
-        VEHICLE_TEST_DATA[0].alias,
-        VEHICLE_TEST_DATA[0].matricula,
-        VEHICLE_TEST_DATA[0].marca,
-        VEHICLE_TEST_DATA[0].modelo,
-        VEHICLE_TEST_DATA[0].anyo,
-        VEHICLE_TEST_DATA[0].tipoCombustible,
-        VEHICLE_TEST_DATA[0].consumoMedio,
-    );
-    const datosAudi: VehicleModel = new VehicleModel(
-        VEHICLE_TEST_DATA[1].alias,
-        VEHICLE_TEST_DATA[1].matricula,
-        VEHICLE_TEST_DATA[1].marca,
-        VEHICLE_TEST_DATA[1].modelo,
-        VEHICLE_TEST_DATA[1].anyo,
-        VEHICLE_TEST_DATA[1].tipoCombustible,
-        VEHICLE_TEST_DATA[1].consumoMedio,
-        );
+    const datosFord: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
+    const datosAudi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
 
     let vehiculoRegistrado: VehicleModel;
 
@@ -187,11 +171,9 @@ fdescribe('Pruebas sobre vehículos', () => {
             // No se lanza ningún error. Se modifica la matrícula.
             expect(vehiculoModificado).toBeTrue();
 
-            // TODO descomentar al integrar readVehicle
-            /*
             // Comprobación adicional de la modificación.
-            let vehiculoLeido = await vehicleService.readVehicle(nuevaMatricula);
-            expect(vehiculoLeido.matricula).toBe(nuevaMatricula);*/
+            const vehiculoLeido = await vehicleService.readVehicle(nuevaMatricula);
+            expect(vehiculoLeido.matricula).toBe(nuevaMatricula);
 
             // CLEANUP
             // Restaurar matrícula original.
@@ -203,7 +185,6 @@ fdescribe('Pruebas sobre vehículos', () => {
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
             const vehiculoAudi = await vehicleService.createVehicle(datosAudi);
 
-            console.log(vehiculoAudi);
             // WHEN
             // El usuario trata de modificar la matrícula del vehículo Audi (4321XYZ) a la del "Ford Fiesta" (1234XYZ)
             await expectAsync(vehicleService.updateVehicle(vehiculoAudi.matricula, {matricula: datosFord.matricula}))
@@ -248,7 +229,7 @@ fdescribe('Pruebas sobre vehículos', () => {
         });
     });
 
-    xdescribe('HU305: Consultar información de un vehículo', () => {
+    describe('HU305: Consultar información de un vehículo', () => {
 
         it('HU305-EV01: Consultar información de un vehículo registrado', async () => {
             // GIVEN
@@ -261,7 +242,7 @@ fdescribe('Pruebas sobre vehículos', () => {
             // THEN
             // Se muestran los datos del vehículo.
             expect(datosVehiculo).toEqual(jasmine.objectContaining({
-                alias: datosFord.matricula,
+                alias: datosFord.alias,
                 matricula: datosFord.matricula,
                 marca: datosFord.marca,
                 modelo: datosFord.modelo,
@@ -286,7 +267,7 @@ fdescribe('Pruebas sobre vehículos', () => {
         });
     });
 
-    xdescribe('HU502: Fijar un vehículo', () => {
+    describe('HU502: Fijar un vehículo', () => {
 
         it('HU502-EV01: Fijar un vehículo registrado', async () => {
             // GIVEN
@@ -322,6 +303,7 @@ fdescribe('Pruebas sobre vehículos', () => {
         it('HU502-EI02: Fijar un vehículo no registrado', async () => {
             // GIVEN
             // Lista de vehículos registrados → ["Ford Fiesta"].
+
             // WHEN
             // El usuario trata de fijar un vehículo no registrado.
             await expectAsync(vehicleService.pinVehicle(datosAudi.matricula))

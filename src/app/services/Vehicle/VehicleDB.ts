@@ -168,7 +168,26 @@ export class VehicleDB implements VehicleRepository {
     }
 
     async readVehicle(matricula: string): Promise<VehicleModel> {
-        return new VehicleModel("", "21", "", "", 0, "", 0);
+        this.safetyChecks();
+        const path: string = `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`;
+        let vehicleSnap;
+
+        // Obtener datos de Firebase
+        try {
+            vehicleSnap = await getDoc( doc(this.firestore, path) );
+        } catch (error: any) {
+            // Loguear error de Firebase
+            console.error("ERROR de Firebase: " + error);
+            throw new DBAccessError();
+        }
+
+        // Si no se han podido obtener, el vehículo solicitado no existe.
+        if (!vehicleSnap.exists()) {
+            throw new MissingVehicleError();
+        }
+
+        // Devolver vehículo
+        return VehicleModel.fromJSON(vehicleSnap.data());
     }
 
     async pinVehicle(matricula: string): Promise<boolean> {

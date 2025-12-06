@@ -34,7 +34,7 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     @Input() vehicle: VehicleModel | null = null;
     @Input() auth: Auth | null = null;
     @Output() close = new EventEmitter<void>();
-    @Output() update = new EventEmitter<boolean>();
+    @Output() update = new EventEmitter<VehicleModel | null>();
 
     private fb = inject(FormBuilder);
     private service = inject(VehicleService);
@@ -111,7 +111,8 @@ export class EditVehicleComponent implements OnInit, OnChanges {
         if (this.editForm.valid && this.vehicle && this.auth) {
             const f = this.editForm.getRawValue();
 
-            const updatedVehicle: Partial<VehicleModel> = {
+            // Se construye el objeto parcial con los cambios
+            const updatedVehicleParts: Partial<VehicleModel> = {
                 alias: f.alias,
                 matricula: f.matricula.replace(/\s/g, '').toUpperCase(),
                 marca: f.marca,
@@ -121,8 +122,15 @@ export class EditVehicleComponent implements OnInit, OnChanges {
                 consumoMedio: Number(f.consumoMedio)
             };
 
-            const success = await this.service.updateVehicle(this.vehicle.matricula, updatedVehicle);
-            this.update.emit(success);
+            const success = await this.service.updateVehicle(this.vehicle.matricula, updatedVehicleParts);
+
+            // Si es exitoso, se mezclan los datos viejos con los nuevos y emitimos el objeto completo
+            if (success) {
+                const finalVehicle = { ...this.vehicle, ...updatedVehicleParts } as VehicleModel;
+                this.update.emit(finalVehicle);
+            } else {
+                this.update.emit(null);
+            }
         }
     }
 

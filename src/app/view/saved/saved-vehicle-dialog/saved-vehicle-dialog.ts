@@ -113,10 +113,21 @@ export class SavedVehicleDialog implements OnInit {
         this.isEditing.set(false);
     }
 
-    onUpdateSuccess(success: boolean): void {
-        if (success) {
+    onUpdateSuccess(updatedVehicle: VehicleModel | null): void {
+        if (updatedVehicle) {
+            // 1. Actualizamos inmediatamente los datos que se están mostrando en el diálogo
+            this.displayData.item = updatedVehicle;
+
+            // 2. Recalculamos el displayName por si cambió el alias o modelo
+            this.displayData.displayName = updatedVehicle.alias || `${updatedVehicle.marca} ${updatedVehicle.modelo}`;
+
+            // 3. Feedback visual
             this.snackBar.open('Vehículo actualizado correctamente', 'Ok', {duration: 3000});
-            this.handleAction('update'); // Notifica al padre (SavedItems) para recargar
+
+            // 4. Notificamos al padre (SavedItems) para que recargue la lista de fondo
+            this.handleAction('update');
+
+            // 5. Cerramos el modo edición (la vista ahora leerá this.displayData.item actualizado)
             this.isEditing.set(false);
         } else {
             this.snackBar.open('Error al actualizar', 'Cerrar', {duration: 3000});

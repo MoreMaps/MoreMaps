@@ -1,0 +1,75 @@
+<div class="dialog-container">
+
+    <div class="dialog-header">
+        <div class="header-content">
+            <div class="icon-wrapper">
+                <mat-icon class="header-icon">location_on</mat-icon>
+            </div>
+
+            <div class="header-text">
+                @if (!isEditing()) {
+                    <h2 class="dialog-title">
+                        {{ displayData.item.alias || displayData.item.marca + ' ' + displayData.item.modelo }}
+                    </h2>
+                    <p class="dialog-subtitle primary-sub">{{ displayData.item.matricula }}</p>
+                    <p class="dialog-subtitle secondary-sub">
+                        {{ displayData.item.marca }} {{ displayData.item.modelo }} ({{ displayData.item.anyo }})
+                    </p>
+                }
+            </div>
+        </div>
+
+        <button mat-icon-button (click)="close()" class="close-btn">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <div class="dialog-body">
+
+        @if (!isEditing()) {
+            <div class="actions-list">
+                <button class="action-item" (click)="onNewRoute()">
+                    <div class="icon-circle green">
+                        <mat-icon>arrow_forward</mat-icon>
+                    </div>
+                    <span class="action-label green-text">NUEVA RUTA</span>
+                </button>
+
+                <button class="action-item" (click)="onEdit()">
+                    <div class="icon-circle green">
+                        <mat-icon>edit</mat-icon>
+                    </div>
+                    <span class="action-label green-text">EDITAR</span>
+                </button>
+
+                <button class="action-item" (click)="onDelete()">
+                    <div class="icon-circle trash-wrapper">
+                        <svg viewBox="0 0 24 24" fill="currentColor" class="trash-icon" style="width: 32px; height: 32px;">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </div>
+                    <span class="action-label orange-text">ELIMINAR</span>
+                </button>
+            </div>
+        }
+
+        @else {
+            <app-edit-vehicle
+                [vehicle]="displayData.item"
+                [auth]="auth"
+                (close)="onCancelEdit()"
+                (update)="onUpdateSuccess($event)">
+            </app-edit-vehicle>
+        }
+    </div>
+
+    @if (isDeleting()) {
+        <app-delete-confirmation-popup
+            [matricula]="displayData.item.matricula"
+            [alias]="displayData.item.alias || displayData.item.matricula"
+            [auth]="auth"
+            (close)="onCancelDelete()"
+            (success)="onDeleteSuccess($event)">
+        </app-delete-confirmation-popup>
+    }
+</div>

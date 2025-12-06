@@ -21,7 +21,7 @@ import {POIService} from '../../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../../services/POI/POIRepository';
 import {POIDB} from '../../../services/POI/POIDB';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {DeleteConfirmationPopupComponent} from '../../deletePOI/deletePOI';
+import {DeleteConfirmationPOIPopupComponent} from '../../deletePOI/deletePOI';
 
 export interface SavedItemDialogData {
     item: POIModel;
@@ -30,7 +30,7 @@ export interface SavedItemDialogData {
 }
 
 @Component({
-    selector: 'app-saved-item-dialog',
+    selector: 'app-saved-poi-dialog',
     standalone: true,
     imports: [
         CommonModule,
@@ -39,13 +39,13 @@ export interface SavedItemDialogData {
         MatIconModule,
         NgOptimizedImage,
         ReactiveFormsModule,
-        DeleteConfirmationPopupComponent,
+        DeleteConfirmationPOIPopupComponent,
     ],
     templateUrl: './saved-poi-dialog.html',
     styleUrls: ['./saved-poi-dialog.scss'],
     providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB}]
 })
-export class SavedItemDialog implements OnInit {
+export class SavedPoiDialog implements OnInit {
     // Inputs for Embedded Mode (Desktop)
     @Input() item?: POIModel;
     @Input() displayName?: string;
@@ -68,7 +68,7 @@ export class SavedItemDialog implements OnInit {
     public auth = inject(Auth);
 
     constructor(
-        @Optional() public dialogRef: MatDialogRef<SavedItemDialog>,
+        @Optional() public dialogRef: MatDialogRef<SavedPoiDialog>,
         @Optional() @Inject(MAT_DIALOG_DATA) public dialogData: SavedItemDialogData
     ) {
     }

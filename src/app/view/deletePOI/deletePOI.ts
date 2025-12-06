@@ -14,7 +14,7 @@ import {POIDB} from '../../services/POI/POIDB';
     styleUrls: ['./deletePOI.css'],
     providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB}]
 })
-export class DeleteConfirmationPopupComponent {
+export class DeleteConfirmationPOIPopupComponent {
     @Input() geohash: Geohash = " ";
     @Input() auth: Auth;
     @Input() poiName: string = '';

@@ -220,17 +220,17 @@
 }
 
 
-/* ===== PANEL DE DETALLES ===== */
+/* ===== PANEL DE DETALLES (Embed Desktop) ===== */
 .details-container {
     /* Mobile Default: Hidden or overlay (handled by logic/dialog) */
     display: none;
 
     @media (min-width: 1025px) {
         /* Desktop Layout */
-        display: flex;              /* Enable Flexbox */
-        flex-direction: column;     /* Stack children vertically */
-        justify-content: center;    /* Center content Vertically (Y-Axis) */
-        align-items: center;        /* Center content Horizontally (X-Axis) */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
 
         p {
             opacity: 0.5;
@@ -241,15 +241,18 @@
         padding: 2rem;
         background-color: transparent;
 
-        /* Ensure the embedded dialog component doesn't stretch weirdly */
-        app-saved-item-dialog {
+        /* CORRECCIÓN: Aplicar estilos a AMBOS componentes (POI y Vehicle) */
+        app-saved-poi-dialog,
+        app-saved-vehicle-dialog {
             width: 100%;
-            max-width: 450px;       /* Constrain width so it looks like a card */
+            max-width: 450px;       /* Ancho máximo tipo tarjeta */
+            min-width: 350px;       /* Ancho mínimo para evitar que se vea muy estrecho */
 
-            /* Add shadow/border to look like a card in embedded mode */
+            /* Estilo de tarjeta */
             border-radius: 20px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            overflow: hidden;       /* Ensure rounded corners clip content */
+            overflow: hidden;
+            background-color: var(--color-white); /* Asegurar fondo blanco */
         }
     }
 }
@@ -357,6 +360,12 @@
 
     .details-container {
         background-color: var(--color-teal-dark);
+    }
+
+    /* Asegurar que el componente embedded tenga fondo oscuro en dark mode */
+    .details-container app-saved-poi-dialog,
+    .details-container app-saved-vehicle-dialog {
+        background-color: var(--color-purple-dark);
     }
 
 }

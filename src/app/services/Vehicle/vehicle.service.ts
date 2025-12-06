@@ -1,10 +1,9 @@
 import {inject, Injectable} from '@angular/core';
 import {VEHICLE_REPOSITORY, VehicleRepository} from './VehicleRepository';
 import {VehicleModel} from '../../data/VehicleModel';
-import {Auth} from '@angular/fire/auth';
 
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class VehicleService {
     private vehicleDb: VehicleRepository = inject(VEHICLE_REPOSITORY);
 
@@ -19,7 +18,7 @@ export class VehicleService {
         if (vehicleList.length > 0) {
             vehicleList.sort((a, b) => {
                 // 1. Primero ordenar por pinned (true > false)
-                if (a.pinned !== b.pinned){
+                if (a.pinned !== b.pinned) {
                     return a.pinned ? -1 : 1;
                 }
                 // 2. Luego ordenar alfabéticamente por alias

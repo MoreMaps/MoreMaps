@@ -1,0 +1,169 @@
+:host {
+    display: block;
+}
+
+.dialog-container {
+    padding: 1.5rem;
+    position: relative;
+    background: var(--color-white, #fff);
+    border-radius: 24px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: none;
+}
+
+/* HEADER */
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.header-content {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.icon-wrapper {
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.header-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: var(--color-orange, #FF8C42);
+}
+
+.header-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.dialog-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: #333;
+    line-height: 1.2;
+}
+
+.dialog-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: #666;
+
+    &.primary-sub {
+        font-weight: 500;
+        text-transform: uppercase;
+        color: #4A90A4;
+    }
+
+    &.secondary-sub {
+        opacity: 0.7;
+    }
+}
+
+.close-btn {
+    color: #333;
+    transform: scale(1.1);
+}
+
+/* --- LISTA DE ACCIONES --- */
+.actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.2s ease;
+
+    &:hover {
+        transform: translateX(4px);
+    }
+}
+
+/* Círculos de iconos */
+.icon-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+
+    /* CORRECCIÓN PRINCIPAL: Forzar a que el icono herede el color del círculo */
+    mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: inherit !important;
+    }
+
+    /* Estilo Verde (Editar, Ruta) en modo Claro */
+    &.green {
+        border: 2px solid #4A90A4;
+        color: #4A90A4;
+    }
+
+    &.trash-wrapper {
+        border: none;
+        width: 40px;
+        height: 40px;
+        justify-content: center;
+    }
+}
+
+.trash-icon {
+    font-size: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+    color: var(--color-orange, #FF8C42) !important;
+}
+
+.action-label {
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.green-text {
+    color: #4A90A4;
+}
+
+.orange-text {
+    color: var(--color-orange, #FF8C42);
+}
+
+/* DARK THEME */
+:host-context(.dark-theme) {
+    .dialog-container {
+        background-color: var(--color-purple-dark, #2C2C3E);
+    }
+    .dialog-title { color: white; }
+    .dialog-subtitle { color: #BBB; }
+    .close-btn { color: white; }
+
+    /* Forzar colores brillantes en modo oscuro */
+    .icon-circle.green {
+        border-color: var(--color-mint-green, #A1E7C5);
+        color: var(--color-mint-green, #A1E7C5);
+    }
+
+    .green-text {
+        color: var(--color-mint-green, #A1E7C5);
+    }
+}

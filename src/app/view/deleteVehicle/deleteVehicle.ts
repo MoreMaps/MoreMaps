@@ -1,6 +1,6 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Geohash } from 'geofire-common';
+import {Auth} from '@angular/fire/auth'; // Importar Auth
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
@@ -13,23 +13,28 @@ import {VehicleDB} from '../../services/Vehicle/VehicleDB';
     styleUrls: ['./deleteVehicle.css'],
     providers: [VehicleService, {provide: VEHICLE_REPOSITORY, useClass: VehicleDB}]
 })
-export class DeleteConfirmationPopupComponent {
-    @Input() matricula: Geohash = " ";
+export class DeleteConfirmationVehiclePopupComponent {
+    @Input() matricula: string = ""; // Cambiado a string simple o Geohash
     @Input() alias: string = '';
+    @Input() auth: Auth | null = null; // AÑADIDO: Input para Auth
+
     @Output() success = new EventEmitter<boolean>();
     @Output() close = new EventEmitter<void>();
 
     constructor(private service: VehicleService) {}
 
-    // Ejecuta el borrado (y cierra el popup, si procede)
-    // Propaga el valor obtenido al padre, que es quien muestra el snackbar
-    // Si se ha borrado el vehículo, debería ser "true" y el padre se cerrará también
     async onConfirm(): Promise<void> {
-        this.success.emit(await this.service.deleteVehicle(this.matricula));
-        this.close.emit();
+        if (this.auth && this.matricula) {
+            // Pasamos auth y matrícula al servicio
+            const result = await this.service.deleteVehicle(this.matricula);
+            this.success.emit(result);
+            this.close.emit();
+        } else {
+            console.error("Falta Auth o Matrícula para borrar");
+            this.close.emit();
+        }
     }
 
-    // Envía una señal de cierre
     onClose() {
         this.close.emit();
     }

@@ -1,9 +1,8 @@
 <div class="dialog-container">
-
     <div class="dialog-header">
         <div class="header-content">
             <div class="icon-wrapper">
-                <mat-icon class="header-icon">location_on</mat-icon>
+                <mat-icon class="header-icon">directions_car</mat-icon>
             </div>
 
             <div class="header-text">
@@ -11,10 +10,13 @@
                     <h2 class="dialog-title">
                         {{ displayData.item.alias || displayData.item.marca + ' ' + displayData.item.modelo }}
                     </h2>
-                    <p class="dialog-subtitle primary-sub">{{ displayData.item.matricula }}</p>
-                    <p class="dialog-subtitle secondary-sub">
-                        {{ displayData.item.marca }} {{ displayData.item.modelo }} ({{ displayData.item.anyo }})
+                    <p class="dialog-subtitle">{{ displayData.item.matricula }}</p>
+                    <p class="dialog-coords">
+                        {{ displayData.item.marca }} {{ displayData.item.modelo }} {{ displayData.item.anyo }}
                     </p>
+                } @else {
+                    <h2 class="dialog-title">Editar vehículo</h2>
+                    <p class="dialog-subtitle">Modifica los detalles</p>
                 }
             </div>
         </div>
@@ -25,29 +27,30 @@
     </div>
 
     <div class="dialog-body">
-
         @if (!isEditing()) {
             <div class="actions-list">
                 <button class="action-item" (click)="onNewRoute()">
                     <div class="icon-circle green">
-                        <mat-icon>arrow_forward</mat-icon>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="action-svg">
+                            <path d="M5 12h14m-7-7l7 7-7 7"/>
+                        </svg>
                     </div>
                     <span class="action-label green-text">NUEVA RUTA</span>
                 </button>
 
                 <button class="action-item" (click)="onEdit()">
                     <div class="icon-circle green">
-                        <mat-icon>edit</mat-icon>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="action-svg">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                        </svg>
                     </div>
                     <span class="action-label green-text">EDITAR</span>
                 </button>
 
                 <button class="action-item" (click)="onDelete()">
-                    <div class="icon-circle trash-wrapper">
-                        <svg viewBox="0 0 24 24" fill="currentColor" class="trash-icon" style="width: 32px; height: 32px;">
-                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                        </svg>
-                    </div>
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="action-svg trash-svg">
+                        <path d="M19 6h-2c0-1.657-1.343-3-3-3h-4c-1.657 0-3 1.343-3 3H5c-1.103 0-2 .897-2 2v2h18V8c0-1.103-.897-2-2-2zM5 11v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9H5zm4 3h1.5v3H9v-3zm4.5 0H15v3h-1.5v-3z"/>
+                    </svg>
                     <span class="action-label orange-text">ELIMINAR</span>
                 </button>
             </div>

@@ -80,6 +80,7 @@ export class SavedPoiDialog implements OnInit {
     // Detect changes if inputs change while component is open (Desktop)
     ngOnChanges(): void {
         this.updateDisplayData();
+        if (this.isEditing() && this.editForm) this.initForm();
     }
 
     updateDisplayData(): void {

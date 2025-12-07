@@ -68,6 +68,8 @@ export class SavedVehicleDialog implements OnInit {
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['item'] && !this.dialogData) {
             this.updateDisplayData();
+            // El componente hijo EditVehicleComponent maneja su propio ngOnChanges
+            // para actualizar el formulario cuando cambia el vehicle
         }
     }
 
@@ -95,12 +97,16 @@ export class SavedVehicleDialog implements OnInit {
     // --- ACCIONES VISTA ---
 
     onNewRoute(): void {
+        this.snackBar.open('Función no implementada.', 'OK', {
+            duration: 3000,
+            horizontalPosition: 'start',
+            verticalPosition: 'bottom'
+        });
         this.handleAction('route');
     }
 
     onEdit(): void {
         this.isEditing.set(true);
-        // No necesitamos inicializar form aquí, lo hace el componente hijo
     }
 
     onDelete(): void {
@@ -122,7 +128,11 @@ export class SavedVehicleDialog implements OnInit {
             this.displayData.displayName = updatedVehicle.alias || `${updatedVehicle.marca} ${updatedVehicle.modelo}`;
 
             // 3. Feedback visual
-            this.snackBar.open('Vehículo actualizado correctamente', 'Ok', {duration: 3000});
+            this.snackBar.open('Vehículo actualizado correctamente', 'Ok', {
+                duration: 3000,
+                horizontalPosition: 'start',
+                verticalPosition: 'bottom'
+            });
 
             // 4. Notificamos al padre (SavedItems) para que recargue la lista de fondo
             this.handleAction('update');
@@ -130,7 +140,11 @@ export class SavedVehicleDialog implements OnInit {
             // 5. Cerramos el modo edición (la vista ahora leerá this.displayData.item actualizado)
             this.isEditing.set(false);
         } else {
-            this.snackBar.open('Error al actualizar', 'Cerrar', {duration: 3000});
+            this.snackBar.open('Error al actualizar', 'Cerrar', {
+                duration: 3000,
+                horizontalPosition: 'start',
+                verticalPosition: 'bottom'
+            });
         }
     }
 
@@ -143,10 +157,18 @@ export class SavedVehicleDialog implements OnInit {
     onDeleteSuccess(success: boolean): void {
         this.isDeleting.set(false);
         if (success) {
-            this.snackBar.open(`Vehículo eliminado`, 'Ok', {duration: 3000});
+            this.snackBar.open(`Vehículo eliminado`, 'Ok', {
+                duration: 3000,
+                horizontalPosition: 'left',
+                verticalPosition: 'bottom'
+            });
             this.handleAction('delete');
         } else {
-            this.snackBar.open('No se pudo eliminar', 'Ok', {duration: 3000});
+            this.snackBar.open('No se pudo eliminar', 'Ok', {
+                duration: 3000,
+                horizontalPosition: 'left',
+                verticalPosition: 'bottom'
+            });
         }
     }
 }

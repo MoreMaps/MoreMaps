@@ -11,7 +11,7 @@ import {
     SimpleChanges,
     WritableSignal
 } from '@angular/core';
-import {CommonModule} from '@angular/common';
+import {CommonModule, NgOptimizedImage} from '@angular/common';
 import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -36,7 +36,8 @@ export interface SavedVehicleDialogData {
         MatIconModule,
         DeleteConfirmationVehiclePopupComponent,
         EditVehicleComponent,
-        DeleteConfirmationVehiclePopupComponent
+        DeleteConfirmationVehiclePopupComponent,
+        NgOptimizedImage
     ],
     templateUrl: './saved-vehicle-dialog.html',
     styleUrls: ['./saved-vehicle-dialog.scss']

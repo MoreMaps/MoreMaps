@@ -1,14 +1,14 @@
 import {
     Component,
+    computed,
     EventEmitter,
-    Input,
-    OnInit,
-    OnChanges, // Importante: Importar OnChanges
-    Output,
-    SimpleChanges, // Importante
     inject,
+    Input,
+    OnChanges,
+    OnInit,
+    Output,
     signal,
-    computed
+    SimpleChanges
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
@@ -19,6 +19,8 @@ import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {Subscription} from 'rxjs';
 
+const MIN_YEAR = 1900;
+const MIN_CONSUMO = 0.1;
 const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
     'Híbrido Enchufable (PHEV)', 'GLP', 'GNC', 'Hidrógeno'];
 
@@ -36,14 +38,19 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     @Output() close = new EventEmitter<void>();
     @Output() update = new EventEmitter<VehicleModel | null>();
 
+    editForm!: FormGroup;
+
+    readonly currentYear = new Date().getFullYear();
+    readonly maxYear = this.currentYear + 1;
+    readonly minYear = MIN_YEAR;
+    readonly minConsumoMedio = MIN_CONSUMO;
+    readonly tiposCombustible = FUEL_TYPES;
+
     private fb = inject(FormBuilder);
     private service = inject(VehicleService);
 
-    editForm!: FormGroup;
     fuelTypes = signal<string[]>(FUEL_TYPES);
-    currentYear = new Date().getFullYear();
 
-    // Usamos una señal escribible en lugar de toSignal para evitar problemas de contexto al recargar
     selectedFuel = signal<string>('');
 
     // Computed depende de la señal selectedFuel
@@ -78,10 +85,15 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     initFormStructure() {
         this.editForm = this.fb.group({
             alias: ['', [Validators.required]],
-            matricula: ['', [Validators.required]], // CORREGIDO: Sin llaves {}
+            matricula: ['', [Validators.required]],
             marca: ['', [Validators.required]],
             modelo: ['', [Validators.required]],
-            anyo: [this.currentYear, [Validators.required, Validators.min(1900), Validators.max(this.currentYear + 1)]],
+            anyo: [this.currentYear, [
+                Validators.required,
+                Validators.min(this.minYear),
+                Validators.max(this.maxYear),
+                Validators.pattern("^[0-9]*$")
+            ]],
             tipoCombustible: ['', [Validators.required]],
             consumoMedio: [0, [Validators.required, Validators.min(0.1)]]
         });
@@ -108,7 +120,12 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     }
 
     async onSave(): Promise<void> {
-        if (this.editForm.valid && this.vehicle && this.auth) {
+        if(this.editForm.invalid) {
+            this.editForm.markAllAsTouched();
+            return;
+        }
+
+        if (this.vehicle && this.auth) {
             const f = this.editForm.getRawValue();
 
             // Se construye el objeto parcial con los cambios
@@ -126,7 +143,7 @@ export class EditVehicleComponent implements OnInit, OnChanges {
 
             // Si es exitoso, se mezclan los datos viejos con los nuevos y emitimos el objeto completo
             if (success) {
-                const finalVehicle = { ...this.vehicle, ...updatedVehicleParts } as VehicleModel;
+                const finalVehicle = {...this.vehicle, ...updatedVehicleParts} as VehicleModel;
                 this.update.emit(finalVehicle);
             } else {
                 this.update.emit(null);
@@ -140,10 +157,14 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     }
 
     clearField(fieldName: string): void {
-        this.editForm.patchValue({ [fieldName]: '' });
+        this.editForm.patchValue({[fieldName]: ''});
+        this.editForm.get(fieldName)?.markAsDirty();
     }
 
     ngOnDestroy() {
         if (this.sub) this.sub.unsubscribe();
     }
+
+
+    protected readonly FUEL_TYPES = FUEL_TYPES;
 }

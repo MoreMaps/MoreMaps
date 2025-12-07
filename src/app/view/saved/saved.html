@@ -71,9 +71,9 @@
                                  (click)="selectItem(item)"
                                  [class.selected]="selectedItem?.matricula === item.matricula">
                                 <div class="item-icon">
-                                    <img ngSrc="assets/images/vehicle/vehicle_active.svg" height="50" width="50" priority class="poi-icon-img"
+                                    <img ngSrc="assets/images/vehicle/vehicle_on.png" height="50" width="50" priority class="poi-icon-img"
                                          [class.visible]="selectedItem?.matricula === item.matricula" alt="active vehicle">
-                                    <img ngSrc="assets/images/vehicle/vehicle_inactive.svg" priority height="50" width="50" class="poi-icon-img"
+                                    <img ngSrc="assets/images/vehicle/vehicle_off.png" priority height="50" width="50" class="poi-icon-img"
                                          [class.visible]="selectedItem?.matricula !== item.matricula" alt="inactive vehicle">
                                 </div>
                                 <div class="item-info">

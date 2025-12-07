@@ -33,6 +33,7 @@ import {Geohash, geohashForLocation} from 'geofire-common';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
+import {CoordsNotFoundError} from '../../errors/CoordsNotFoundError';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -185,14 +186,16 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         if (this.map) return; // extra prevention
 
         // Limit config
-        const southWest = L.latLng(-90, -180);
-        const northEast = L.latLng(90, 180);
+        const latBuffer = 50; // Grados extra de latitud
+        const lonBuffer = 50; // Grados extra de longitud
+        const southWest = L.latLng(-90 - latBuffer, -180 - lonBuffer);
+        const northEast = L.latLng(90 + latBuffer, 180 + lonBuffer);
         const bounds = L.latLngBounds(southWest, northEast);
 
         // Initialize map
         this.map = L.map(this.mapContainer.nativeElement, {
             maxBounds: bounds,
-            maxBoundsViscosity: 1.0,
+            maxBoundsViscosity: 0.5, // permitir un rebote elástico
             zoomControl: false // Opcional: si quieres mover los controles de zoom
         });
 
@@ -223,10 +226,9 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
             const latNum = parseFloat(lat);
             const lonNum = parseFloat(lon);
-            const validCoords = !isNaN(latNum) && !isNaN(lonNum);
 
             // Si tengo longitud y latitud, significa que tengo que hacer una búsqueda
-            const hasPoiParams = latNum && lonNum;
+            const hasPoiParams = !isNaN(latNum) && !isNaN(lonNum);
             this.shouldCenterOnLocation = !hasPoiParams;
 
             if (this.mapUpdateService.lastKnownLocation) {
@@ -399,6 +401,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private fitMapToMarkers(): void {
+
         if (!this.listMarkers || this.listMarkers.length === 0) return;
 
         // Caso 1: Solo hay un marcador
@@ -464,6 +467,19 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             // Manejo de errores
             if (this.loadingSnackBarRef) {
                 this.loadingSnackBarRef.dismiss();
+            }
+
+            if (error instanceof CoordsNotFoundError) {
+                // Caso: Coordenadas válidas (ej. 0,0) pero sin resultados (Océano)
+                this.snackBar.open(
+                    `No se encontró ninguna dirección en las coordenadas (${lat}, ${lon}).`,
+                    'OK',
+                    { duration: 5000 }
+                );
+            } else {
+                // Caso: Error técnico (API caída, sin internet, etc.)
+                const msg = error.message ? error.message : 'Error desconocido';
+                this.snackBar.open(`Error al buscar: ${msg}`, 'Cerrar', { duration: 5000 });
             }
             console.error(`Error al buscar por coordenadas: ${error}`);
             this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', {duration: 5000});

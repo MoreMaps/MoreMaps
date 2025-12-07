@@ -1,11 +1,11 @@
 
 // Profile Button
 .profile-button {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
+    position: fixed;
+    top: var(--btn-margin-desktop);
+    right: var(--btn-margin-desktop);
+    width: var(--btn-size-desktop);
+    height: var(--btn-size-desktop);
     border-radius: var(--radius-full);
     border: 3px solid var(--color-white);
     background: var(--color-white);
@@ -40,5 +40,14 @@
         height: 100%;
         object-fit: cover;
         display: block;
+    }
+}
+
+@media (max-width: 640px) {
+    .profile-button {
+        top: var(--btn-margin-mobile);
+        width: var(--btn-size-mobile);
+        height: var(--btn-size-mobile);
+        right: var(--btn-margin-mobile);
     }
 }

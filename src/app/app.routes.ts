@@ -4,6 +4,7 @@ import {LeafletMapComponent} from './view/map/map';
 import {AccountSettingsComponent} from './view/deleteUser/deleteUser';
 import {SavedItemsComponent} from './view/saved/saved';
 import {AuthGuard} from '@angular/fire/auth-guard';
+import {VehicleForm} from './view/vehicleForm/vehicleForm';
 
 export const routes: Routes = [
     {
@@ -23,6 +24,11 @@ export const routes: Routes = [
     {
         path: 'saved',
         component: SavedItemsComponent,
+        canActivate: [AuthGuard],
+    },
+    {
+        path: 'vehicle',
+        component: VehicleForm,
         canActivate: [AuthGuard],
     }
 ];

@@ -14,7 +14,7 @@ import {POIDB} from '../../services/POI/POIDB';
     styleUrls: ['./deletePOI.css'],
     providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB}]
 })
-export class DeleteConfirmationPopupComponent {
+export class DeleteConfirmationPOIPopupComponent {
     @Input() geohash: Geohash = " ";
     @Input() auth: Auth;
     @Input() poiName: string = '';
@@ -25,7 +25,7 @@ export class DeleteConfirmationPopupComponent {
 
     // Ejecuta el borrado (y cierra el popup, si procede)
     // Propaga el valor obtenido al padre, que es quien muestra el snackbar
-    // Si se ha borrado el POI, debería ser undefined y el padre se cerrará también
+    // Si se ha borrado el POI, debería ser "true" y el padre se cerrará también
     async onConfirm(): Promise<void> {
         this.success.emit(await this.service.deletePOI(this.auth, this.geohash));
         this.close.emit();

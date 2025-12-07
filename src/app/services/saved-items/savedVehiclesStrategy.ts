@@ -1,23 +1,30 @@
-import {Injectable} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {SavedItemsStrategy} from './savedItemsStrategy';
 import {Auth} from '@angular/fire/auth';
+import {VehicleService} from '../Vehicle/vehicle.service';
+import {VehicleModel} from '../../data/VehicleModel';
 
-// Por ahora, este es únicamente un placeholder.
 @Injectable({providedIn: 'root'})
 export class SavedVehiclesStrategy implements SavedItemsStrategy {
-    async loadItems(auth: Auth): Promise<any[]> {
-        return [];
+    private vehicleService = inject(VehicleService);
+
+    async loadItems(auth: Auth): Promise<VehicleModel[]> {
+        return await this.vehicleService.getVehicleList();
     }
 
-    async toggleFavorite(auth: Auth, item: any): Promise<boolean> {
-        return false;
+    async toggleFavorite(auth: Auth, item: VehicleModel): Promise<boolean> {
+        const res: boolean = await this.vehicleService.pinVehicle(item.matricula);
+        if(res){
+            item.pinned = !item.pinned;
+        }
+        return res;
     }
 
     getEmptyMessage(): string {
-        return 'Esta función no está implementada y es un placeholder por el momento.';
+        return 'No tienes vehículos guardados. Registra uno y muévete con mayor facilidad.';
     }
 
-    getDisplayName(item: any): string {
-        return item.name || 'Vehículo sin nombre';
+    getDisplayName(item: VehicleModel): string {
+        return item.alias || 'Vehículo sin nombre';
     }
 }

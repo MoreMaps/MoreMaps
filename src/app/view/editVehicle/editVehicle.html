@@ -1,0 +1,135 @@
+<div class="edit-mode">
+    <form [formGroup]="editForm" class="edit-form">
+        <div class="form-group">
+            <label>Alias</label>
+            <div class="input-wrapper">
+                <input type="text" formControlName="alias" placeholder="Mi coche" />
+                @if (editForm.get('alias')?.value) {
+                    <button type="button" class="clear-btn" (click)="clearField('alias')">⊗</button>
+                }
+            </div>
+            @if (editForm.get('alias')?.hasError('required') && editForm.get('alias')?.touched) {
+                <span class="error-msg">Requerido</span>
+            }
+        </div>
+
+        <div class="form-group">
+            <label>Matrícula</label>
+            <div class="input-wrapper">
+                <input type="text" formControlName="matricula" placeholder="1234ABC" />
+                @if (editForm.get('matricula')?.value) {
+                    <button type="button" class="clear-btn" (click)="clearField('matricula')">⊗</button>
+                }
+            </div>
+            @if (editForm.get('matricula')?.hasError('required') && editForm.get('matricula')?.touched) {
+                <span class="error-msg">Requerido</span>
+            }
+        </div>
+
+        <div class="grid-row">
+            <div class="form-group">
+                <label>Marca</label>
+                <div class="input-wrapper">
+                    <input type="text" formControlName="marca" placeholder="Toyota" />
+                    @if (editForm.get('marca')?.value) {
+                        <button type="button" class="clear-btn" (click)="clearField('marca')">⊗</button>
+                    }
+                </div>
+                @if (editForm.get('marca')?.hasError('required') && editForm.get('marca')?.touched) {
+                    <span class="error-msg">Requerido</span>
+                }
+            </div>
+
+            <div class="form-group">
+                <label>Modelo</label>
+                <div class="input-wrapper">
+                    <input type="text" formControlName="modelo" placeholder="Corolla" />
+                    @if (editForm.get('modelo')?.value) {
+                        <button type="button" class="clear-btn" (click)="clearField('modelo')">⊗</button>
+                    }
+                </div>
+                @if (editForm.get('modelo')?.hasError('required') && editForm.get('modelo')?.touched) {
+                    <span class="error-msg">Requerido</span>
+                }
+            </div>
+        </div>
+
+        <div class="grid-row">
+            <div class="form-group">
+                <label>Año</label>
+                <div class="input-wrapper">
+                    <input
+                        type="number"
+                        formControlName="anyo"
+                        placeholder="2020"
+                        [min]="minYear"
+                        [max]="maxYear"
+                    />
+                    @if (editForm.get('anyo')?.value) {
+                        <button type="button" class="clear-btn" (click)="clearField('anyo')">⊗</button>
+                    }
+                </div>
+                @if (editForm.get('anyo')?.touched) {
+                    @if (editForm.get('anyo')?.hasError('required')) {
+                        <span class="error-msg">El año del vehículo es obligatorio</span>
+                    } @else if (editForm.get('anyo')?.hasError('min') || editForm.get('anyo')?.hasError('max')) {
+                        <span class="error-msg">El año debe estar entre {{ minYear }} y {{ maxYear }}</span>
+                    } @else if (editForm.get('anyo')?.hasError('pattern')) {
+                        <span class="error-msg">El año del vehículo debe ser un número entero válido</span>
+                    }
+                }
+            </div>
+
+            <div class="form-group">
+                <label>Combustible</label>
+                <select formControlName="tipoCombustible" class="form-select">
+                    <option value="" disabled>Selecciona tipo</option>
+                    @for (tipo of FUEL_TYPES; track tipo) {
+                        <option [value]="tipo">{{ tipo }}</option>
+                    }
+                </select>
+                @if (editForm.get('tipoCombustible')?.hasError('required') && editForm.get('tipoCombustible')?.touched) {
+                    <span class="error-msg">El campo de combustible es obligatorio</span>
+                }
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Consumo medio ({{ consumptionUnit() }})</label>
+            <div class="input-wrapper">
+                <input
+                    type="number"
+                    formControlName="consumoMedio"
+                    placeholder="5.5"
+                    step="0.1"
+                    [min]="minConsumoMedio"
+                />
+                @if (editForm.get('consumoMedio')?.value) {
+                    <button type="button" class="clear-btn" (click)="clearField('consumoMedio')">⊗</button>
+                }
+            </div>
+            @if (editForm.get('consumoMedio')?.touched) {
+                @if (editForm.get('consumoMedio')?.hasError('required')) {
+                    <span class="error-msg">El campo de consumo medio es obligatorio</span>
+                } @else if (editForm.get('consumoMedio')?.hasError('min')) {
+                    <span class="error-msg">El consumo medio debe ser un número positivo y mayor o igual que {{ minConsumoMedio }}</span>
+                }
+            }
+        </div>
+
+        <div class="form-actions">
+            <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="editForm.invalid"
+                (click)="onSave()"
+            >
+                GUARDAR
+            </button>
+
+            <button type="button" class="btn btn-cancel" (click)="onCancel()">
+                CANCELAR
+            </button>
+        </div>
+    </form>
+</div>

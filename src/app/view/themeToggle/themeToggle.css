@@ -1,9 +1,12 @@
 .theme-toggle-button {
     position: fixed;
-    top: 20px;
-    right: 80px;
-    width: 48px;
-    height: 48px;
+    top: var(--btn-margin-desktop);
+    right: calc(
+        var(--btn-margin-desktop)
+        + var(--btn-size-desktop)
+        + var(--btn-margin-desktop));
+    width: var(--btn-size-desktop);
+    height: var(--btn-size-desktop);
     border-radius: var(--radius-full);
     border: 3px solid var(--color-white);
     background: var(--toggle-bg, var(--color-white));
@@ -52,10 +55,10 @@
 /* Responsive design */
 @media (max-width: 640px) {
     .theme-toggle-button {
-        top: 16px;
-        right: 70px;
-        width: 44px;
-        height: 44px;
+        width: var(--btn-size-mobile);
+        height: var(--btn-size-mobile);
+        right: calc(var(--btn-margin-mobile) + var(--btn-size-mobile) + var(--btn-margin-mobile));
+        top: var(--btn-margin-mobile);
     }
 
     .theme-icon {

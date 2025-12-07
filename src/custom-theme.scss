@@ -69,6 +69,12 @@ $dark-theme: mat.define-theme((
     --radius-md: 8px;
     --radius-lg: 12px;
     --radius-full: 9999px;
+
+    // Tamaño botones profileButton-themeToggle
+    --btn-size-desktop: 48px;
+    --btn-size-mobile: 44px;
+    --btn-margin-desktop: 16px; /* Margen desde el borde y entre botones */
+    --btn-margin-mobile: 12px;
 }
 
 // ===== APLICAR TEMA CLARO POR DEFECTO =====

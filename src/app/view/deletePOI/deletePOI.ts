@@ -27,7 +27,7 @@ export class DeleteConfirmationPOIPopupComponent {
     // Propaga el valor obtenido al padre, que es quien muestra el snackbar
     // Si se ha borrado el POI, debería ser "true" y el padre se cerrará también
     async onConfirm(): Promise<void> {
-        this.success.emit(await this.service.deletePOI(this.auth, this.geohash));
+        this.success.emit(await this.service.deletePOI(this.geohash));
         this.close.emit();
     }
 

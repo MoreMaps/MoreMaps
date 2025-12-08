@@ -1,15 +1,13 @@
 import {Injectable} from '@angular/core';
 import {SavedItemsStrategy} from './savedItemsStrategy';
-import {Auth} from '@angular/fire/auth';
 
-// Por ahora, este es únicamente un placeholder.
 @Injectable({providedIn: 'root'})
 export class SavedRouteStrategy implements SavedItemsStrategy {
-    async loadItems(auth: Auth): Promise<any[]> {
+    async loadItems(): Promise<any[]> {
         return [];
     }
 
-    async toggleFavorite(auth: Auth, item: any): Promise<boolean> {
+    async toggleFavorite(item: any): Promise<boolean> {
         return false;
     }
 

@@ -1,19 +1,18 @@
 import {inject, Injectable} from '@angular/core';
 import {SavedItemsStrategy} from './savedItemsStrategy';
 import {POIService} from '../POI/poi.service';
-import {Auth} from '@angular/fire/auth';
 import {POIModel} from '../../data/POIModel';
 
 @Injectable({providedIn: 'root'})
 export class SavedPOIStrategy implements SavedItemsStrategy {
     private poiService = inject(POIService);
 
-    async loadItems(auth: Auth): Promise<POIModel[]>{
-        return await this.poiService.getPOIList(auth);
+    async loadItems(): Promise<POIModel[]>{
+        return await this.poiService.getPOIList();
     }
 
-    async toggleFavorite(auth:Auth, item: POIModel): Promise<boolean> {
-        return await this.poiService.pinPOI(auth, item);
+    async toggleFavorite(item: POIModel): Promise<boolean> {
+        return await this.poiService.pinPOI(item);
     }
 
     getEmptyMessage(): string {

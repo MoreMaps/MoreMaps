@@ -27,6 +27,11 @@ export class VehicleDB implements VehicleRepository {
     private firestore = inject(Firestore);
     private auth = inject(Auth);
 
+    /**
+     * Registra un vehículo en la base de datos.
+     * @param vehiculo datos del vehículo: (alias, matricula, marca, modelo, anyo,
+     * tipoCombustible, consumoMedio, fijado)
+     */
     async createVehicle(vehiculo: VehicleModel): Promise<VehicleModel> {
         this.safetyChecks();
         this.properValues(vehiculo);
@@ -55,25 +60,37 @@ export class VehicleDB implements VehicleRepository {
         }
     }
 
+    /**
+     * Lee los datos de la base de datos correspondientes al vehículo con la matrícula especificada.
+     */
     async getVehicleList(): Promise<VehicleModel[]> {
         this.safetyChecks();
 
         let list: VehicleModel[] = [];
         const path: string = `/items/${this.auth.currentUser!.uid}/vehicles`;
 
-        // Obtener items de la colección
-        const itemsRef = collection(this.firestore, path);
-        const snapshot = await getDocs(query(itemsRef));
+        try{
+            // Obtener items de la colección
+            const itemsRef = collection(this.firestore, path);
+            const snapshot = await getDocs(query(itemsRef));
 
-        if (!snapshot.empty) {
-            list = snapshot.docs.map(doc => {
-                return VehicleModel.fromJSON(doc.data());
-            });
+            if (!snapshot.empty) {
+                list = snapshot.docs.map(doc => {
+                    return VehicleModel.fromJSON(doc.data());
+                });
+            }
+        } catch(error) {
+            console.error("ERROR de Firebase: " + error);
+            throw new DBAccessError();
         }
 
         return list;
     }
 
+    /**
+     * Actualiza los datos de la base de datos correspondientes al vehículo con la matrícula especificada.
+     * @param matricula matricula del vehículo
+     */
     async updateVehicle(matricula: string, update: Partial<VehicleModel>): Promise<boolean> {
         this.safetyChecks();
         this.properValues(update, false);
@@ -132,6 +149,10 @@ export class VehicleDB implements VehicleRepository {
         }
     }
 
+    /**
+     * Elimina los datos de la base de datos correspondientes al vehículo con la matrícula especificada.
+     * @param matricula matricula del vehículo
+     */
     async deleteVehicle(matricula: string): Promise<boolean> {
         this.safetyChecks();
         try {
@@ -157,6 +178,10 @@ export class VehicleDB implements VehicleRepository {
         }
     }
 
+    /**
+     * Lee los datos de la base de datos correspondientes al vehículo con la matrícula especificada.
+     * @param matricula matricula del vehículo
+     */
     async readVehicle(matricula: string): Promise<VehicleModel> {
         this.safetyChecks();
         const path: string = `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`;
@@ -180,6 +205,10 @@ export class VehicleDB implements VehicleRepository {
         return VehicleModel.fromJSON(vehicleSnap.data());
     }
 
+    /**
+     * Fija el vehículo si no está fijado y viceversa.
+     * @param matricula matrícula del vehículo
+     */
     async pinVehicle(matricula: string): Promise<boolean> {
         this.safetyChecks();
 
@@ -204,6 +233,10 @@ export class VehicleDB implements VehicleRepository {
         }
     }
 
+    /**
+     * Comprobación de sesión activa.
+     * @private
+     */
     private safetyChecks() {
         const currentUser = this.auth.currentUser?.uid;
         if (!currentUser) throw new SessionNotActiveError();

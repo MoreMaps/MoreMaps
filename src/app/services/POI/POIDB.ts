@@ -11,13 +11,13 @@ import {
     Firestore,
     getDoc,
     getDocs,
-    query,
     setDoc,
     updateDoc
 } from '@angular/fire/firestore';
-import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
 import {MissingPOIError} from '../../errors/MissingPOIError';
 import {DescriptionLengthError} from '../../errors/DescriptionLengthError';
+import {DBAccessError} from '../../errors/DBAccessError';
+import {POIAlreadyExistsError} from '../../errors/POIAlreadyExistsError';
 
 @Injectable({
     providedIn: 'root'
@@ -26,20 +26,50 @@ export class POIDB implements POIRepository {
     private auth = inject(Auth);
     private firestore = inject(Firestore);
 
+    /**
+     * Registra un punto de interés (POI) en la base de datos.
+     * @param poi datos del POI (latitud, longitud, topónimo, geohash, alias, descripción, fijado)
+     */
     async createPOI(poi: POIModel): Promise<POIModel> {
-        const userUid = this.auth.currentUser?.uid;
-        const poiDocRef = doc(this.firestore, `items/${userUid}/pois/${poi.geohash}`);
-        if (poi) await setDoc(poiDocRef, poi.toJSON());
+        this.safetyChecks();
 
-        return poi;
+        const userUid = this.auth.currentUser!.uid;
+        const path = `items/${userUid}/pois/${poi.geohash}`;
+
+        try{
+            // Referencia al documento
+            const vehicleDocRef = doc(this.firestore, path);
+
+            // Obtener el snapshot para ver si existe
+            const docSnap = await getDoc(vehicleDocRef);
+
+            // Si existe, lanzamos el error
+            if (docSnap.exists()) throw new POIAlreadyExistsError();
+
+            // Si no existe, procedemos a guardar
+            await setDoc(vehicleDocRef, poi.toJSON());
+            return poi;
+        } catch(error: any) {
+            // Si el error es de Firebase, loguearlo
+            if (error.code) {
+                console.error("ERROR de Firebase: " + error);
+                throw new DBAccessError();
+            }
+            // Si no, es un error propio y se puede propagar
+            throw error;
+        }
     }
 
-    async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {
-        try {
-            this.safetyChecks(user);
+    /**
+     * Lee los datos de la base de datos correspondientes al punto de interés (POI) con el geohash especificado.
+     * @param geohash geohash del POI
+     */
+    async readPOI(geohash: Geohash): Promise<POIModel> {
+        this.safetyChecks();
 
+        try {
             const poiSnap = await getDoc(
-                doc(this.firestore, `items/${user.currentUser?.uid}/pois/${geohash}`)
+                doc(this.firestore, `items/${this.auth.currentUser!.uid}/pois/${geohash}`)
             );
 
             if (!poiSnap.exists()) {
@@ -51,17 +81,26 @@ export class POIDB implements POIRepository {
 
         } catch (error: any) {
             // Si el error es de Firebase, loguearlo
-            if (error.code) console.error("ERROR de Firebase: " + error);
+            if (error.code) {
+                console.error("ERROR de Firebase: " + error);
+                throw new DBAccessError();
+            }
+            // Si no, es un error propio y se puede propagar
             throw error;
         }
     }
 
-    async updatePOI(user: Auth, geohash: Geohash, update: Partial<POIModel>): Promise<boolean> {
-        try {
-            this.safetyChecks(user);
+    /**
+     * Actualiza los datos de la base de datos correspondientes al punto de interés (POI) con el geohash especificado.
+     * @param geohash geohash del POI
+     * @param update datos a actualizar del POI
+     */
+    async updatePOI(geohash: Geohash, update: Partial<POIModel>): Promise<boolean> {
+        this.safetyChecks();
 
+        try {
             // Obtener los datos del POI que se va a actualizar
-            const poiRef = doc(this.firestore, `items/${user.currentUser?.uid}/pois/${geohash}`);
+            const poiRef = doc(this.firestore, `items/${this.auth.currentUser!.uid}/pois/${geohash}`);
             const poiSnap = await getDoc(poiRef);
 
             // Si no existe, se lanza un error
@@ -78,19 +117,23 @@ export class POIDB implements POIRepository {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
-                return false;
+                throw new DBAccessError();
             }
             // Si no, es un error propio y se puede propagar
             throw error;
         }
     }
 
-    async deletePOI(user: Auth, geohash: Geohash): Promise<boolean> {
-        try {
-            this.safetyChecks(user);
+    /**
+     * Elimina los datos de la base de datos correspondientes al punto de interés (POI) con el geohash especificado.
+     * @param geohash geohash del POI
+     */
+    async deletePOI(geohash: Geohash): Promise<boolean> {
+        this.safetyChecks();
 
+        try {
             // Obtener los datos del POI que se va a borrar
-            const poiRef = doc(this.firestore, `items/${user.currentUser?.uid}/pois/${geohash}`);
+            const poiRef = doc(this.firestore, `items/${this.auth.currentUser!.uid}/pois/${geohash}`);
             const poiSnap = await getDoc(poiRef);
 
             // Si no existe, se lanza un error
@@ -104,53 +147,52 @@ export class POIDB implements POIRepository {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
-                return false;
+                throw new DBAccessError();
             }
             // Si no, es un error propio y se puede propagar
             throw error;
         }
     }
 
-    async getPOIList(user: Auth): Promise<POIModel[]> {
-        this.safetyChecks(user);
+    /**
+     * Devuelve una lista con todos los puntos de interés (POI).
+     */
+    async getPOIList(): Promise<POIModel[]> {
+        this.safetyChecks();
+
+        let list: POIModel[] = [];
 
         // Referencia a la colección
-        let collectionPath: string;
-        // El if-else es necesario para evitar errores al compilar. Se comprueba en safetyChecks()
-        if (user.currentUser) collectionPath = `/items/${user.currentUser.uid}/pois`;
-        else throw new SessionNotActiveError();
+        const collectionPath = `/items/${this.auth.currentUser!.uid}/pois`;
 
-        // Obtener items de la colección
-        const itemsRef = collection(this.firestore, collectionPath);
-        const q = query(itemsRef);
-        const snapshot = await getDocs(q);
+        try {
+            // Obtener items de la colección
+            const itemsRef = collection(this.firestore, collectionPath);
+            const snapshot = await getDocs(itemsRef);
 
-        if (snapshot.empty) {
-            return [];
-        } else {
-            return snapshot.docs.map(doc => {
-                const data = doc.data();
-                return new POIModel(
-                    data['lat'],
-                    data['lon'],
-                    data['placeName'],
-                    data['geohash'],
-                    data['pinned'] ?? false,
-                    data['alias'],
-                    data['description']
-                );
-            });
+            if (!snapshot.empty) {
+                list = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return POIModel.fromJSON(data);
+                });
+            }
+        } catch(error) {
+            console.error("ERROR de Firebase: " + error);
+            throw new DBAccessError();
         }
+
+        return list;
     }
 
-    async pinPOI(user: Auth, poi: POIModel): Promise<boolean> {
-        this.safetyChecks(user);
+    /**
+     * Fija el punto de interés (POI) si no está fijado y viceversa.
+     * @param poi datos completos del POI
+     */
+    async pinPOI(poi: POIModel): Promise<boolean> {
+        this.safetyChecks();
 
         // Referencia a la colección
-        let docPath: string;
-        // El if-else es necesario para evitar errores al compilar. Se comprueba en safetyChecks()
-        if (user.currentUser) docPath = `/items/${user.currentUser.uid}/pois/${poi.geohash}`;
-        else throw new SessionNotActiveError();
+        const docPath = `/items/${this.auth.currentUser!.uid}/pois/${poi.geohash}`;
 
         // Actualiza el documento para que invertir el boolean pinned del POI
         try {
@@ -169,17 +211,13 @@ export class POIDB implements POIRepository {
         }
     }
 
-    private safetyChecks(user: Auth) {
-        const authUser = this.auth.currentUser;
-
-        // si el usuario pasado por argumento o el de auth no existen...
-        if (!authUser || !user.currentUser) {
-            throw new SessionNotActiveError();
-        }
-
-        // si el usuario pasado por argumento y el de auth no coinciden
-        if (authUser.uid !== user.currentUser?.uid) {
-            throw new ForbiddenContentError();
-        }
+    /**
+     * Comprobación de sesión activa.
+     * @private
+     */
+    private safetyChecks() {
+        const currentUser = this.auth.currentUser!.uid;
+        if (!currentUser) throw new SessionNotActiveError();
     }
+
 }

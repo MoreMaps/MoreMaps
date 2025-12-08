@@ -52,7 +52,7 @@ export class PoiDetailEdit implements OnInit {
                 alias: this.editForm.value?.alias,
                 description: this.editForm.value?.description
             };
-            this.update.emit(await this.service.updatePOI(this.auth, this.poi.geohash, updatedPOI));
+            this.update.emit(await this.service.updatePOI(this.poi.geohash, updatedPOI));
             this.close.emit();
         }
     }

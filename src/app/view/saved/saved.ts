@@ -165,7 +165,7 @@ export class SavedItemsComponent implements OnDestroy {
         }
 
         // Carga agnóstica del tipo
-        const items = await this.currentStrategy().loadItems(this.auth);
+        const items = await this.currentStrategy().loadItems();
         this.items.set(items);
 
         if (targetId && items) {
@@ -322,7 +322,7 @@ export class SavedItemsComponent implements OnDestroy {
 
     async toggleFavorite(item: any, event: Event): Promise<void> {
         event.stopPropagation();
-        const success = await this.currentStrategy().toggleFavorite(this.auth, item);
+        const success = await this.currentStrategy().toggleFavorite(item);
         if (success) {
             const message = item.pinned
                 ? `Se ha fijado ${this.getDisplayName(item)}.`

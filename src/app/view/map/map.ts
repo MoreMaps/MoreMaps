@@ -152,7 +152,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                     }
 
                 }
-                let currentList = await this.poiService.getPOIList(this.auth);
+                let currentList = await this.poiService.getPOIList();
                 for (const item of currentList) {
                     this.savedPOIs.push(item.geohash);
                 }
@@ -374,7 +374,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
     private async updateSaved(): Promise<void> {
         this.savedPOIs = [];
-        let currentList = await this.poiService.getPOIList(this.auth);
+        let currentList = await this.poiService.getPOIList();
         for (const item of currentList) {
             this.savedPOIs.push(item.geohash);
         }

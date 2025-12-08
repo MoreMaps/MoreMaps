@@ -1,7 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {POIModel} from '../../data/POIModel';
 import {POI_REPOSITORY, POIRepository} from './POIRepository';
-import {Auth} from '@angular/fire/auth';
 import {Geohash, geohashForLocation} from 'geofire-common';
 import {POISearchModel} from '../../data/POISearchModel';
 
@@ -16,9 +15,9 @@ export class POIService {
     }
 
     // HU203 Consultar lista de POI
-    async getPOIList(user: Auth): Promise<POIModel[]> {
+    async getPOIList(): Promise<POIModel[]> {
         // Obtener lista llamando a Firebase
-        let fireList = await this.poiDb.getPOIList(user)
+        let fireList = await this.poiDb.getPOIList()
         if (fireList.length > 0) {
             fireList.sort((a, b) => {
                 // 1. Primero ordenar por pinned (true > false)
@@ -41,22 +40,22 @@ export class POIService {
     }
 
     // HU204 Consultar POI
-    async readPOI(user: Auth, geohash: Geohash): Promise<POIModel> {
-        return this.poiDb.readPOI(user, geohash);
+    async readPOI(geohash: Geohash): Promise<POIModel> {
+        return this.poiDb.readPOI(geohash);
     }
 
     // HU205 Modificar información de POI
-    async updatePOI(user: Auth, geohash: string, update: Partial<POIModel>): Promise<boolean> {
-        return this.poiDb.updatePOI(user, geohash, update);
+    async updatePOI(geohash: string, update: Partial<POIModel>): Promise<boolean> {
+        return this.poiDb.updatePOI(geohash, update);
     }
 
     // HU206 Eliminar POI
-    async deletePOI(user: Auth, geohash: Geohash): Promise<boolean> {
-        return this.poiDb.deletePOI(user, geohash);
+    async deletePOI(geohash: Geohash): Promise<boolean> {
+        return this.poiDb.deletePOI(geohash);
     }
 
     // HU501 Fijar POI
-    async pinPOI(user: Auth, poi: POIModel): Promise<boolean> {
-        return await this.poiDb.pinPOI(user, poi);
+    async pinPOI(poi: POIModel): Promise<boolean> {
+        return await this.poiDb.pinPOI(poi);
     }
 }

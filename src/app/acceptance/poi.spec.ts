@@ -106,7 +106,7 @@ describe('Pruebas sobre POI', () => {
 
             // CLEANUP
             // Se borra el POI "B"
-            await poiService.deletePOI(auth, poiCreado.geohash);
+            await poiService.deletePOI(poiCreado.geohash);
         });
 
         it('HU201-EI03: Dar de alta un POI por coordenadas no válidas', async () => {
@@ -152,7 +152,7 @@ describe('Pruebas sobre POI', () => {
 
             // CLEANUP
             // Se borra el POI "B"
-            await poiService.deletePOI(auth, poiCreado.geohash);
+            await poiService.deletePOI(poiCreado.geohash);
         });
 
         it('HU202-EI03: Dar de alta un POI por topónimo que no corresponde a ningún sitio', async () => {
@@ -181,7 +181,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario maria consulta su lista de POI registrados
-            let list = await poiService.getPOIList(auth);
+            let list = await poiService.getPOIList();
 
             // THEN
             // Se devuelve una lista vacía y se indica que no hay POI registrados.
@@ -201,7 +201,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario consulta su lista de POI registrados
-            const listaPoi = await poiService.getPOIList(auth)
+            const listaPoi = await poiService.getPOIList()
 
             // THEN
             // Se devuelve el listado de POI
@@ -225,7 +225,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario consulta los datos del POI “A”
-            const poiConsultado = await poiService.readPOI(auth, poiRegistrado.geohash);
+            const poiConsultado = await poiService.readPOI(poiRegistrado.geohash);
 
             // THEN
             // Se obtienen los datos del POI
@@ -249,7 +249,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario consulta los datos del POI con geohash vacío (no registrado)
-            await expectAsync(poiService.readPOI(auth, " "))
+            await expectAsync(poiService.readPOI(" "))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError
@@ -267,7 +267,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario modifica el alias del POI “A” a "Al y Canto"
-            const poiModificado = await poiService.updatePOI(auth, poiRegistrado.geohash, {alias: "Al y Canto"})
+            const poiModificado = await poiService.updatePOI(poiRegistrado.geohash, {alias: "Al y Canto"})
 
             // THEN
             // Se actualiza el POI
@@ -275,7 +275,7 @@ describe('Pruebas sobre POI', () => {
 
             // CLEANUP
             // Modificar el alias del POI "A" de nuevo a "Alicante"
-            await poiService.updatePOI(auth, poiRegistrado.geohash, {alias: "Alicante"});
+            await poiService.updatePOI(poiRegistrado.geohash, {alias: "Alicante"});
         });
 
         it('HU205-EI02: Modificar información de un POI no registrado', async () => {
@@ -285,7 +285,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario modifica el alias del POI con geohash vacío a "Castellón de la Nada"
-            await expectAsync(poiService.updatePOI(auth, " ", {alias: "Castellón de la Nada"}))
+            await expectAsync(poiService.updatePOI(" ", {alias: "Castellón de la Nada"}))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError
@@ -299,12 +299,11 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario modifica la descripción del POI "A" a un texto con 151 caracteres (el máximo es 150)
-            await expectAsync(poiService.updatePOI(auth, poiRegistrado.geohash,
-                {
-                    description: "The descriptive text is deliberately engineered " +
-                        "to exceed the maximum character limit of 150. " +
-                        "As such, it serves as a perfect test case for validation."
-                }))
+            await expectAsync(poiService.updatePOI(poiRegistrado.geohash, {
+                description: "The descriptive text is deliberately engineered " +
+                    "to exceed the maximum character limit of 150. " +
+                    "As such, it serves as a perfect test case for validation."
+            }))
                 .toBeRejectedWith(new DescriptionLengthError());
 
             // THEN
@@ -325,7 +324,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario trata de borrar el POI "B"
-            const poiBorrado = await poiService.deletePOI(auth, poiCreado.geohash);
+            const poiBorrado = await poiService.deletePOI(poiCreado.geohash);
 
             // THEN
             // El POI "B" se elimina
@@ -339,7 +338,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario trata de borrar el POI con geohash vacío (no registrado).
-            await expectAsync(poiService.deletePOI(auth, " "))
+            await expectAsync(poiService.deletePOI(" "))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError
@@ -357,24 +356,24 @@ describe('Pruebas sobre POI', () => {
             const poiCreado: POIModel = await poiService.createPOI(nuevoPoi)
 
             // Ambos puntos no son fijados, una consulta de POI devuelve ["A", "B"]
-            let list = await poiService.getPOIList(auth);
+            let list = await poiService.getPOIList();
             expect(list.at(0)?.placeName === 'Alicante').toBeTrue();
 
             // WHEN
             // El usuario trata de fijar el POI "B"
-            const poiFijado = await poiService.pinPOI(auth, poiCreado);
+            const poiFijado = await poiService.pinPOI(poiCreado);
 
             // THEN
             // El punto B pasa a estar fijado (pinned = true)
             expect(poiFijado).toBeTrue();
 
             // el orden ahora es ["B", "A"]
-            list = await poiService.getPOIList(auth);
+            list = await poiService.getPOIList();
             expect(list.at(0)?.placeName).toEqual('Valencia');
 
             // CLEANUP
             // Borrar el POI "B"
-            await poiService.deletePOI(auth, poiCreado.geohash);
+            await poiService.deletePOI(poiCreado.geohash);
         });
 
         it('HU501-EI02: Fijar un POI no registrado', async () => {
@@ -384,7 +383,7 @@ describe('Pruebas sobre POI', () => {
 
             // WHEN
             // El usuario trata de fijar un POI no registrado
-            await expectAsync(poiService.pinPOI(auth, poiB))
+            await expectAsync(poiService.pinPOI(poiB))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError
@@ -399,7 +398,7 @@ describe('Pruebas sobre POI', () => {
             // GIVEN
             //  el usuario "ramon" está registrado y ha iniciado sesión
             //  la lista de POI registrados es [A]
-            const listaPoiAntes = await poiService.getPOIList(auth);
+            const listaPoiAntes = await poiService.getPOIList();
 
             //  se cierra la sesión involuntariamente
             await userService.logout();
@@ -410,7 +409,7 @@ describe('Pruebas sobre POI', () => {
 
             // THEN
             //  los datos de POI de la BD son los mismos que los introducidos previamente
-            const listaPoi = await poiService.getPOIList(auth);
+            const listaPoi = await poiService.getPOIList();
             expect(listaPoi).toEqual(listaPoiAntes);
         });
     });

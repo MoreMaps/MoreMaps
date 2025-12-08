@@ -161,7 +161,7 @@ export class SavedPoiDialog implements OnInit {
 
             try {
                 // Call the service
-                const success = await this.poiService.updatePOI(this.auth, this.displayData.item.geohash, updatedData);
+                const success = await this.poiService.updatePOI(this.displayData.item.geohash, updatedData);
                 if (success) {
                     // Update local data
                     this.displayData.item.alias = updatedData.alias;

@@ -1,20 +1,30 @@
-// Datos de prueba para los tests
+/**
+ * Datos de prueba para los tests
+ */
 import {POIModel} from '../data/POIModel';
 import {geohashForLocation} from 'geofire-common';
 import {VehicleModel} from '../data/VehicleModel';
 
+/**
+ * Datos de prueba sobre usuarios
+ */
 export const USER_TEST_DATA = [
+    // Usuario "ramon"
     {email: "ramonejemplo@gmail.com", pwd: "Passw0rd!", nombre: "Ramón", apellidos: "García García"},
+    // Usuario "maria"
     {email: "mariaejemplo@gmail.com", pwd: "P4ssword!", nombre: "María", apellidos: "De Los Campos"},
 ]
 
+/**
+ * Datos de prueba sobre puntos de interés (POI)
+ */
 export const POI_TEST_DATA: POIModel[] = [
     // POI A: Alicante
     new POIModel(
-        38.345170,
-        -0.481490,
+        38.345143,
+        -0.481508,
         "Alicante",
-        geohashForLocation([38.345170, -0.481490], 7),
+        geohashForLocation([38.345143, -0.481508], 7),
         false,
         "",
         "Ciudad que no frecuento",
@@ -22,16 +32,20 @@ export const POI_TEST_DATA: POIModel[] = [
     // POI B: Valencia
     new POIModel(
         39.473910,
-        -0.376388,
+        -0.376380,
         "Valencia",
-        geohashForLocation([39.473910, -0.376388], 7),
+        geohashForLocation([39.473910, -0.376380], 7),
         false,
         "València",
         "Ciudad que frecuento",
     ),
 ]
 
+/**
+ * Datos de prueba sobre vehículos
+ */
 export const VEHICLE_TEST_DATA: VehicleModel[] = [
+    // Vehículo "Ford Fiesta"
     new VehicleModel(
         "Ford Fiesta",
         "1234XYZ",
@@ -41,6 +55,7 @@ export const VEHICLE_TEST_DATA: VehicleModel[] = [
         "Gasolina",
         13.0,
         false),
+    // Vehículo "Audi A6"
     new VehicleModel(
         "Audi A6",
         "4321XYZ",

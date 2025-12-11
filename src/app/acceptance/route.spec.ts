@@ -24,6 +24,7 @@ import {MapSearchService} from '../services/map-search-service/map-search.servic
 // Rutas
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../data/RouteModel';
 import {RouteService} from '../services/Route/route.service';
+import {Geometry} from 'geojson';
 
 // Errores
 import {WrongRouteParamsError} from '../errors/Route/WrongRouteParamsError';
@@ -211,7 +212,7 @@ fdescribe('Pruebas sobre rutas', () => {
 
             // WHEN
             // El usuario pide el coste (combustible, precio) de una ruta inválida.
-            const res = new RouteResultModel(-1, -1, '');
+            const res = new RouteResultModel(-1, -1,  '' as unknown as Geometry);
 
             await expectAsync(routeService.getRouteCost(res, TIPO_TRANSPORTE.COCHE, datosFord.consumoMedio))
                 .toBeRejectedWith(new InvalidDataError());
@@ -253,7 +254,7 @@ fdescribe('Pruebas sobre rutas', () => {
 
             // WHEN
             // El usuario pide el coste (kCal) de una ruta inválida.
-            const res = new RouteResultModel(-1, -1, '');
+            const res = new RouteResultModel(-1, -1, '' as unknown as Geometry);
 
             await expectAsync(routeService.getRouteCost(res, TIPO_TRANSPORTE.A_PIE))
                 .toBeRejectedWith(new InvalidDataError());

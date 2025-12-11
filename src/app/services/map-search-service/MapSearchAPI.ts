@@ -10,6 +10,9 @@ import {CoordsNotFoundError} from '../../errors/CoordsNotFoundError';
 import {environment} from '../../../environments/environment';
 import {PlaceNameNotFoundError} from '../../errors/PlaceNameNotFoundError';
 import {APIAccessError} from '../../errors/APIAccessError';
+import {Geohash} from 'geofire-common';
+import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
+import {RouteResultModel} from '../../data/RouteResultModel';
 
 @Injectable({
     providedIn: 'root'
@@ -112,7 +115,19 @@ export class MapSearchAPI implements MapSearchRepository {
     }
 
     /**
-     * Función genérica para hacer peticiones a la API
+     * Devuelve una ruta entre el origen y destino especificados
+     * según el tipo de transporte y la preferencia (si es posible)
+     * @param origen origen de la ruta
+     * @param destino destino de la ruta
+     * @param transporte transporte escogido
+     * @param preferencia preferencia escogida
+     */
+    async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
+        return new RouteResultModel(0.0, 0.0, '');
+    }
+
+    /**
+     * Realiza una petición a una API y devuelve el primer valor recibido
      * @param url URL base para la petición
      * @param headers Headers de la petición
      * @param params Parámetros de la petición
@@ -123,7 +138,7 @@ export class MapSearchAPI implements MapSearchRepository {
     }
 
     /**
-     * Función para extraer un array de coordenadas y nombres de un GeoJSON
+     * Extrae un array de coordenadas y nombres de un GeoJSON
      * @param geoJsonObject Objeto en formato GeoJSON
      * @param num Número de features a leer
      * @private
@@ -136,7 +151,7 @@ export class MapSearchAPI implements MapSearchRepository {
             return [];
         }
 
-        // Procesar solo los primeros 'num' features disponibles
+        // Procesar solo los primeros 'núm' features disponibles
         const featuresToProcess = features.slice(0, num);
         const result: POISearchModel[] = [];
 

@@ -4,6 +4,7 @@
 import {POIModel} from '../data/POIModel';
 import {geohashForLocation} from 'geofire-common';
 import {VehicleModel} from '../data/VehicleModel';
+import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../data/RouteModel';
 
 /**
  * Datos de prueba sobre usuarios
@@ -65,4 +66,33 @@ export const VEHICLE_TEST_DATA: VehicleModel[] = [
         "Diésel",
         6.0,
         false),
+]
+
+/**
+ * Datos de prueba sobre rutas
+ */
+export const ROUTE_TEST_DATA: RouteModel[] = [
+
+    // Ruta de Alicante a Valencia
+    new RouteModel(
+        POI_TEST_DATA[0].geohash,
+        POI_TEST_DATA[1].geohash,
+        TIPO_TRANSPORTE.COCHE,
+        PREFERENCIA.RECOMENDADA,
+        177628.3,
+        7064.3,
+        'De Alicante a Valencia en coche',
+        false,
+        VEHICLE_TEST_DATA[0].matricula,
+    ),
+    new RouteModel(
+        POI_TEST_DATA[0].geohash,
+        POI_TEST_DATA[1].geohash,
+        TIPO_TRANSPORTE.A_PIE,
+        PREFERENCIA.RECOMENDADA,
+        161481.6,
+        116265.8,
+        'De Alicante a Valencia a pie',
+        false,
+    ),
 ]

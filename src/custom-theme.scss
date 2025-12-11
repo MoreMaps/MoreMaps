@@ -934,7 +934,30 @@ mat-error,
 
         /* Efecto Hover */
         &:hover {
-            background-color: var(--color-lavender) !important; /* Blanco semitransparente al pasar el mouse */
+            background-color: var(--color-lavender) !important;
         }
     }
+}
+
+:host-context(.dark-theme) {
+    .custom-navbar-menu {
+        background-color: var(--color-purple-dark) !important;
+        .mat-mdc-menu-item {
+            color: var(--color-lavender) !important;
+
+            mat-icon {
+                color: var(--color-lavender) !important;
+            }
+
+            &:hover {
+                background-color: var(--color-mint-green-light) !important;
+            }
+        }
+    }
+}
+
+
+.mat-mdc-snack-bar-label, .mdc-snackbar__label {
+    /* Aquí definimos el z-index para la tarjeta del snackbar */
+    z-index: 9999 !important;
 }

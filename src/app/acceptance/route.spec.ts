@@ -214,7 +214,7 @@ fdescribe('Pruebas sobre rutas', () => {
             // El usuario pide el coste (combustible, precio) de una ruta inválida.
             const res = new RouteResultModel(-1, -1,  '' as unknown as Geometry);
 
-            await expectAsync(routeService.getRouteCost(res, TIPO_TRANSPORTE.COCHE, datosFord.consumoMedio))
+            await expectAsync(routeService.getRouteCost(res, TIPO_TRANSPORTE.VEHICULO, datosFord.consumoMedio))
                 .toBeRejectedWith(new InvalidDataError());
 
             // THEN

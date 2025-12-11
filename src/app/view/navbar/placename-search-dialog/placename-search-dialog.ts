@@ -48,4 +48,5 @@ export class PlaceNameSearchDialogComponent {
         event.stopPropagation();
         this.placeForm.get('placeName')?.setValue('');
     }
+
 }

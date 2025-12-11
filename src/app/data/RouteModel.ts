@@ -1,7 +1,7 @@
 import {Geohash} from 'geofire-common';
 
 export enum TIPO_TRANSPORTE {
-    COCHE = 'driving-car',
+    VEHICULO = 'driving-car',
     A_PIE = 'foot-walking',
     BICICLETA = 'cycling-regular',
 }

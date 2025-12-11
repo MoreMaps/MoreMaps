@@ -77,7 +77,7 @@ export const ROUTE_TEST_DATA: RouteModel[] = [
     new RouteModel(
         POI_TEST_DATA[0].geohash,
         POI_TEST_DATA[1].geohash,
-        TIPO_TRANSPORTE.COCHE,
+        TIPO_TRANSPORTE.VEHICULO,
         PREFERENCIA.RECOMENDADA,
         177628.3,
         7064.3,

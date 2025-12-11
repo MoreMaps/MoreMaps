@@ -130,7 +130,7 @@ export class MapSearchAPI implements MapSearchRepository {
         // 2. Preparar el body.
         const body = {
           coordinates: [coordsOrigen, coordsDestino],
-          preferencia: preferencia,
+          preference: preferencia,
         };
 
         const httpOptions = {
@@ -216,7 +216,7 @@ export class MapSearchAPI implements MapSearchRepository {
      * Decodifica un Geohash directamente a [Lon., Lat.]
      * Formato compatible con OpenRouteService
      */
-    private decodeGeohash(geohash: string): [number, number] {
+    public decodeGeohash(geohash: string): [number, number] {
         const BITS = [16, 8, 4, 2, 1];
         const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz';
         let is_even = true;

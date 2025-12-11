@@ -1,6 +1,6 @@
 import {Component, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {Router, RouterModule} from '@angular/router';
+import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
@@ -18,6 +18,7 @@ import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-
 import {MapSearchService} from '../../services/map-search-service/map-search.service';
 import {POISearchModel} from '../../data/POISearchModel';
 import {PointConfirmationDialog} from './point-confirmation-dialog/point-confirmation-dialog';
+import {Geohash, geohashForLocation} from 'geofire-common';
 
 @Component({
     selector: 'app-navbar',
@@ -39,6 +40,14 @@ export class NavbarComponent {
     private mapSearchService = inject(MapSearchService);
     private mapUpdateService = inject(MapUpdateService);
     private snackBar = inject(MatSnackBar);
+    private route = inject(ActivatedRoute);
+    isRouteMode: boolean = false;
+
+    ngOnInit(): void {
+        this.route.queryParams.subscribe(params => {
+            this.isRouteMode = params['mode'] === 'route';
+        });
+    }
 
     /** El navbar emplea esta función para indicar al usuario en qué sección se encuentra. */
     isActive(route: string): boolean {
@@ -61,10 +70,14 @@ export class NavbarComponent {
 
         // --- PASO 2: Datos ---
         // Pedir los datos de búsqueda según el method elegido
-        const result = await this.executeSearchMethod(method);
+        const result = await this.executeSearchMethod(method, false);
 
         // --- PASO 3: Navegar ---
-        if (result) this.router.navigate(['/map'], {queryParams: result});
+        if (result) {
+            this.router.navigate(['/map'], {queryParams: result});
+        } else {
+            this.router.navigate(['/map'], {queryParams: {}});
+        }
     }
 
     // ==========================================================
@@ -82,6 +95,10 @@ export class NavbarComponent {
         let transporte: TIPO_TRANSPORTE | null = null;
         let selectedVehicleMatricula: string | undefined = undefined;
         let preferencia: PREFERENCIA | null = null;
+
+        // Variables para inicio y fin
+        let startHash: Geohash = '';
+        let endHash: Geohash = '';
 
         // Bucle de navegación
         while (step <= totalSteps && step > 0) {
@@ -102,6 +119,7 @@ export class NavbarComponent {
                     if (!res) return; // Cancelado
 
                     originData = res;
+                    startHash = originData.hash || geohashForLocation([originData.lat, originData.lon], 7);
                     step++; // Avanzar
                     break;
                 }
@@ -121,6 +139,7 @@ export class NavbarComponent {
                     if (!res) return; // Cancelado
 
                     destData = res;
+                    endHash = destData.hash || geohashForLocation([destData.lat, destData.lon], 7);
                     step++;
                     break;
                 }
@@ -166,7 +185,7 @@ export class NavbarComponent {
                         step--;
                         // OJO: Si veníamos de Coche, step 3 incluye vehículo.
                         // Al bajar a 3, el switch case 3 se ejecutará de nuevo preguntando transporte.
-                        // Esto es correcto UX: "¿Quieres cambiar transporte o vehículo?" -> Vuelves a elegir transporte.
+                        // Esto es buena UX: "¿Quieres cambiar transporte o vehículo?" -> Vuelves a elegir transporte.
                         break;
                     }
                     if (!res) return;
@@ -179,13 +198,12 @@ export class NavbarComponent {
         }
         // Si salimos del bucle porque step > totalSteps, la info. es completa
         if (step > totalSteps) {
+
             const routeParams = {
                 mode: 'route',
-                startLat: originData!.lat,
-                startLon: originData!.lon,
+                start: startHash,
                 startName: originData!.name,
-                endLat: destData!.lat,
-                endLon: destData!.lon,
+                end: endHash,
                 endName: destData!.name,
                 transport: transporte,
                 preference: preferencia,
@@ -194,8 +212,7 @@ export class NavbarComponent {
 
             const cleanParams = JSON.parse(JSON.stringify(routeParams));
             console.info(JSON.stringify(cleanParams));
-            return;
-            // this.router.navigate(['/map'], { queryParams: cleanParams });
+            this.router.navigate(['/map'], { queryParams: cleanParams });
         }
     }
 
@@ -235,8 +252,7 @@ export class NavbarComponent {
                 if (savedPoi) {
                     // Mapeamos el POIModel a lo que espera tu router
                     return {
-                        lat: savedPoi.lat,
-                        lon: savedPoi.lon,
+                        hash: savedPoi.geohash,
                         name: savedPoi.alias || savedPoi.placeName // Usamos alias si tiene
                     };
                 }
@@ -248,7 +264,7 @@ export class NavbarComponent {
             if (!searchMethod) continue;
 
             // Ejecutamos la búsqueda y devolvemos el resultado (lat/lon o name)
-            const search = await this.executeSearchMethod(searchMethod);
+            const search = await this.executeSearchMethod(searchMethod, true);
             if (search === 'BACK') continue;
             if (search) return search;
         }
@@ -263,7 +279,7 @@ export class NavbarComponent {
     }
 
     /** Ejecuta el diálogo correspondiente y devuelve el objeto de datos limpio */
-    private async executeSearchMethod(method: AddPoiMethod): Promise<any | 'BACK' | null> {
+    private async executeSearchMethod(method: AddPoiMethod, confirm: boolean): Promise<any | 'BACK' | null> {
         let potentialPOI: POISearchModel | null = null;
 
         try {
@@ -275,8 +291,18 @@ export class NavbarComponent {
                 if (!coords) return 'BACK'; // Usuario canceló input -> Volver atrás
 
                 // LLAMADA API: Reverse Geocoding
-                this.snackBar.open('Obteniendo dirección...', '', {duration: 1500});
-                potentialPOI = await this.mapSearchService.searchPOIByCoords(coords.lat, coords.lon);
+                const snackBarRef =  this.snackBar.open('Obteniendo dirección...', '', {duration: 0});
+
+                try {
+                    potentialPOI = await this.mapSearchService.searchPOIByCoords(coords.lat, coords.lon);
+                } finally {
+                    snackBarRef.dismiss();
+                }
+
+                if (!potentialPOI) {
+                    this.snackBar.open("No se pudo obtener la dirección de esas coordenadas.", 'OK', {duration: 3000});
+                    return 'BACK';
+                }
             } else if (method === 'name') {
                 const dialogRef = this.dialog.open(PlaceNameSearchDialogComponent, {width: '90%', maxWidth: '400px'});
                 const nameStr = await firstValueFrom(dialogRef.afterClosed());
@@ -288,6 +314,8 @@ export class NavbarComponent {
                 const results = await this.mapSearchService.searchPOIByPlaceName(nameStr);
 
                 if (results && results.length > 0) {
+                    if (!confirm) return  {name: nameStr}; // pasar la lista si es una búsqueda simple
+                    // si es una ruta...
                     const selectedResult = await this.selectSavedItem(
                         'search-results',
                         'Resultados de búsqueda',
@@ -314,26 +342,33 @@ export class NavbarComponent {
         }
 
         // 2. CONFIRMACIÓN (Si tenemos un candidato)
-        if (potentialPOI) {
-            const confirmRef = this.dialog.open(PointConfirmationDialog, {
-                width: '90%', maxWidth: '400px',
-                data: potentialPOI // Pasamos el modelo completo (lat, lon, placeName)
-            });
+        if (potentialPOI ) {
+            if (confirm) {
+                const confirmRef = this.dialog.open(PointConfirmationDialog, {
+                    width: '90%', maxWidth: '400px',
+                    data: potentialPOI // Pasamos el modelo completo (lat, lon, placeName)
+                });
 
-            const confirmed = await firstValueFrom(confirmRef.afterClosed());
+                const confirmed = await firstValueFrom(confirmRef.afterClosed());
 
-            if (confirmed) {
-                // Devolvemos el formato que espera tu router/lógica
+                if (confirmed) {
+                    // Devolvemos el formato que espera tu router/lógica
+                    return {
+                        lat: potentialPOI.lat,
+                        lon: potentialPOI.lon,
+                        name: potentialPOI.placeName
+                    };
+                } else {
+                    return 'BACK'; // Canceló en la confirmación -> Volver a elegir cómo buscar
+                }
+            } else {
                 return {
                     lat: potentialPOI.lat,
                     lon: potentialPOI.lon,
                     name: potentialPOI.placeName
                 };
-            } else {
-                return 'BACK'; // Canceló en la confirmación -> Volver a elegir cómo buscar
             }
         }
-
         return null;
     }
 

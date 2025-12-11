@@ -205,3 +205,9 @@
         height: 75px;
     }
 }
+
+.navbar.route-hidden {
+    transform: translateY(200%); /* Lo mueve hacia abajo fuera de la pantalla */
+    opacity: 0;
+    pointer-events: none; /* Evita clics accidentales mientras no se ve */
+}

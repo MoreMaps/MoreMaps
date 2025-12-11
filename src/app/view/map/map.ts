@@ -34,6 +34,10 @@ import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
 import {CoordsNotFoundError} from '../../errors/CoordsNotFoundError';
+import {RouteDetailsDialog} from '../route/route-details-dialog/routeDetailsDialog';
+import {RouteResultModel} from '../../data/RouteResultModel';
+import {RouteService} from '../../services/Route/route.service';
+import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -79,7 +83,7 @@ const selectedIcon = L.icon({
         ProfileButtonComponent,
         MatIcon,
         MatFabButton,
-        MatTooltip
+        MatTooltip,
     ],
     providers: [
         MapSearchService,
@@ -108,6 +112,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private savedPOIs: Geohash[] = []
     private route = inject(ActivatedRoute);
     private shouldCenterOnLocation = true;
+    private routeLayer: L.GeoJSON | null = null;
+    private routeDialogRef: MatDialogRef<RouteDetailsDialog> | null = null;
+    private routeService = inject(RouteService);
+    private routeStartMarker: L.Marker | null = null;
+    private routeEndMarker: L.Marker | null = null;
 
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
@@ -131,11 +140,20 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
 
         this.mapUpdateService.searchCoords$.subscribe((coords) => {
+           if (this.routeLayer) {
+               this.showSnackbar('Cierra la ruta actual para realizar nuevas búsquedas.', 'OK');
+               return;
+           }
             console.info('Recibidas coordenadas externas:', coords);
             this.searchByCoords(coords.lat, coords.lon);
         });
 
         this.mapUpdateService.searchPlaceName$.subscribe((placeName) => {
+            if (this.routeLayer) {
+                this.showSnackbar('Cierra la ruta actual para realizar nuevas búsquedas.', 'OK');
+                return;
+            }
+
             console.info('Recibido topónimo:', placeName);
             this.searchByPlaceName(placeName);
         });
@@ -219,7 +237,29 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private handleInitialLocationLogic() {
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams.subscribe(async params => {
+            console.log(params);
+            const mode = params['mode'];
+
+            if (mode === 'route') {
+                const startHash = params['start'];
+                const endHash = params['end'];
+                const startName = params['startName'];
+                const endName = params['endName'];
+                const transport = params['transport'];
+                const preference = params['preference'];
+                const matricula = params['matricula']; // opcional
+
+                if (startHash && endHash) {
+                    await this.calculateAndDrawRoute(
+                        startHash, endHash, startName, endName,
+                        transport, preference, matricula
+                    );
+                    return;
+                }
+                console.warn("Faltan parámetros de ruta, cargando mapa estándar...")
+            }
+
             const lat = params['lat'];
             const lon = params['lon'];
             const name = params['name'];
@@ -228,21 +268,28 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             const lonNum = parseFloat(lon);
 
             // Si tengo longitud y latitud, significa que tengo que hacer una búsqueda
-            const hasPoiParams = !isNaN(latNum) && !isNaN(lonNum);
+            const hasCoords = !isNaN(latNum) && !isNaN(lonNum);
+            const hasPoiParams = hasCoords || !!name;
+
             this.shouldCenterOnLocation = !hasPoiParams;
 
-            if (this.mapUpdateService.lastKnownLocation) {
+            if (!this.userLocationMarker && !this.mapUpdateService.lastKnownLocation)
+                this.startLocating()
+            else if (this.shouldCenterOnLocation && this.mapUpdateService.lastKnownLocation)
                 this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
-            } else {
-                this.startLocating();
+
+            if (this.shouldCenterOnLocation) {
+                if (this.mapUpdateService.lastKnownLocation) {
+                    this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
+                } else {
+                    this.startLocating();
+                }
             }
-
             // Cuando el mapa esté listo, empiezo la búsqueda
-            this.map!.whenReady(() => {
+            if (this.map) {
                 this.map!.invalidateSize();
-
                 // si tengo lan y lon...
-                if (hasPoiParams) {
+                if (hasCoords) {
                     console.info('Cargando mapa con coordenadas específicas:', lat, lon);
                     // si tengo nombre también, significa que estoy mirando un POI guardado
                     if (name) {
@@ -259,9 +306,150 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                         this.searchByPlaceName(name);
                     }
                 }
-            })
-
+            }
         });
+    }
+
+    async calculateAndDrawRoute(
+        startHash: string, endHash: string,
+        startName: string, endName: string,
+        transport: string, preference: string,
+        matricula?: string
+    ) {
+        try {
+            this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
+                horizontalPosition: 'left', verticalPosition: 'bottom', duration: 0
+            });
+
+
+            // 1. Llamada a API y obtener datos
+            const result: RouteResultModel = await this.mapSearchService.searchRoute(
+                startHash, endHash, transport as TIPO_TRANSPORTE, preference as PREFERENCIA
+            );
+            const coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE);
+
+            if (this.loadingSnackBarRef) this.loadingSnackBarRef.dismiss();
+
+            // 2. Limpiar mapa
+            this.resetMapState();
+            this.clearRouteMarkers();
+
+            // 3. Pintar Marcadores Inicio y Fin
+            // Necesitamos decodificar el geohash para poner el marker
+            const startCoords = this.decodeGeohash(startHash); // [lat, lon]
+            const endCoords = this.decodeGeohash(endHash);     // [lat, lon]
+
+            // Marcador A (Origen)
+            this.routeStartMarker = L.marker([startCoords[1], startCoords[0]], {
+                icon: customIcon // O usa un icono diferente para origen
+            }).addTo(this.map!).bindPopup(`Origen: ${startName}`);
+
+            // Marcador B (Destino)
+            this.routeEndMarker = L.marker([endCoords[1], endCoords[0]], {
+                icon: selectedIcon // Icono destacado para destino
+            }).addTo(this.map!).bindPopup(`Destino: ${endName}`);
+
+            // 4. Pintar Geometría de Ruta
+            if (result.geometry) {
+                this.drawRouteGeometry(result.geometry);
+            }
+
+            // 5. Abrir Diálogo de Detalles
+            this.openRouteDetailsDialog(result, startName, endName, transport, matricula, coste);
+
+        } catch (e) {
+            if (this.loadingSnackBarRef) this.loadingSnackBarRef.dismiss();
+            this.showSnackbar('Error calculando la ruta', 'Cerrar');
+            console.error(e);
+        }
+    }
+
+    private drawRouteGeometry(geometry: any) {
+        if (this.routeLayer) this.map?.removeLayer(this.routeLayer);
+
+        this.routeLayer = L.geoJSON(geometry, {
+            style: {
+                color: '#FF9539', // Naranja corporativo
+                weight: 6,
+                opacity: 0.9,
+                lineJoin: 'round',
+                lineCap: 'round'
+            }
+        }).addTo(this.map!);
+
+        // Ajustar zoom a la ruta
+        this.map?.fitBounds(this.routeLayer.getBounds(), { padding: [50, 200] }); // Más padding abajo para el diálogo
+    }
+
+    private openRouteDetailsDialog(
+        routeResult: RouteResultModel,
+        startName: string, endName: string,
+        transport: any, matricula?: string,
+        coste: number = 0
+    ){
+        // Cerrar otros diálogos
+        this.closePOIDetailsDialog();
+
+        this.routeDialogRef = this.dialog.open(RouteDetailsDialog, {
+            position: { bottom: '30px', right: '30px' },
+            width: '90vw',
+            maxWidth: '400px', // Estrecho como tarjeta
+            hasBackdrop: false, // Permitir interactuar con el mapa
+            panelClass: 'route-dialog-panel', // Para quitar estilos por defecto si hace falta
+            data: {
+                origenName: startName,
+                destinoName: endName,
+                transporte: transport,
+                routeResult: routeResult,
+                matricula: matricula,
+                // TODO: Calcular coste real en RouteService
+                coste: 0
+            }
+        });
+
+        // Manejar cierre
+        this.routeDialogRef.componentInstance.closeRoute.subscribe(() => {
+            this.clearRoute();
+        });
+
+        // Manejar guardar
+        this.routeDialogRef.componentInstance.save.subscribe(() => {
+            // Implementar lógica de guardado
+            this.showSnackbar('Ruta guardada (Simulación)', 'OK');
+        });
+    }
+
+    private clearRoute() {
+        if (this.routeLayer) {
+            this.map?.removeLayer(this.routeLayer);
+            this.routeLayer = null;
+        }
+
+        // Borrar marcaderos específicos de ruta
+        this.clearRouteMarkers();
+
+        // Borrar marcadores generales
+        this.deleteMarkers();
+
+        // Volver a centrar en usuario
+        // this.centerOnUser();
+
+        // Limpiar URL
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: {}
+        });
+    }
+
+    private clearRouteMarkers() {
+        if (this.routeStartMarker) {
+            this.routeStartMarker.remove();
+            this.routeStartMarker = null;
+        }
+        if (this.routeEndMarker) {
+            this.routeEndMarker.remove();
+            this.routeEndMarker = null;
+        }
     }
 
     private setupLocationEventHandlers() {
@@ -273,8 +461,9 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             }
 
             this.handleLocationSuccess(e.latlng);
-
-            this.showSnackbar('Ubicación encontrada.', '¡Bien!');
+            if (this.shouldCenterOnLocation && this.loadingSnackBarRef) {
+                this.showSnackbar('Ubicación encontrada.', '¡Bien!');
+            }
         });
 
         if (this.map) this.map.on('locationerror', (e: L.ErrorEvent) => {
@@ -301,46 +490,47 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private handleLocationSuccess(latlng: L.LatLng) {
-        // 1. Cerrar spinner si estaba abierto
-        if (this.loadingSnackBarRef) {
-            this.loadingSnackBarRef.dismiss();
-        }
-
-        // 2. Limpiar marcador anterior
+        // 1. SIEMPRE actualizamos/creamos el marcador de posición del usuario
         if (this.userLocationMarker) {
-            if (this.map) this.map.removeLayer(this.userLocationMarker);
+            this.userLocationMarker.setLatLng(latlng);
+        } else {
+            // Crear icono
+            const pulsingIcon = L.divIcon({
+                className: 'pulsing-beacon',
+                html: '<div class="beacon-core"></div>',
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+                popupAnchor: [0, -10]
+            });
+
+            this.userLocationMarker = L.marker(latlng, {
+                icon: pulsingIcon,
+                zIndexOffset: 1000 // Asegurar que esté por encima de otros
+            }).addTo(this.map!);
         }
 
-        // 3. Crear icono
-        const pulsingIcon = L.divIcon({
-            className: 'pulsing-beacon',
-            html: '<div class="beacon-core"></div>',
-            iconSize: [22, 22],
-            iconAnchor: [11, 11],
-            popupAnchor: [0, -10]
-        });
-
-        // 4. Poner marcador
-        this.userLocationMarker = L.marker(latlng, {
-            icon: pulsingIcon,
-            zIndexOffset: 1000
-        }).addTo(this.map!);
-
-        // 5. Centrar mapa
-        if (this.map) this.map.setView(latlng, 15);
+        // 2. SOLO centramos el mapa si el usuario NO está buscando otra cosa
+        if (this.shouldCenterOnLocation) {
+            // Cerrar spinner solo si era el de "Localizando..."
+            if (this.loadingSnackBarRef) {
+                this.loadingSnackBarRef.dismiss();
+            }
+            if (this.map) this.map.setView(latlng, 15);
+        }
     }
 
     private startLocating() {
-        this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
+        if (this.shouldCenterOnLocation)
+            this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
             horizontalPosition: 'left',
             verticalPosition: 'bottom',
             duration: 0
-        });
+            });
 
         if (this.map) this.map.locate({
             setView: false,
             maxZoom: 16,
-            watch: false,
+            watch: true,
             enableHighAccuracy: true,
             timeout: 10000
         });
@@ -487,6 +677,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     async searchByPlaceName(placeName: string): Promise<void> {
+        if (this.loadingSnackBarRef) this.loadingSnackBarRef.dismiss();
+
         try {
             // Mostrar spinner de carga
             this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
@@ -498,11 +690,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             // Realizar búsqueda en la API (Geocode Search)
             const poiSearchResult: POISearchModel[] = await this.mapSearchService.searchPOIByPlaceName(placeName);
 
-            // Cerrar spinner de carga
-            if (this.loadingSnackBarRef) {
-                this.loadingSnackBarRef.dismiss();
-            }
-
             this.selectPOI(poiSearchResult);
 
         } catch (error: any) {
@@ -512,11 +699,20 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             }
             console.error(`Error al buscar por topónimo: ${error}`);
             this.snackBar.open(`Error al buscar: ${error.message}`, 'Cerrar', {duration: 5000});
+        } finally {
+            // Cerrar spinner de carga
+            if (this.loadingSnackBarRef) {
+                this.loadingSnackBarRef.dismiss();
+                this.loadingSnackBarRef = null;
+            }
         }
     }
 
     private setupMapClickHandler(): void {
         if (this.map) this.map.on('click', async (e: L.LeafletMouseEvent) => {
+
+            if (this.routeLayer) return;
+
             const lat = e.latlng.lat;
             const lon = e.latlng.lng;
 
@@ -677,6 +873,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     public refreshLocation(): void {
+        this.router.navigate(['/map'], {queryParams: {}});
         this.startLocating();
     }
 
@@ -695,5 +892,45 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             activeMarker.setZIndexOffset(700);
         }
         activeMarker.openPopup();
+    }
+
+    /**
+     * Decodifica un Geohash directamente a [Lon., Lat.]
+     * Formato compatible con OpenRouteService
+     */
+    decodeGeohash(geohash: string): [number, number] {
+        const BITS = [16, 8, 4, 2, 1];
+        const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz';
+        let is_even = true;
+        let lat = [-90.0, 90.0];
+        let lon = [-180.0, 180.0];
+        let lat_err = 90.0;
+        let lon_err = 180.0;
+
+        for (let i = 0; i < geohash.length; i++) {
+            const c = geohash[i];
+            const cd = BASE32.indexOf(c);
+            for (let j = 0; j < 5; j++) {
+                const mask = BITS[j];
+                if (is_even) {
+                    lon_err /= 2;
+                    if (cd & mask) {
+                        lon[0] = (lon[0] + lon[1]) / 2;
+                    } else {
+                        lon[1] = (lon[0] + lon[1]) / 2;
+                    }
+                } else {
+                    lat_err /= 2;
+                    if (cd & mask) {
+                        lat[0] = (lat[0] + lat[1]) / 2;
+                    } else {
+                        lat[1] = (lat[0] + lat[1]) / 2;
+                    }
+                }
+                is_even = !is_even;
+            }
+        }
+        // Devolvemos [Longitud, Latitud]
+        return [(lon[0] + lon[1]) / 2, (lat[0] + lat[1]) / 2];
     }
 }

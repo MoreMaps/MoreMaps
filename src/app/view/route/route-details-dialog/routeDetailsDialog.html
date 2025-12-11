@@ -1,0 +1,63 @@
+<div class="route-card">
+    <div class="info-group">
+        <div class="info-field">
+            <span class="label">Origen</span>
+            <div class="value-box">
+                <span class="text-truncate">{{ data.origenName }}</span>
+                <mat-icon class="field-icon">trip_origin</mat-icon>
+            </div>
+        </div>
+
+        <div class="arrow-connector">
+            <mat-icon>arrow_downward</mat-icon>
+        </div>
+
+        <div class="info-field">
+            <span class="label">Destino</span>
+            <div class="value-box">
+                <span class="text-truncate">{{ data.destinoName }}</span>
+                <mat-icon class="field-icon">location_on</mat-icon>
+            </div>
+        </div>
+
+        @if (data.transporte === 'driving-car') {
+            <div class="info-field vehicle-field">
+                <div class="value-box vehicle-box">
+                    <mat-icon class="transport-icon">directions_car</mat-icon>
+                    <div class="vehicle-info">
+                        <span class="vehicle-label">Vehículo</span>
+                        <span class="vehicle-name">{{ data.vehicleAlias || data.matricula || 'Coche' }}</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="footer-stats">
+        <div class="stats-left">
+            <div class="main-stat duration">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ durationString }}</span>
+            </div>
+
+            <div class="sub-stats">
+                <span class="dist">{{ distanceKm }}</span>
+                @if (data.coste !== undefined && data.coste > 0) {
+                    <span class="cost">{{ data.coste | number:'1.2-2' }} €</span>
+                }
+            </div>
+        </div>
+
+        <div class="actions-right">
+            <button class="action-btn save-btn" (click)="onSave()" matTooltip="Guardar Ruta">
+                <mat-icon>bookmark</mat-icon>
+            </button>
+
+            <button class="action-btn close-btn" (click)="onClose()" matTooltip="Cerrar Ruta">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+    </div>
+</div>

@@ -22,6 +22,6 @@ export class MapSearchService {
 
     // HU401, HU404-406: Buscar una ruta según preferencia entre dos POI
     async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
-        return new RouteResultModel(0.0, 0.0, '' as unknown as Geometry);
+        return this.mapSearchApi.searchRoute(origen, destino, transporte, preferencia);
     }
 }

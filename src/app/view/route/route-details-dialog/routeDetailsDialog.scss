@@ -1,0 +1,175 @@
+.route-card {
+    background-color: var(--color-white);
+    padding: 1rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow: hidden;
+    /* Ajuste para que parezca la imagen */
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+}
+
+.arrow-connector {
+    position: absolute;
+    left: 1rem;
+    top: 38px;
+    color: #ccc;
+    z-index: 0;
+
+    mat-icon { font-size: 16px; height: 16px; width: 16px; }
+}
+
+.info-field {
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    font-size: 0.7rem;
+    color: #888;
+    margin-left: 4px;
+    margin-bottom: 2px;
+}
+
+.value-box {
+    background-color: var(--color-lavender);
+    padding: 8px 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+
+    .text-truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--color-teal-dark);
+        margin-right: 8px;
+    }
+
+    .field-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: #999;
+    }
+}
+
+/* Estilo especial para vehículo */
+.vehicle-field {
+    margin-top: 8px;
+}
+.vehicle-box {
+    background-color: rgba(0,0,0,0.03); /* Un gris muy suave */
+    border: 1px dashed #ccc;
+    justify-content: flex-start;
+    gap: 12px;
+}
+.transport-icon {
+    color: var(--color-teal-dark);
+}
+.vehicle-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+.vehicle-label { font-size: 0.65rem; color: #888; }
+.vehicle-name { font-size: 0.9rem; font-weight: 600; color: var(--color-black); }
+
+
+.divider {
+    height: 1px;
+    background-color: rgba(0,0,0,0.05);
+    margin: 8px 0;
+}
+
+/* Footer Stats */
+.footer-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.stats-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.main-stat.duration {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-teal-dark);
+    font-weight: 700;
+    font-size: 1.2rem;
+
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+}
+
+.sub-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+
+    .dist { color: #888; }
+    .cost { color: var(--color-mint-green-dark, #2E8B57); } /* Verde oscuro para dinero */
+}
+
+/* Botones de Acción (Cuadrados redondeados) */
+.actions-right {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+
+    mat-icon { font-size: 24px; color: var(--color-teal-dark); }
+
+    &:hover { transform: translateY(-2px); }
+}
+
+.save-btn {
+    background-color: var(--color-mint-green);
+    box-shadow: 0 4px 12px rgba(126, 222, 176, 0.4);
+}
+
+.close-btn {
+    background-color: var(--color-orange);
+    box-shadow: 0 4px 12px rgba(255, 149, 57, 0.4);
+
+    mat-icon { color: white; }
+}
+
+/* Dark Theme */
+:host-context(.dark-theme) {
+    .route-card { background-color: var(--color-purple-dark); border-color: rgba(255,255,255,0.1); }
+    .value-box { background-color: rgba(255,255,255,0.05); }
+    .text-truncate { color: var(--color-white); }
+    .vehicle-name { color: var(--color-white); }
+    .main-stat { color: var(--color-mint-green); }
+    .label, .vehicle-label { color: var(--color-lavender); }
+}

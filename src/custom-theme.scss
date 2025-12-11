@@ -907,3 +907,34 @@ mat-error,
     color: var(--color-dark-teal);
 }
 
+// MAT-MENUs
+.custom-navbar-menu {
+    border-radius: var(--radius-md) !important;
+    background-color: var(--color-white) !important;
+
+    box-shadow: var(--shadow-sm) !important;
+
+    .mat-mdc-menu-content {
+        padding: 8px !important;
+    }
+
+    /* Estilo de los botones internos */
+    .mat-mdc-menu-item {
+        border-radius: 16px; /* Botones internos también redondos */
+        margin-bottom: 4px;
+        color: var(--color-purple-dark) !important;
+        min-height: 48px;
+        transition: background 0.2s;
+
+        /* Iconos */
+        mat-icon {
+            color: var(--color-purple-dark) !important;
+            margin-right: 12px;
+        }
+
+        /* Efecto Hover */
+        &:hover {
+            background-color: var(--color-lavender) !important; /* Blanco semitransparente al pasar el mouse */
+        }
+    }
+}

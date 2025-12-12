@@ -276,6 +276,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.route.queryParams.subscribe(async params => {
             const mode = params['mode'];
 
+            // CONSULTA DE RUTA
             if (mode === 'route') {
                 const startHash = params['start'];
                 const endHash = params['end'];
@@ -295,6 +296,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 console.warn("Faltan parámetros de ruta, cargando mapa estándar...")
             }
 
+            // CONSULTAR POI EN MAPA
+
             const lat = params['lat'];
             const lon = params['lon'];
             const name = params['name'];
@@ -305,29 +308,28 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             const hasCoords = !isNaN(latNum) && !isNaN(lonNum);
             const hasPoiParams = hasCoords || !!name;
 
+            // si hay POI, centramos en el POI, no en el usuario
             this.shouldCenterOnLocation = !hasPoiParams;
 
-            if (!this.userLocationMarker && !this.mapUpdateService.lastKnownLocation)
-                this.startLocating()
-            else if (this.shouldCenterOnLocation && this.mapUpdateService.lastKnownLocation)
+            // GESTIÓN DE UBICACIÓN DEL USUARIO (BEACON)
+            if (this.mapUpdateService.lastKnownLocation) {
+                // Si ya la tenemos, la pintamos
                 this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
-
-            if (this.shouldCenterOnLocation) {
-                if (this.mapUpdateService.lastKnownLocation) {
-                    this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
-                } else {
-                    this.startLocating();
-                }
+            } else {
+                // Si no, empezamos a buscar (en silencio si shouldCenterOnLocation es false)
+                this.startLocating();
             }
-            // Cuando el mapa esté listo, empiezo la búsqueda
+
+            // INICIALIZACIÓN DEL MAPA Y POIs
             if (this.map) {
                 this.map!.invalidateSize();
                 // si tengo lan y lon...
                 if (hasCoords) {
                     console.info('Cargando mapa con coordenadas específicas:', lat, lon);
+                    this.map.setView([latNum, lonNum], 16);
                     if (name) {
                         const savedPoi = new POISearchModel(latNum, lonNum, name);
-                        this.selectPOI(savedPoi);
+                        this.selectPOI(savedPoi, false);
                     } else {
                         this.searchByCoords(latNum, lonNum);
                     }
@@ -346,6 +348,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         transport: string, preference: string,
         matricula?: string
     ) {
+        // Comprobación
+        if (startHash === endHash) {
+            this.showSnackbar('El origen y el destino no pueden ser el mismo.', 'Cerrar');
+            this.clearRoute();
+            return;
+        }
         try {
             // 1. GUARDAR ESTADO ACTUAL
             this.currentRouteState = {
@@ -842,7 +850,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.goToPOIIndex(this.currentIndex());
     }
 
-    private selectPOI(poi: POISearchModel | POISearchModel[]): void {
+    private selectPOI(poi: POISearchModel | POISearchModel[], animate: boolean = true): void {
         this.deleteCurrentMarker();
         this.deleteMarkers();
         this.closePOIDetailsDialog();
@@ -862,7 +870,13 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         }
 
         this.highlightMarker(0);
-        this.fitMapToMarkers();
+        if (animate) {
+            this.fitMapToMarkers();
+        } else {
+            if (this.currentMarker) {
+                this.currentMarker.openPopup();
+            }
+        }
         this.openPOIDetailsDialog();
     }
 

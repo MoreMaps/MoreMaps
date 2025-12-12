@@ -140,6 +140,12 @@ export class NavbarComponent {
 
                     destData = res;
                     endHash = destData.hash || geohashForLocation([destData.lat, destData.lon], 7);
+
+                    if (endHash === startHash) {
+                        this.snackBar.open('El origen no puede ser el mismo que el destino.', 'Cerrar', {duration: 3000});
+                        break;
+                    }
+
                     step++;
                     break;
                 }
@@ -211,7 +217,7 @@ export class NavbarComponent {
             };
 
             const cleanParams = JSON.parse(JSON.stringify(routeParams));
-            this.router.navigate(['/map'], { queryParams: cleanParams });
+            this.router.navigate(['/map'], {queryParams: cleanParams});
         }
     }
 
@@ -290,7 +296,7 @@ export class NavbarComponent {
                 if (!coords) return 'BACK'; // Usuario canceló input -> Volver atrás
 
                 // LLAMADA API: Reverse Geocoding
-                const snackBarRef =  this.snackBar.open('Obteniendo dirección...', '', {duration: 0});
+                const snackBarRef = this.snackBar.open('Obteniendo dirección...', '', {duration: 0});
 
                 try {
                     potentialPOI = await this.mapSearchService.searchPOIByCoords(coords.lat, coords.lon);
@@ -313,7 +319,7 @@ export class NavbarComponent {
                 const results = await this.mapSearchService.searchPOIByPlaceName(nameStr);
 
                 if (results && results.length > 0) {
-                    if (!confirm) return  {name: nameStr}; // pasar la lista si es una búsqueda simple
+                    if (!confirm) return {name: nameStr}; // pasar la lista si es una búsqueda simple
                     // si es una ruta...
                     const selectedResult = await this.selectSavedItem(
                         'search-results',
@@ -341,7 +347,7 @@ export class NavbarComponent {
         }
 
         // 2. CONFIRMACIÓN (Si tenemos un candidato)
-        if (potentialPOI ) {
+        if (potentialPOI) {
             if (confirm) {
                 const confirmRef = this.dialog.open(PointConfirmationDialog, {
                     width: '90%', maxWidth: '400px',

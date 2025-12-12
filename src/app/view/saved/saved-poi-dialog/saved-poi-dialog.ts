@@ -22,6 +22,7 @@ import {POI_REPOSITORY} from '../../../services/POI/POIRepository';
 import {POIDB} from '../../../services/POI/POIDB';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {DeleteConfirmationPOIPopupComponent} from '../../deletePOI/deletePOI';
+import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 
 export interface SavedItemDialogData {
     item: POIModel;
@@ -40,6 +41,9 @@ export interface SavedItemDialogData {
         NgOptimizedImage,
         ReactiveFormsModule,
         DeleteConfirmationPOIPopupComponent,
+        MatMenu,
+        MatMenuTrigger,
+        MatMenuItem,
     ],
     templateUrl: './saved-poi-dialog.html',
     styleUrls: ['./saved-poi-dialog.scss'],
@@ -112,13 +116,12 @@ export class SavedPoiDialog implements OnInit {
         }
     }
 
-    onNewRoute(): void {
-        this.snackBar.open('Función no implementada.', 'OK', {
-            duration: 3000,
-            horizontalPosition: 'start',
-            verticalPosition: 'bottom'
-        });
-        this.handleAction('route');
+    onRouteFromHere(): void {
+        this.handleAction('route-from');
+    }
+
+    onRouteToHere(): void {
+        this.handleAction('route-to');
     }
 
     onShowOnMap(): void {

@@ -13,7 +13,6 @@ import {POI_REPOSITORY} from '../services/POI/POIRepository';
 import {POIDB} from '../services/POI/POIDB';
 import {LongitudeRangeError} from '../errors/LongitudeRangeError';
 import {MissingPOIError} from '../errors/MissingPOIError';
-import {ForbiddenContentError} from '../errors/ForbiddenContentError';
 import {PlaceNameNotFoundError} from '../errors/PlaceNameNotFoundError';
 import {DescriptionLengthError} from '../errors/DescriptionLengthError';
 import {MapSearchService} from '../services/map-search-service/map-search.service';
@@ -21,7 +20,6 @@ import {MAP_SEARCH_REPOSITORY} from '../services/map-search-service/MapSearchRep
 import {MapSearchAPI} from '../services/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
-import {VehicleService} from '../services/Vehicle/vehicle.service';
 
 describe('Pruebas sobre POI', () => {
     let userService: UserService;

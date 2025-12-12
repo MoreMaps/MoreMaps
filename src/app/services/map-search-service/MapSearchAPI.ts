@@ -13,6 +13,7 @@ import {APIAccessError} from '../../errors/APIAccessError';
 import {Geohash} from 'geofire-common';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {RouteResultModel} from '../../data/RouteResultModel';
+import {Geometry} from 'geojson';       // Este import es para evitar que el compilador dé un error
 
 @Injectable({
     providedIn: 'root'
@@ -123,7 +124,7 @@ export class MapSearchAPI implements MapSearchRepository {
      * @param preferencia preferencia escogida
      */
     async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
-        return new RouteResultModel(0.0, 0.0, '');
+        return new RouteResultModel(0.0, 0.0, '' as unknown as Geometry);
     }
 
     /**

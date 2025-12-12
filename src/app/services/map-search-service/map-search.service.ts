@@ -4,6 +4,7 @@ import {POISearchModel} from '../../data/POISearchModel';
 import {Geohash} from 'geofire-common';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {RouteResultModel} from '../../data/RouteResultModel';
+import {Geometry} from 'geojson';       // Ídem al de la API
 
 @Injectable({ providedIn: 'root' })
 export class MapSearchService {
@@ -21,6 +22,6 @@ export class MapSearchService {
 
     // HU401, HU404-406: Buscar una ruta según preferencia entre dos POI
     async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
-        return new RouteResultModel(0.0, 0.0, '');
+        return new RouteResultModel(0.0, 0.0, '' as unknown as Geometry);
     }
 }

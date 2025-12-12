@@ -57,6 +57,10 @@ describe('Pruebas sobre vehículos', () => {
     beforeEach(async () => {
         // Registrar Vehículo inicial "Ford Fiesta" para tener estado base en algunos tests
         try {
+            // Si el usuario estuviera nulo por alguna razón, inicio sesión con ramón
+            if (!auth.currentUser) {await userService.login(ramon.email, ramon.pwd);}
+            // Si aun así, no puedo iniciar sesión...
+            if (!auth.currentUser) {throw new Error('Fallo al reintentar login en beforeEach.')}
             // 1. Referencia al documento
             const vehicleRef = doc(firestore, `/items/${auth.currentUser?.uid}/vehicles/${datosFord.matricula}`);
 
@@ -70,6 +74,17 @@ describe('Pruebas sobre vehículos', () => {
         } catch (error) {
             console.error(error);
             throw error;
+        }
+    })
+
+    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
+    afterAll(async () => {
+        try {
+            if (auth.currentUser) await userService.logout();
+            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de vehicle.spec.ts.');
+            else { console.info('Logout en afterAll de vehicle.spec.ts funcionó correctamente.'); }
+        } catch (error) {
+            console.error(error);
         }
     })
 
@@ -123,11 +138,10 @@ describe('Pruebas sobre vehículos', () => {
     describe('HU302: Consultar lista de vehículos', () => {
 
         it('HU302-EV01: Consultar el listado vacío de vehículos', async () => {
-            // GIVEN
-            // El usuario maria se ha registrado y ha iniciado sesión
-            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-
             try {
+                // GIVEN
+                // El usuario maria se ha registrado y ha iniciado sesión
+                await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
                 // WHEN
                 // El usuario maria consulta su lista de vehículos registrados (vacía)
                 let list: VehicleModel[] = await vehicleService.getVehicleList();
@@ -137,7 +151,9 @@ describe('Pruebas sobre vehículos', () => {
             } finally {
                 // CLEANUP
                 // borrar a maria
-                await userService.deleteUser();
+                try {
+                    await userService.deleteUser();
+                } catch (error) { console.error('Error deleting user maria in test HU302-EV01: ', error); }
                 // volver a iniciar sesión con ramon
                 await userService.login(ramon.email, ramon.pwd);
             }

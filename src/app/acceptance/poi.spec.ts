@@ -77,6 +77,17 @@ describe('Pruebas sobre POI', () => {
         }
     });
 
+    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
+    afterAll(async () => {
+        try {
+            if (auth.currentUser) await userService.logout();
+            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de poi.spec.ts.');
+            else { console.info('Logout en afterAll de poi.spec.ts funcionó correctamente.'); }
+        } catch (error) {
+            console.error(error);
+        }
+    })
+
     // Las pruebas empiezan a partir de AQUÍ
 
     describe('HU201: Registrar POI por coordenadas', () => {

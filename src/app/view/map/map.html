@@ -2,7 +2,7 @@
     <div id="map" #mapContainer style="height: 100%;width: 100vw;"></div>
 </div>
 
-<div class="location-controls">
+<div class="location-controls" [class.route-hidden]="isRouteMode" >
     <button mat-fab class="map-fab small-fab"
             (click)="refreshLocation()"
             matTooltip="Actualizar mi ubicación">

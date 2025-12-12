@@ -13,6 +13,8 @@ import {APIAccessError} from '../../errors/APIAccessError';
 import {Geohash} from 'geofire-common';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {RouteResultModel} from '../../data/RouteResultModel';
+import {WrongRouteParamsError} from '../../errors/Route/WrongRouteParamsError';
+import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 
 @Injectable({
     providedIn: 'root'
@@ -123,6 +125,11 @@ export class MapSearchAPI implements MapSearchRepository {
      * @param preferencia preferencia escogida
      */
     async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
+        // Comprobar que los parametros están bien
+        if (!origen || !destino || !transporte || !preferencia) {
+            throw new WrongRouteParamsError();
+        }
+
         // 1. Obtener [lon, lan] de origen y destino que espera ORS.
         const coordsOrigen = this.decodeGeohash(origen);
         const coordsDestino = this.decodeGeohash(destino);
@@ -156,7 +163,12 @@ export class MapSearchAPI implements MapSearchRepository {
 
             return new RouteResultModel(time, distance, geometry);
 
-        } catch (error) {
+        } catch (error: any) {
+            if (error.status === 400) {
+                console.warn('Ruta imposible detectada por el API');
+                throw new ImpossibleRouteError();
+            }
+
             console.error('Error calculando ruta: ', error);
             throw new APIAccessError();
         }

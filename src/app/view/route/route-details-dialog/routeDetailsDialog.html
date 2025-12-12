@@ -1,36 +1,64 @@
 <div class="route-card">
-    <div class="info-group">
-        <div class="info-field">
+
+    <div class="od-group">
+
+        <div class="connector-line">
+            <div class="dot start-dot"></div>
+            <div class="line"></div>
+            <div class="dot end-dot"></div>
+        </div>
+
+        <div class="od-inputs">
             <span class="label">Origen</span>
-            <div class="value-box">
+            <div class="value-box input-style clickable" (click)="onEditOrigin()" matTooltip="Cambiar Origen">
+                <mat-icon style="margin-right: 0.2em;">place</mat-icon>
                 <span class="text-truncate">{{ data.origenName }}</span>
-                <mat-icon class="field-icon">trip_origin</mat-icon>
             </div>
-        </div>
-
-        <div class="arrow-connector">
-            <mat-icon>arrow_downward</mat-icon>
-        </div>
-
-        <div class="info-field">
-            <span class="label">Destino</span>
-            <div class="value-box">
+            <div class="value-box input-style clickable" (click)="onEditDestination()" matTooltip="Cambiar Destino">
+                <mat-icon style="margin-right: 0.2em;">place</mat-icon>
                 <span class="text-truncate">{{ data.destinoName }}</span>
-                <mat-icon class="field-icon">location_on</mat-icon>
             </div>
+            <span style="margin-bottom: 0;" class="label">Destino</span>
         </div>
 
-        @if (data.transporte === 'driving-car') {
-            <div class="info-field vehicle-field">
-                <div class="value-box vehicle-box">
-                    <mat-icon class="transport-icon">directions_car</mat-icon>
-                    <div class="vehicle-info">
-                        <span class="vehicle-label">Vehículo</span>
-                        <span class="vehicle-name">{{ data.vehicleAlias || data.matricula || 'Coche' }}</span>
-                    </div>
-                </div>
+        <button class="swap-btn" (click)="onSwap()" matTooltip="Intercambiar sentido">
+            <mat-icon>swap_vert</mat-icon>
+        </button>
+
+    </div>
+
+    <div class="info-field clickable-box" (click)="onEditTransport()" matTooltip="Cambiar transporte">
+        <div class="value-box vehicle-box">
+            <mat-icon class="transport-icon">
+                @if(data.transporte === TIPO_TRANSPORTE.VEHICULO) { directions_car }
+                @else if(data.transporte === TIPO_TRANSPORTE.BICICLETA) { pedal_bike }
+                @else { directions_walk }
+            </mat-icon>
+
+            <div class="vehicle-info">
+                <span class="vehicle-label">Transporte</span>
+                <span class="vehicle-name">
+                    @if(data.transporte === TIPO_TRANSPORTE.VEHICULO) {
+                        {{ data.vehicleAlias || data.matricula || 'Coche' }}
+                    } @else if (data.transporte === TIPO_TRANSPORTE.BICICLETA) {
+                        Bicicleta
+                    } @else {
+                        A pie
+                    }
+                </span>
             </div>
-        }
+        </div>
+    </div>
+
+    <div class="info-field preference-field">
+        <div class="value-box select-box">
+            <mat-icon class="pref-icon">tune</mat-icon>
+            <mat-select [(ngModel)]="data.preference" (selectionChange)="onPreferenceChange($event.value)" class="custom-select" panelClass="custom-select-panel">
+                <mat-option [value]="PREFERENCIA.RAPIDA">Más Rápida</mat-option>
+                <mat-option [value]="PREFERENCIA.CORTA">Más Corta</mat-option>
+                <mat-option [value]="PREFERENCIA.RECOMENDADA">Recomendada</mat-option>
+            </mat-select>
+        </div>
     </div>
 
     <div class="divider"></div>

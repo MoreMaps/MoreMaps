@@ -5,50 +5,56 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    overflow: hidden;
-    /* Ajuste para que parezca la imagen */
+    gap: 0.8rem; /* Un poco más de aire */
     border: 1px solid rgba(0,0,0,0.05);
 }
 
-.info-group {
+/* --- GRUPO ORIGEN / DESTINO --- */
+.od-group {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
     position: relative;
+    align-items: center; /* Alineación vertical */
+    gap: 8px;
 }
 
-.arrow-connector {
+/* Decoración Línea izquierda (Puntos y línea) */
+.connector-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 100%;
     position: absolute;
-    left: 1rem;
-    top: 38px;
-    color: #ccc;
+    left: 4px;
+    top: 0;
     z-index: 0;
 
-    mat-icon { font-size: 16px; height: 16px; width: 16px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid #ccc; background: white; z-index: 1;}
+    .start-dot { border-color: #888; }
+    .end-dot { border-color: var(--color-orange); }
+    .line { flex: 1; width: 2px; background: #eee; margin: -2px 0; }
 }
 
-.info-field {
-    z-index: 1;
+/* Contenedor de Inputs */
+.od-inputs {
+    flex: 1; /* Ocupa el espacio disponible */
     display: flex;
     flex-direction: column;
+    gap: 8px; /* Espacio entre las cajas de origen y destino */
+    margin-left: 28px; /* Espacio para la línea conectora */
+    margin-right: 40px; /* Espacio para el botón de swap */
 }
 
-.label {
-    font-size: 0.7rem;
-    color: #888;
-    margin-left: 4px;
-    margin-bottom: 2px;
-}
-
+/* Estilo cajas inputs */
 .value-box {
     background-color: var(--color-lavender);
-    padding: 8px 12px;
+    padding: 0 12px;
     border-radius: 12px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    height: 40px;
+    height: 44px;
+    transition: background-color 0.2s;
 
     .text-truncate {
         white-space: nowrap;
@@ -57,30 +63,63 @@
         font-size: 0.9rem;
         font-weight: 500;
         color: var(--color-teal-dark);
-        margin-right: 8px;
-    }
-
-    .field-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-        color: #999;
+        width: 100%;
     }
 }
 
-/* Estilo especial para vehículo */
-.vehicle-field {
-    margin-top: 8px;
+.clickable {
+    cursor: pointer;
+    &:hover { background-color: #e8eaf6; } /* Feedback visual al pasar ratón */
+    &:active { transform: scale(0.99); }
 }
+
+/* BOTÓN SWAP */
+.swap-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%); /* Centrado vertical perfecto */
+
+    background-color: var(--color-white);
+    border: 1px solid #eee;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+    z-index: 10;
+    color: var(--color-teal-dark);
+
+    &:hover {
+        background-color: var(--color-lavender);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    mat-icon { font-size: 20px; }
+}
+
+
+/* --- VEHICLE --- */
+.clickable-box {
+    cursor: pointer;
+    transition: transform 0.1s;
+    &:active { transform: scale(0.99); }
+}
+
 .vehicle-box {
-    background-color: rgba(0,0,0,0.03); /* Un gris muy suave */
+    background-color: rgba(0,0,0,0.03);
     border: 1px dashed #ccc;
-    justify-content: flex-start;
+    padding: 8px 12px;
     gap: 12px;
 }
-.transport-icon {
-    color: var(--color-teal-dark);
-}
+
+.transport-icon { color: var(--color-teal-dark); }
+.edit-hint { margin-left: auto; font-size: 18px; color: #ccc; }
+
 .vehicle-info {
     display: flex;
     flex-direction: column;
@@ -89,14 +128,35 @@
 .vehicle-label { font-size: 0.65rem; color: #888; }
 .vehicle-name { font-size: 0.9rem; font-weight: 600; color: var(--color-black); }
 
+/* --- PREFERENCE SELECT --- */
+.preference-field { margin-top: 0; }
 
+.select-box {
+    background-color: var(--color-white);
+    border: 1px solid #eee;
+
+    .pref-icon {
+        color: #888;
+        font-size: 20px;
+        margin-right: 8px;
+    }
+}
+
+/* Select Styling Override */
+::ng-deep .custom-select {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-teal-dark);
+    width: 100%;
+}
+
+/* --- FOOTER --- */
 .divider {
     height: 1px;
     background-color: rgba(0,0,0,0.05);
-    margin: 8px 0;
+    margin: 4px 0;
 }
 
-/* Footer Stats */
 .footer-stats {
     display: flex;
     justify-content: space-between;
@@ -116,7 +176,6 @@
     color: var(--color-teal-dark);
     font-weight: 700;
     font-size: 1.2rem;
-
     mat-icon { font-size: 20px; width: 20px; height: 20px; }
 }
 
@@ -125,51 +184,30 @@
     gap: 12px;
     font-size: 0.9rem;
     font-weight: 500;
-
     .dist { color: #888; }
-    .cost { color: var(--color-mint-green-dark, #2E8B57); } /* Verde oscuro para dinero */
+    .cost { color: var(--color-mint-green-dark, #2E8B57); }
 }
 
-/* Botones de Acción (Cuadrados redondeados) */
-.actions-right {
-    display: flex;
-    gap: 8px;
-}
+.actions-right { display: flex; gap: 8px; }
 
 .action-btn {
-    width: 48px;
-    height: 48px;
+    width: 48px; height: 48px;
     border-radius: 12px;
     border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     transition: transform 0.2s;
-
     mat-icon { font-size: 24px; color: var(--color-teal-dark); }
-
     &:hover { transform: translateY(-2px); }
 }
 
-.save-btn {
-    background-color: var(--color-mint-green);
-    box-shadow: 0 4px 12px rgba(126, 222, 176, 0.4);
-}
+.save-btn { background-color: var(--color-mint-green); }
+.close-btn { background-color: var(--color-orange); mat-icon { color: white; } }
 
-.close-btn {
-    background-color: var(--color-orange);
-    box-shadow: 0 4px 12px rgba(255, 149, 57, 0.4);
 
-    mat-icon { color: white; }
-}
-
-/* Dark Theme */
-:host-context(.dark-theme) {
-    .route-card { background-color: var(--color-purple-dark); border-color: rgba(255,255,255,0.1); }
-    .value-box { background-color: rgba(255,255,255,0.05); }
-    .text-truncate { color: var(--color-white); }
-    .vehicle-name { color: var(--color-white); }
-    .main-stat { color: var(--color-mint-green); }
-    .label, .vehicle-label { color: var(--color-lavender); }
+.label {
+    font-size: 0.7rem;
+    color: #888;
+    margin-left: 4px;
+    margin-bottom: 2px;
 }

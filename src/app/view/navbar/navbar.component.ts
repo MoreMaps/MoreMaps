@@ -211,7 +211,6 @@ export class NavbarComponent {
             };
 
             const cleanParams = JSON.parse(JSON.stringify(routeParams));
-            console.info(JSON.stringify(cleanParams));
             this.router.navigate(['/map'], { queryParams: cleanParams });
         }
     }

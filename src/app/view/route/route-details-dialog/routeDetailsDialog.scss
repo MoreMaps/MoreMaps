@@ -2,11 +2,11 @@
     background-color: var(--color-white);
     padding: 1rem;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
     gap: 0.8rem; /* Un poco más de aire */
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* --- GRUPO ORIGEN / DESTINO --- */
@@ -30,10 +30,29 @@
     top: 0;
     z-index: 0;
 
-    .dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid #ccc; background: white; z-index: 1;}
-    .start-dot { border-color: #888; }
-    .end-dot { border-color: var(--color-orange); }
-    .line { flex: 1; width: 2px; background: #eee; margin: -2px 0; }
+    .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 2px solid #ccc;
+        background: white;
+        z-index: 1;
+    }
+
+    .start-dot {
+        border-color: #888;
+    }
+
+    .end-dot {
+        border-color: var(--color-orange);
+    }
+
+    .line {
+        flex: 1;
+        width: 2px;
+        background: #eee;
+        margin: -2px 0;
+    }
 }
 
 /* Contenedor de Inputs */
@@ -61,7 +80,6 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: 0.9rem;
-        font-weight: 500;
         color: var(--color-teal-dark);
         width: 100%;
     }
@@ -69,8 +87,16 @@
 
 .clickable {
     cursor: pointer;
-    &:hover { background-color: #e8eaf6; } /* Feedback visual al pasar ratón */
-    &:active { transform: scale(0.99); }
+
+    &:hover {
+        filter: brightness(0.9);
+        transition: filter 0.2s;
+    }
+
+    /* Feedback visual al pasar ratón */
+    &:active {
+        transform: scale(0.99);
+    }
 }
 
 /* BOTÓN SWAP */
@@ -80,7 +106,7 @@
     top: 50%;
     transform: translateY(-50%); /* Centrado vertical perfecto */
 
-    background-color: var(--color-white);
+    background-color: var(--color-lavender);
     border: 1px solid #eee;
     border-radius: 50%;
     width: 36px;
@@ -89,17 +115,19 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     transition: all 0.2s;
     z-index: 10;
     color: var(--color-teal-dark);
 
     &:hover {
-        background-color: var(--color-lavender);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        filter: brightness(0.9);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
-    mat-icon { font-size: 20px; }
+    mat-icon {
+        font-size: 20px;
+    }
 }
 
 
@@ -107,29 +135,49 @@
 .clickable-box {
     cursor: pointer;
     transition: transform 0.1s;
-    &:active { transform: scale(0.99); }
+
+    &:active {
+        transform: scale(0.99);
+    }
 }
 
 .vehicle-box {
-    background-color: rgba(0,0,0,0.03);
+    background-color: rgba(0, 0, 0, 0.05);
     border: 1px dashed #ccc;
     padding: 8px 12px;
     gap: 12px;
 }
 
-.transport-icon { color: var(--color-teal-dark); }
-.edit-hint { margin-left: auto; font-size: 18px; color: #ccc; }
+.transport-icon {
+    color: var(--color-teal-dark);
+}
+
+.edit-hint {
+    margin-left: auto;
+    font-size: 18px;
+    color: #ccc;
+}
 
 .vehicle-info {
     display: flex;
     flex-direction: column;
     line-height: 1.1;
 }
-.vehicle-label { font-size: 0.65rem; color: #888; }
-.vehicle-name { font-size: 0.9rem; font-weight: 600; color: var(--color-black); }
+
+.vehicle-label {
+    font-size: 0.65rem;
+    color: #888;
+}
+
+.vehicle-name {
+    font-size: 0.9rem;
+    color: var(--color-black);
+}
 
 /* --- PREFERENCE SELECT --- */
-.preference-field { margin-top: 0; }
+.preference-field {
+    margin-top: 0;
+}
 
 .select-box {
     background-color: var(--color-white);
@@ -142,18 +190,10 @@
     }
 }
 
-/* Select Styling Override */
-::ng-deep .custom-select {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-teal-dark);
-    width: 100%;
-}
-
 /* --- FOOTER --- */
 .divider {
     height: 1px;
-    background-color: rgba(0,0,0,0.05);
+    background-color: rgba(0, 0, 0, 0.05);
     margin: 4px 0;
 }
 
@@ -174,9 +214,13 @@
     align-items: center;
     gap: 6px;
     color: var(--color-teal-dark);
-    font-weight: 700;
     font-size: 1.2rem;
-    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+    mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+    }
 }
 
 .sub-stats {
@@ -184,25 +228,53 @@
     gap: 12px;
     font-size: 0.9rem;
     font-weight: 500;
-    .dist { color: #888; }
-    .cost { color: var(--color-mint-green-dark, #2E8B57); }
+
+    .dist {
+        color: var(--color-gray-blue);
+    }
+
+    .cost {
+        color: var(--color-purple);
+    }
 }
 
-.actions-right { display: flex; gap: 8px; }
+.actions-right {
+    display: flex;
+    gap: 8px;
+}
 
 .action-btn {
-    width: 48px; height: 48px;
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
     border: none;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: transform 0.2s;
-    mat-icon { font-size: 24px; color: var(--color-teal-dark); }
-    &:hover { transform: translateY(-2px); }
+
+    mat-icon {
+        font-size: 24px;
+        color: var(--color-teal-dark);
+    }
+
+    &:hover {
+        transform: translateY(-2px);
+    }
 }
 
-.save-btn { background-color: var(--color-mint-green); }
-.close-btn { background-color: var(--color-orange); mat-icon { color: white; } }
+.save-btn {
+    background-color: var(--color-mint-green);
+}
+
+.close-btn {
+    background-color: var(--color-orange);
+
+    mat-icon {
+        color: white;
+    }
+}
 
 
 .label {
@@ -210,4 +282,86 @@
     color: #888;
     margin-left: 4px;
     margin-bottom: 2px;
+}
+
+:host-context(.dark-theme) {
+    .route-card {
+        background-color: var(--color-teal-dark);
+    }
+
+
+    /* Decoración Línea izquierda (Puntos y línea) */
+    .connector-line {
+        .dot {
+            border: 2px solid var(--color-purple-dark);
+            background: var(--color-lavender);
+            z-index: 1;
+        }
+
+        .start-dot {
+            border-color: var(--color-mint-green);
+        }
+
+        .end-dot {
+            border-color: var(--color-orange);
+        }
+
+        .line {
+            flex: 1;
+            width: 2px;
+            background: var(--color-lavender);
+            margin: -2px 0;
+        }
+    }
+
+
+    .label {
+        color: var(--color-gray-blue);
+    }
+
+
+    .vehicle-box {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .transport-icon {
+        color: var(--color-gray-blue);
+    }
+
+
+    .vehicle-label {
+        color: var(--color-gray-blue);
+    }
+
+    .vehicle-name {
+        color: var(--color-lavender);
+    }
+
+    .select-box {
+        background-color: rgba(255, 255, 255, 0.15);
+        border: 1px solid var(--color-gray-blue);
+
+        .pref-icon {
+            color: var(--color-gray-blue);
+        }
+    }
+
+    .divider {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+
+    .main-stat.duration {
+        color: var(--color-lavender);
+        mat-icon {
+            color: var(--color-lavender);
+        }
+    }
+
+
+    .sub-stats {
+        .cost {
+            color: var(--color-mint-green);
+        }
+    }
 }

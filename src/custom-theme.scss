@@ -966,3 +966,7 @@ mat-error,
     background: transparent !important; /* Fuerza la transparencia */
     box-shadow: none !important;        /* Quita la sombra gris externa */
 }
+
+.cdk-global-scrollblock {
+    overflow: hidden !important; /* Fuerza a que no haya scroll en el body */
+}

@@ -140,6 +140,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private routeStartMarker: L.Marker | null = null;
     private routeEndMarker: L.Marker | null = null;
     private vehicleService = inject(VehicleService);
+    private routeSubscription: Subscription | null = null;
     isRouteMode : boolean = false;
 
     // Estado de la ruta
@@ -237,6 +238,10 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.map.remove();
             this.map = null;
         }
+
+        if (this.routeSubscription) {
+            this.routeSubscription.unsubscribe();
+        }
     }
 
     private initMap() {
@@ -274,7 +279,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private handleInitialLocationLogic() {
-        this.route.queryParams.subscribe(async params => {
+        if (this.routeSubscription) this.routeSubscription.unsubscribe();
+        this.routeSubscription = this.route.queryParams.subscribe(async params => {
             const mode = params['mode'];
 
             // CONSULTA DE RUTA
@@ -617,6 +623,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.listPOIs.set([]);
         this.currentIndex.set(-1);
         this.poiDialogRef = null;
+
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: {},
+            replaceUrl: true // Importante para no llenar el historial del navegador
+        });
     }
 
     private async updateSaved(): Promise<void> {

@@ -50,6 +50,7 @@ import {CoordsSearchDialogComponent} from '../navbar/coords-search-dialog/coords
 import {PlaceNameSearchDialogComponent} from '../navbar/placename-search-dialog/placename-search-dialog';
 import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-dialog/savedSelectorData';
 import {PointConfirmationDialog} from '../navbar/point-confirmation-dialog/point-confirmation-dialog';
+import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -412,7 +413,10 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         } catch (e) {
             if (this.loadingSnackBarRef) this.loadingSnackBarRef.dismiss();
-            this.showSnackbar('Error calculando la ruta', 'Cerrar');
+            if (e instanceof ImpossibleRouteError)
+                this.showSnackbar('No existe una ruta entre los dos puntos.', 'Cerrar');
+            else
+                this.showSnackbar('Error calculando la ruta', 'Cerrar');
             console.error(e);
         }
     }

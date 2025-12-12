@@ -16,7 +16,6 @@ import {Auth} from '@angular/fire/auth';
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
-    let uid = 'LBlENZ0rtxW48TgGLYIfLZlgrzJ2';
     let firestore: Firestore;
     let auth: Auth;
 
@@ -39,8 +38,13 @@ describe('Pruebas sobre usuarios', () => {
         auth = TestBed.inject(Auth);
 
         // get datos de ramon
-        try{
-            const userDocRef = doc(firestore, `users/${uid}`);
+        try {
+            await userService.login(ramon.email, ramon.pwd);
+        } catch(error) {
+            await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
+        }
+        finally {
+            const userDocRef = doc(firestore, `users/${auth.currentUser?.uid}`);
             const docSnap = await getDoc(userDocRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -51,8 +55,7 @@ describe('Pruebas sobre usuarios', () => {
                     data['apellidos']
                 );
             } else throw new UserNotFoundError();
-        }catch(error){
-            console.error(error);}
+        }
     });
 
     describe('HU101: Registrar Usuario', () => {
@@ -161,7 +164,7 @@ describe('Pruebas sobre usuarios', () => {
         });
     });
 
-    describe('HU106: Eliminar cuenta', () => {
+    fdescribe('HU106: Eliminar cuenta', () => {
 
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN

@@ -2,10 +2,9 @@ import {Component, computed, effect, inject, Signal, signal} from '@angular/core
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
-import {Auth} from '@angular/fire/auth';
 import {Router} from "@angular/router";
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {VehicleModel} from '../../data/VehicleModel';
+import {FUEL_TYPE, VehicleModel} from '../../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
 import {MatError, MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
@@ -19,10 +18,7 @@ import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
-
-
-const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
-    'Híbrido Enchufable (PHEV)', 'GLP', 'GNC', 'Hidrógeno'];
+import {object} from '@angular/fire/database';
 
 
 @Component({
@@ -51,13 +47,10 @@ const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
 export class VehicleForm {
     private fb = inject(FormBuilder);
     private vehicleService: VehicleService = inject(VehicleService);
-    private auth: Auth;
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
 
-    constructor(auth: Auth) {
-        this.auth = auth;
-
+    constructor() {
         // reacciona a cambios en isLoading para (des)habilitar el formulario
         effect(() => {
             if (this.isLoading()) this.vehicleForm.disable();
@@ -66,7 +59,6 @@ export class VehicleForm {
     }
 
     isLoading = signal<boolean>(false);
-    fuelTypes = signal<string[]>(FUEL_TYPES);
 
     currentYear = new Date().getFullYear();
     vehicleForm: FormGroup = this.fb.nonNullable.group({
@@ -164,4 +156,7 @@ export class VehicleForm {
         if (!this.isLoading())
             this.vehicleForm.get(fieldName)?.reset();
     }
+
+    protected readonly FUEL_TYPE = FUEL_TYPE;
+    protected readonly Object = Object;
 }

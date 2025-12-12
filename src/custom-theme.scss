@@ -961,3 +961,8 @@ mat-error,
     /* Aquí definimos el z-index para la tarjeta del snackbar */
     z-index: 9999 !important;
 }
+
+.mat-mdc-dialog-surface {
+    background: transparent !important; /* Fuerza la transparencia */
+    box-shadow: none !important;        /* Quita la sombra gris externa */
+}

@@ -780,6 +780,16 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.poiDialogRef!.close({savePOI: true});
         });
 
+        this.poiDialogRef.componentInstance.center.subscribe(() => {
+            const poi = this.currentPOI();
+            if (poi && this.map) {
+                this.map.flyTo([poi.lat, poi.lon], this.map.getZoom(), {
+                    animate: true,
+                    duration: 1,
+                })
+            }
+        });
+
         this.poiDialogRef.componentInstance.next.subscribe(() => {
             this.goToNextPOI();
         });

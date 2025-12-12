@@ -380,29 +380,31 @@ describe('Pruebas sobre rutas', () => {
                 datosRutaC.transporte,
                 datosRutaC.preferencia
             );
+            try {
+                // WHEN
+                // El usuario decide guardar la ruta que ha buscado.
+                const rutaGuardada = await routeService.createRoute(datosRutaC.geohash_origen,
+                    datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
 
-            // WHEN
-            // El usuario decide guardar la ruta que ha buscado.
-            const rutaGuardada = await routeService.createRoute(datosRutaC.geohash_origen,
-                datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
+                // THEN
+                // Salida esperada: no se lanza ningún error. Se notifica al usuario del alta y se
+                // registra la ruta.
+                // Estado esperado: la lista de rutas registradas pasa a ser ["A-B"]
+                expect(rutaGuardada).toBeDefined();
+                expect(rutaGuardada).toEqual(jasmine.objectContaining({
+                    geohash_origen: datosRutaC.geohash_origen,
+                    geohash_destino: datosRutaC.geohash_destino,
+                    transporte: datosRutaC.transporte,
+                    preferencia: datosRutaC.preferencia,
+                    tiempo: datosRutaC.tiempo,
+                    distancia: datosRutaC.distancia,
+                    matricula: datosRutaC.matricula,
+                }));
+            } finally {
+                // Cleanup
+                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+            }
 
-            // THEN
-            // Salida esperada: no se lanza ningún error. Se notifica al usuario del alta y se
-            // registra la ruta.
-            // Estado esperado: la lista de rutas registradas pasa a ser ["A-B"]
-            expect(rutaGuardada).toBeDefined();
-            expect(rutaGuardada).toEqual(jasmine.objectContaining({
-                geohash_origen: datosRutaC.geohash_origen,
-                geohash_destino: datosRutaC.geohash_destino,
-                transporte: datosRutaC.transporte,
-                preferencia: datosRutaC.preferencia,
-                tiempo: datosRutaC.tiempo,
-                distancia: datosRutaC.distancia,
-                matricula: datosRutaC.matricula,
-            }));
-
-            // Cleanup
-            await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
         });
 
         it('HU407-EI08. Guardar una ruta idéntica a una ya guardada.', async () => {
@@ -417,19 +419,21 @@ describe('Pruebas sobre rutas', () => {
                 datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
             await routeService.createRoute(datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
+            try {
+                // WHEN
+                // El usuario decide guardar la ruta que ha buscado.
+                await expectAsync(routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
+                    datosRutaC.transporte, rutaBuscada, datosRutaC.matricula))
+                    .toBeRejectedWith(new RouteAlreadyExistsError());
 
-            // WHEN
-            // El usuario decide guardar la ruta que ha buscado.
-            await expectAsync(routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
-                datosRutaC.transporte, rutaBuscada, datosRutaC.matricula))
-                .toBeRejectedWith(new RouteAlreadyExistsError());
+                // THEN
+                // Salida esperada: se lanza el error RouteAlreadyExistsError.
+                // Estado esperado: no se modifica el estado.
+            } finally {
+                // Cleanup
+                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+            }
 
-            // THEN
-            // Salida esperada: se lanza el error RouteAlreadyExistsError.
-            // Estado esperado: no se modifica el estado.
-
-            // Cleanup
-            await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
         });
     });
 

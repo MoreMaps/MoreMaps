@@ -13,7 +13,6 @@ import {POI_REPOSITORY} from '../services/POI/POIRepository';
 import {POIDB} from '../services/POI/POIDB';
 import {LongitudeRangeError} from '../errors/LongitudeRangeError';
 import {MissingPOIError} from '../errors/MissingPOIError';
-import {ForbiddenContentError} from '../errors/ForbiddenContentError';
 import {PlaceNameNotFoundError} from '../errors/PlaceNameNotFoundError';
 import {DescriptionLengthError} from '../errors/DescriptionLengthError';
 import {MapSearchService} from '../services/map-search-service/map-search.service';
@@ -21,7 +20,6 @@ import {MAP_SEARCH_REPOSITORY} from '../services/map-search-service/MapSearchRep
 import {MapSearchAPI} from '../services/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
-import {VehicleService} from '../services/Vehicle/vehicle.service';
 
 describe('Pruebas sobre POI', () => {
     let userService: UserService;
@@ -51,7 +49,7 @@ describe('Pruebas sobre POI', () => {
                 appConfig.providers],
 
             // This prevents Angular from destroying the injector after the first test.
-            teardown: { destroyAfterEach: false }
+            teardown: {destroyAfterEach: false}
         }).compileComponents();
 
         // Inyección de los servicios
@@ -93,20 +91,22 @@ describe('Pruebas sobre POI', () => {
             const poiBuscado = await mapSearchService.searchPOIByCoords(poiB.lat, poiB.lon);
             const poiCreado = await poiService.createPOI(poiBuscado)
 
-            // THEN
-            // Se da de alta el POI
-            expect(poiCreado).toEqual(jasmine.objectContaining({
-                lat: poiBuscado.lat,
-                lon: poiBuscado.lon,
-                placeName: poiBuscado.placeName,
-                geohash: geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7),
-                pinned: false
-                })
-            );
-
-            // CLEANUP
-            // Se borra el POI "B"
-            await poiService.deletePOI(poiCreado.geohash);
+            try {
+                // THEN
+                // Se da de alta el POI
+                expect(poiCreado).toEqual(jasmine.objectContaining({
+                        lat: poiBuscado.lat,
+                        lon: poiBuscado.lon,
+                        placeName: poiBuscado.placeName,
+                        geohash: geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7),
+                        pinned: false
+                    })
+                );
+            } finally {
+                // CLEANUP
+                // Se borra el POI "B"
+                await poiService.deletePOI(poiCreado.geohash);
+            }
         });
 
         it('HU201-EI03: Dar de alta un POI por coordenadas no válidas', async () => {
@@ -137,22 +137,24 @@ describe('Pruebas sobre POI', () => {
             const listaPoiEncontrados: POISearchModel[] = await mapSearchService.searchPOIByPlaceName(poiB.placeName);
             const poiBuscado: POISearchModel = listaPoiEncontrados[0];
             const poiCreado = await poiService.createPOI(poiBuscado)
+            try {
+                // THEN
+                // Se da de alta el POI
+                // La lista de POI es ["A", "B"]
+                expect(poiCreado).toEqual(jasmine.objectContaining({
+                        lat: poiBuscado.lat,
+                        lon: poiBuscado.lon,
+                        placeName: poiBuscado.placeName,
+                        geohash: geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7),
+                        pinned: false
+                    })
+                );
+            } finally {
+                // CLEANUP
+                // Se borra el POI "B"
+                await poiService.deletePOI(poiCreado.geohash);
+            }
 
-            // THEN
-            // Se da de alta el POI
-            // La lista de POI es ["A", "B"]
-            expect(poiCreado).toEqual(jasmine.objectContaining({
-                lat: poiBuscado.lat,
-                lon: poiBuscado.lon,
-                placeName: poiBuscado.placeName,
-                geohash: geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7),
-                pinned: false
-                })
-            );
-
-            // CLEANUP
-            // Se borra el POI "B"
-            await poiService.deletePOI(poiCreado.geohash);
         });
 
         it('HU202-EI03: Dar de alta un POI por topónimo que no corresponde a ningún sitio', async () => {
@@ -182,16 +184,17 @@ describe('Pruebas sobre POI', () => {
             // WHEN
             // El usuario maria consulta su lista de POI registrados
             let list = await poiService.getPOIList();
-
-            // THEN
-            // Se devuelve una lista vacía y se indica que no hay POI registrados.
-            expect(list.length).toBe(0);
-
-            // CLEANUP
-            // borrar a maria
-            await userService.deleteUser();
-            // volver a ramon
-            await userService.login(ramon.email, ramon.pwd);
+            try {
+                // THEN
+                // Se devuelve una lista vacía y se indica que no hay POI registrados.
+                expect(list.length).toBe(0);
+            } finally {
+                // CLEANUP
+                // borrar a maria
+                await userService.deleteUser();
+                // volver a ramon
+                await userService.login(ramon.email, ramon.pwd);
+            }
         });
 
         it('HU203-EV02: Consultar el listado no vacío de POI', async () => {
@@ -268,14 +271,15 @@ describe('Pruebas sobre POI', () => {
             // WHEN
             // El usuario modifica el alias del POI “A” a "Al y Canto"
             const poiModificado = await poiService.updatePOI(poiRegistrado.geohash, {alias: "Al y Canto"})
-
-            // THEN
-            // Se actualiza el POI
-            expect(poiModificado).toBeTrue();
-
-            // CLEANUP
-            // Modificar el alias del POI "A" de nuevo a "Alicante"
-            await poiService.updatePOI(poiRegistrado.geohash, {alias: "Alicante"});
+            try {
+                // THEN
+                // Se actualiza el POI
+                expect(poiModificado).toBeTrue();
+            } finally {
+                // CLEANUP
+                // Modificar el alias del POI "A" de nuevo a "Alicante"
+                await poiService.updatePOI(poiRegistrado.geohash, {alias: "Alicante"});
+            }
         });
 
         it('HU205-EI02: Modificar información de un POI no registrado', async () => {
@@ -356,24 +360,27 @@ describe('Pruebas sobre POI', () => {
             const poiCreado: POIModel = await poiService.createPOI(nuevoPoi)
 
             // Ambos puntos no son fijados, una consulta de POI devuelve ["A", "B"]
-            let list = await poiService.getPOIList();
-            expect(list.at(0)?.placeName === 'Alicante').toBeTrue();
+            try {
+                let list = await poiService.getPOIList();
+                expect(list.at(0)?.placeName === 'Alicante').toBeTrue();
 
-            // WHEN
-            // El usuario trata de fijar el POI "B"
-            const poiFijado = await poiService.pinPOI(poiCreado);
+                // WHEN
+                // El usuario trata de fijar el POI "B"
+                const poiFijado = await poiService.pinPOI(poiCreado);
 
-            // THEN
-            // El punto B pasa a estar fijado (pinned = true)
-            expect(poiFijado).toBeTrue();
+                // THEN
+                // El punto B pasa a estar fijado (pinned = true)
+                expect(poiFijado).toBeTrue();
 
-            // el orden ahora es ["B", "A"]
-            list = await poiService.getPOIList();
-            expect(list.at(0)?.placeName).toEqual('Valencia');
+                // el orden ahora es ["B", "A"]
+                list = await poiService.getPOIList();
+                expect(list.at(0)?.placeName).toEqual('Valencia');
+            } finally {
+                // CLEANUP
+                // Borrar el POI "B"
+                await poiService.deletePOI(poiCreado.geohash);
+            }
 
-            // CLEANUP
-            // Borrar el POI "B"
-            await poiService.deletePOI(poiCreado.geohash);
         });
 
         it('HU501-EI02: Fijar un POI no registrado', async () => {

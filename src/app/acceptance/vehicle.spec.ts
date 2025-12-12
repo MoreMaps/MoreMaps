@@ -39,7 +39,7 @@ describe('Pruebas sobre vehículos', () => {
                 {provide: USER_REPOSITORY, useClass: UserDB},
                 {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
                 appConfig.providers],
-            teardown: { destroyAfterEach: false }
+            teardown: {destroyAfterEach: false}
         }).compileComponents();
 
         // Inyección de los servicios
@@ -85,23 +85,24 @@ describe('Pruebas sobre vehículos', () => {
             // WHEN
             // El usuario intenta registrar el vehículo
             const vehiculoCreado = await vehicleService.createVehicle(datosAudi);
-
-            // THEN
-            // No se lanza ningún error
-            // Se da de alta el vehículo
-            expect(vehiculoCreado).toEqual(jasmine.objectContaining({
-                alias: datosAudi.alias,
-                matricula: datosAudi.matricula,
-                marca: datosAudi.marca,
-                modelo: datosAudi.modelo,
-                anyo: datosAudi.anyo,
-                tipoCombustible: datosAudi.tipoCombustible,
-                consumoMedio: datosAudi.consumoMedio,
-                pinned: datosAudi.pinned,
-            }));
-
-            // CLEANUP
-            await vehicleService.deleteVehicle(vehiculoCreado.matricula);
+            try {
+                // THEN
+                // No se lanza ningún error
+                // Se da de alta el vehículo
+                expect(vehiculoCreado).toEqual(jasmine.objectContaining({
+                    alias: datosAudi.alias,
+                    matricula: datosAudi.matricula,
+                    marca: datosAudi.marca,
+                    modelo: datosAudi.modelo,
+                    anyo: datosAudi.anyo,
+                    tipoCombustible: datosAudi.tipoCombustible,
+                    consumoMedio: datosAudi.consumoMedio,
+                    pinned: datosAudi.pinned,
+                }));
+            } finally {
+                // CLEANUP
+                await vehicleService.deleteVehicle(vehiculoCreado.matricula);
+            }
         });
 
         it('HU301-EI01: Registrar vehículo ya existente', async () => {
@@ -126,19 +127,21 @@ describe('Pruebas sobre vehículos', () => {
             // El usuario maria se ha registrado y ha iniciado sesión
             await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
-            // WHEN
-            // El usuario maria consulta su lista de vehículos registrados (vacía)
-            let list: VehicleModel[] = await vehicleService.getVehicleList();
+            try {
+                // WHEN
+                // El usuario maria consulta su lista de vehículos registrados (vacía)
+                let list: VehicleModel[] = await vehicleService.getVehicleList();
+                // THEN
+                // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
+                expect(list.length).toBe(0);
+            } finally {
+                // CLEANUP
+                // borrar a maria
+                await userService.deleteUser();
+                // volver a iniciar sesión con ramon
+                await userService.login(ramon.email, ramon.pwd);
+            }
 
-            // THEN
-            // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
-            expect(list.length).toBe(0);
-
-            // CLEANUP
-            // borrar a maria
-            await userService.deleteUser();
-            // volver a iniciar sesión con ramon
-            await userService.login(ramon.email, ramon.pwd);
         });
 
         it('HU302-EV02: Consultar lista no vacía de vehículos', async () => {
@@ -161,41 +164,44 @@ describe('Pruebas sobre vehículos', () => {
             // GIVEN
             // Lista de vehículos registrados → ["Ford Fiesta"] (con matrícula "1234XYZ")
 
-            // WHEN
-            // El usuario trata de modificar la matrícula del vehículo "Ford Fiesta" a "1235ZYX".
-            const nuevaMatricula = "1235ZYX";
-            const vehiculoModificado = await vehicleService
-                .updateVehicle(vehiculoRegistrado.matricula, {matricula: nuevaMatricula});
+            const nuevaMatricula = "1235ZYX"; // para el WHEN
+            try {
+                // WHEN
+                // El usuario trata de modificar la matrícula del vehículo "Ford Fiesta" a "1235ZYX".
+                const vehiculoModificado = await vehicleService
+                    .updateVehicle(vehiculoRegistrado.matricula, {matricula: nuevaMatricula});
 
-            // THEN
-            // No se lanza ningún error. Se modifica la matrícula.
-            expect(vehiculoModificado).toBeTrue();
+                // THEN
+                // No se lanza ningún error. Se modifica la matrícula.
+                expect(vehiculoModificado).toBeTrue();
 
-            // Comprobación adicional de la modificación.
-            const vehiculoLeido = await vehicleService.readVehicle(nuevaMatricula);
-            expect(vehiculoLeido.matricula).toBe(nuevaMatricula);
-
-            // CLEANUP
-            // Restaurar matrícula original.
-            await vehicleService.updateVehicle(nuevaMatricula, {matricula: datosFord.matricula});
+                // Comprobación adicional de la modificación.
+                const vehiculoLeido = await vehicleService.readVehicle(nuevaMatricula);
+                expect(vehiculoLeido.matricula).toBe(nuevaMatricula);
+            } finally {
+                // CLEANUP
+                // Restaurar matrícula original.
+                await vehicleService.updateVehicle(nuevaMatricula, {matricula: datosFord.matricula});
+            }
         });
 
         it('HU303-EI01: Modificar matrícula de un vehículo para que coincida con la de otro', async () => {
             // GIVEN
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
             const vehiculoAudi = await vehicleService.createVehicle(datosAudi);
+            try {
+                // WHEN
+                // El usuario trata de modificar la matrícula del vehículo Audi (4321XYZ) a la del "Ford Fiesta" (1234XYZ)
+                await expectAsync(vehicleService.updateVehicle(vehiculoAudi.matricula, {matricula: datosFord.matricula}))
+                    .toBeRejectedWith(new VehicleAlreadyExistsError());
 
-            // WHEN
-            // El usuario trata de modificar la matrícula del vehículo Audi (4321XYZ) a la del "Ford Fiesta" (1234XYZ)
-            await expectAsync(vehicleService.updateVehicle(vehiculoAudi.matricula, {matricula: datosFord.matricula}))
-                .toBeRejectedWith(new VehicleAlreadyExistsError());
-
-            // THEN
-            // Se lanza el error VehicleAlreadyExistsError.
-            // Estado esperado: no se modifica el estado.
-
-            // CLEANUP
-            await vehicleService.deleteVehicle(vehiculoAudi.matricula);
+                // THEN
+                // Se lanza el error VehicleAlreadyExistsError.
+                // Estado esperado: no se modifica el estado.
+            } finally {
+                // CLEANUP
+                await vehicleService.deleteVehicle(vehiculoAudi.matricula);
+            }
         });
     });
 
@@ -276,28 +282,30 @@ describe('Pruebas sobre vehículos', () => {
 
             // Ambos vehículos no son fijados, una consulta de vehículos devuelve ["Audi A6", "Ford Fiesta"].
             let list = await vehicleService.getVehicleList();
+            try {
+                expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
+                // WHEN
+                // El usuario trata de fijar el vehículo "Ford Fiesta".
+                const vehiculoFijado = await vehicleService.pinVehicle(datosFord.matricula);
+
+                // THEN
+                // El vehículo "Ford Fiesta" pasa a estar fijado (pinned = true).
+                expect(vehiculoFijado).toBeTrue();
+
+                // El orden ahora es ["Ford Fiesta", "Audi A6"].
+                list = await vehicleService.getVehicleList();
+                expect(list.at(0)?.matricula).toEqual('1234XYZ');
+            } finally {
+                // CLEANUP
+                // Quitar el fijado de "Ford Fiesta".
+                await vehicleService.pinVehicle(datosFord.matricula);
+                list = await vehicleService.getVehicleList();
+
+                // Borrar el vehículo "Audi".
+                await vehicleService.deleteVehicle(vehiculoAudi.matricula);
+            }
+            // Comprobar que el cleanup ha quitado el fijado correctamente (comprueba que es un toggle!)
             expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
-
-            // WHEN
-            // El usuario trata de fijar el vehículo "Ford Fiesta".
-            const vehiculoFijado = await vehicleService.pinVehicle(datosFord.matricula);
-
-            // THEN
-            // El vehículo "Ford Fiesta" pasa a estar fijado (pinned = true).
-            expect(vehiculoFijado).toBeTrue();
-
-            // El orden ahora es ["Ford Fiesta", "Audi A6"].
-            list = await vehicleService.getVehicleList();
-            expect(list.at(0)?.matricula).toEqual('1234XYZ');
-
-            // CLEANUP
-            // Quitar el fijado de "Ford Fiesta".
-            await vehicleService.pinVehicle(datosFord.matricula);
-            list = await vehicleService.getVehicleList();
-            expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
-
-            // Borrar el vehículo "Audi".
-            await vehicleService.deleteVehicle(vehiculoAudi.matricula);
         });
 
         it('HU502-EI02: Fijar un vehículo no registrado', async () => {

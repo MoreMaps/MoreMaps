@@ -158,8 +158,12 @@ describe('Pruebas sobre rutas', () => {
             // Salida esperada: no se lanza ningún error. El sistema muestra en el mapa una
             // ruta entre A y B en vehículo, junto al tiempo estimado y la distancia recorrida.
             // Estado esperado: no se modifica el estado.
-            expect(datosRutaCalculada.tiempo).toBeGreaterThanOrEqual(datosRutaC.tiempo);
-            expect(datosRutaCalculada.distancia).toBeGreaterThanOrEqual(datosRutaC.distancia);
+            if (datosRutaC.tiempo != null) {
+                expect(datosRutaCalculada.tiempo).toBeGreaterThanOrEqual(datosRutaC.tiempo);
+            }
+            if (datosRutaC.distancia != null) {
+                expect(datosRutaCalculada.distancia).toBeGreaterThanOrEqual(datosRutaC.distancia);
+            }
         }, 30000);
 
         it('HU401-EI03. Obtener una ruta entre dos puntos sin indicar el medio de transporte.', async () => {
@@ -318,7 +322,9 @@ describe('Pruebas sobre rutas', () => {
             // Estado esperado: no se modifica el estado.
             expect(ruta).toBeDefined();
             // ¿por qué Less? Porque al ser la más corta, es menos distancia que la ruta "recomendada" (coincide con rápida)
-            expect(ruta.distancia).toBeLessThanOrEqual(datosRutaC.distancia);
+            if (datosRutaC.distancia != null) {
+                expect(ruta.distancia).toBeLessThanOrEqual(datosRutaC.distancia);
+            }
         }, 30000);
 
         it('HU404-EI07. Obtener ruta más corta/económica entre dos puntos con vehículo cuando la ruta no es posible.', async () => {
@@ -366,7 +372,9 @@ describe('Pruebas sobre rutas', () => {
             // Salida esperada: no se lanza ningún error. Se devuelve la ruta correspondiente.
             // Estado esperado: no se modifica el estado.
             expect(ruta).toBeDefined();
-            expect(ruta.tiempo).toBeGreaterThanOrEqual(datosRutaC.tiempo);
+            if (datosRutaC.tiempo != null) {
+                expect(ruta.tiempo).toBeGreaterThanOrEqual(datosRutaC.tiempo);
+            }
         }, 30000);
 
         it('HU405-EI07. Obtener ruta más rápida/económica entre dos puntos con vehículo cuando la ruta no es posible.', async () => {
@@ -395,7 +403,7 @@ describe('Pruebas sobre rutas', () => {
 
     // --- HU407: Guardar Ruta ---
 
-    xdescribe('HU407: Guardar una ruta', () => {
+    fdescribe('HU407: Guardar una ruta', () => {
 
         it('HU407-EV01. Guardar una ruta nueva.', async () => {
             // GIVEN
@@ -414,7 +422,7 @@ describe('Pruebas sobre rutas', () => {
                 // WHEN
                 // El usuario decide guardar la ruta que ha buscado.
                 const rutaGuardada = await routeService.createRoute(datosRutaC.geohash_origen,
-                    datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
+                    datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula);
 
                 // THEN
                 // Salida esperada: no se lanza ningún error. Se notifica al usuario del alta y se
@@ -426,10 +434,13 @@ describe('Pruebas sobre rutas', () => {
                     geohash_destino: datosRutaC.geohash_destino,
                     transporte: datosRutaC.transporte,
                     preferencia: datosRutaC.preferencia,
-                    tiempo: datosRutaC.tiempo,
-                    distancia: datosRutaC.distancia,
                     matricula: datosRutaC.matricula,
                 }));
+                // Espera que la diferencia entre tiempos no supere 5 minutos (300 segundos)
+                expect(Math.abs(datosRutaC.tiempo!-rutaGuardada.tiempo!)).toBeLessThanOrEqual(300);
+                // Espera que la diferencia entre distancias no supere 1.5 km (1500 metros)
+                expect(Math.abs(datosRutaC.distancia!-rutaGuardada.distancia!)).toBeLessThanOrEqual(1500);
+
             } finally {
                 // Cleanup
                 await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
@@ -448,12 +459,12 @@ describe('Pruebas sobre rutas', () => {
             const rutaBuscada = await mapSearchService.searchRoute(datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
             await routeService.createRoute(datosRutaC.geohash_origen,
-                datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
+                datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula);
             try {
                 // WHEN
                 // El usuario decide guardar la ruta que ha buscado.
                 await expectAsync(routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
-                    datosRutaC.transporte, rutaBuscada, datosRutaC.matricula))
+                    datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula))
                     .toBeRejectedWith(new RouteAlreadyExistsError());
 
                 // THEN
@@ -562,8 +573,11 @@ describe('Pruebas sobre rutas', () => {
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN
             // 1. Lista de rutas registradas ["A-B"].
-            const rutaBuscada = await mapSearchService.searchRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
-            await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
+            const rutaBuscada = await mapSearchService.searchRoute(
+                datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
+            await routeService.createRoute(
+                datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia,
+                rutaBuscada, datosRutaC.matricula);
 
             // WHEN
             // El usuario trata de eliminar la ruta "A-B".

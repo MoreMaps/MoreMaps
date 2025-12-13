@@ -1,5 +1,5 @@
 import {inject, Injectable} from '@angular/core';
-import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
+import {RouteModel, TIPO_TRANSPORTE, PREFERENCIA} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {ROUTE_REPOSITORY, RouteRepository} from './RouteRepository';
@@ -14,8 +14,8 @@ export class RouteService {
     }
 
     // HU407: Guardar ruta
-    async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
-        return this.routeDb.createRoute(origen, destino, transporte, modelo, matricula);
+    async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
+        return this.routeDb.createRoute(origen, destino, transporte, preferencia, modelo, matricula);
     }
 
     // HU410: Eliminar ruta

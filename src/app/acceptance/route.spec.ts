@@ -657,6 +657,27 @@ describe('Pruebas sobre rutas', () => {
             // Estado esperado: no se modifica el estado.
         },30000);
     });
-     */
 
+    describe('HU606: Guardar datos de rutas', () => {
+
+        it('HU606-EV01: Comprobación de datos guardados de rutas ante cierre involuntario', async () => {
+            // GIVEN
+            //  el usuario "ramon" está registrado y ha iniciado sesión
+            //  la lista de POI registrados es [A]
+            const listaRutasAntes = await routeService.getRouteList();
+
+            //  se cierra la sesión involuntariamente
+            await userService.logout();
+
+            // WHEN
+            //  el usuario "ramon" vuelve a iniciar sesión
+            await userService.login(datosRamon.email, datosRamon.pwd);
+
+            // THEN
+            //  los datos de rutas de la BD son los mismos que los introducidos previamente
+            const listaRutas = await routeService.getRouteList();
+            expect(listaRutas).toEqual(listaRutasAntes);
+        });
+    });
+     */
 });

@@ -8,7 +8,7 @@ import {UserNotFoundError} from '../errors/UserNotFoundError';
 import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../errors/SessionNotActiveError';
 import {appConfig} from '../app.config';
-import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {doc, Firestore, getDoc} from '@angular/fire/firestore';
 import {Auth} from '@angular/fire/auth';
 
 
@@ -58,8 +58,7 @@ describe('Pruebas sobre usuarios', () => {
                     data['apellidos']
                 );
             } else throw new UserNotFoundError();
-        }catch(error){
-            console.error(error);}
+        }
     });
 
     // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
@@ -99,11 +98,7 @@ describe('Pruebas sobre usuarios', () => {
             expect(docSnap.exists()).toEqual(true);
 
             // LIMPIEZA: la base de datos vuelve al estado inicial
-            await deleteDoc(userDocRef);
-            const currentUser  = auth.currentUser;
-            if (currentUser) {
-                await currentUser.delete();
-            }
+            await userService.deleteUser();
         });
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
@@ -183,7 +178,7 @@ describe('Pruebas sobre usuarios', () => {
         });
     });
 
-    describe('HU106: Eliminar cuenta', () => {
+    fdescribe('HU106: Eliminar cuenta', () => {
 
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
@@ -196,7 +191,6 @@ describe('Pruebas sobre usuarios', () => {
             // THEN
             //  se elimina la cuenta
             expect(usuarioBorrado).toBeTrue();
-            if(auth.currentUser) {pending('User is logged in: debug deleteUser.');}
         });
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {

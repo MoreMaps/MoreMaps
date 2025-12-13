@@ -6,13 +6,13 @@ import {RouteResultModel} from '../../data/RouteResultModel';
 export const ROUTE_REPOSITORY = new InjectionToken<RouteRepository>('RouteRepository');
 
 export interface RouteRepository {
-    // HU402-403: Conocer coste de ruta
+    // Obtener el coste de una ruta
     getRouteCost(ruta: RouteResultModel, transporte: TIPO_TRANSPORTE, consumoMedio?: number): Promise<number>;
 
-    // HU407: Crear ruta
+    // Operaciones CRUDE
+    // (por ahora solo crear y borrar)
     createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE,
                 modelo: RouteResultModel, matricula?: string): Promise<RouteModel>;
 
-    // HU410: Eliminar ruta
     deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean>;
 }

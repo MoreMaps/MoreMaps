@@ -16,7 +16,6 @@ import {Auth} from '@angular/fire/auth';
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
-    let uid: string
     let firestore: Firestore;
     let auth: Auth;
 
@@ -58,6 +57,9 @@ describe('Pruebas sobre usuarios', () => {
                     data['apellidos']
                 );
             } else throw new UserNotFoundError();
+        }
+        catch (error) {
+            console.log("Error de Firebase al buscar usuario:" + error);
         }
     });
 

@@ -26,6 +26,8 @@ import {MapSearchService} from '../services/map-search-service/map-search.servic
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../data/RouteModel';
 import {RouteService} from '../services/Route/route.service';
 import {Geometry} from 'geojson';
+import {ROUTE_REPOSITORY} from '../services/Route/RouteRepository';
+import {RouteDB} from '../services/Route/RouteDB';
 
 // Errores
 import {WrongRouteParamsError} from '../errors/Route/WrongRouteParamsError';
@@ -73,6 +75,7 @@ describe('Pruebas sobre rutas', () => {
                 {provide: POI_REPOSITORY, useClass: POIDB},
                 {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
                 {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
+                {provide: ROUTE_REPOSITORY, useClass: RouteDB},
                 appConfig.providers],
             teardown: {destroyAfterEach: false}
         }).compileComponents();
@@ -554,7 +557,7 @@ describe('Pruebas sobre rutas', () => {
 
     // --- HU410: Eliminar Ruta ---
 
-    xdescribe('HU410: Eliminar una ruta guardada', () => {
+    fdescribe('HU410: Eliminar una ruta guardada', () => {
 
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN

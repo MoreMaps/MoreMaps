@@ -17,22 +17,26 @@ export class RouteModel {
     geohash_destino: Geohash;
     transporte: TIPO_TRANSPORTE;
     preferencia: PREFERENCIA;
-    distancia: number;
-    tiempo: number;
+    distancia?: number;
+    tiempo?: number;
     alias?: string;
     pinned?: boolean;
     matricula?: string;
 
     constructor(geohash_origen: Geohash, geohash_destino: Geohash,
                 transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA,
-                distancia: number, tiempo: number,
+                distancia?: number, tiempo?: number,
                 alias?: string, pinned?: boolean, matricula?: string) {
         this.geohash_origen = geohash_origen;
         this.geohash_destino = geohash_destino;
         this.transporte = transporte;
         this.preferencia = preferencia;
-        this.distancia = distancia;
-        this.tiempo = tiempo;
+        if (distancia !== undefined) {
+            this.distancia = distancia;
+        }
+        if (tiempo !== undefined) {
+            this.tiempo = tiempo;
+        }
         if (alias !== undefined) {
             this.alias = alias;
         }

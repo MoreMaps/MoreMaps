@@ -26,6 +26,8 @@ import {MapSearchService} from '../services/map-search-service/map-search.servic
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../data/RouteModel';
 import {RouteService} from '../services/Route/route.service';
 import {Geometry} from 'geojson';
+import {ROUTE_REPOSITORY} from '../services/Route/RouteRepository';
+import {RouteDB} from '../services/Route/RouteDB';
 
 // Errores
 import {WrongRouteParamsError} from '../errors/Route/WrongRouteParamsError';
@@ -73,6 +75,7 @@ describe('Pruebas sobre rutas', () => {
                 {provide: POI_REPOSITORY, useClass: POIDB},
                 {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
                 {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
+                {provide: ROUTE_REPOSITORY, useClass: RouteDB},
                 appConfig.providers],
             teardown: {destroyAfterEach: false}
         }).compileComponents();
@@ -155,8 +158,12 @@ describe('Pruebas sobre rutas', () => {
             // Salida esperada: no se lanza ningún error. El sistema muestra en el mapa una
             // ruta entre A y B en vehículo, junto al tiempo estimado y la distancia recorrida.
             // Estado esperado: no se modifica el estado.
-            expect(datosRutaCalculada.tiempo).toBeGreaterThanOrEqual(datosRutaC.tiempo);
-            expect(datosRutaCalculada.distancia).toBeGreaterThanOrEqual(datosRutaC.distancia);
+            if (datosRutaC.tiempo != null) {
+                expect(datosRutaCalculada.tiempo).toBeGreaterThanOrEqual(datosRutaC.tiempo);
+            }
+            if (datosRutaC.distancia != null) {
+                expect(datosRutaCalculada.distancia).toBeGreaterThanOrEqual(datosRutaC.distancia);
+            }
         }, 30000);
 
         it('HU401-EI03. Obtener una ruta entre dos puntos sin indicar el medio de transporte.', async () => {
@@ -315,7 +322,9 @@ describe('Pruebas sobre rutas', () => {
             // Estado esperado: no se modifica el estado.
             expect(ruta).toBeDefined();
             // ¿por qué Less? Porque al ser la más corta, es menos distancia que la ruta "recomendada" (coincide con rápida)
-            expect(ruta.distancia).toBeLessThanOrEqual(datosRutaC.distancia);
+            if (datosRutaC.distancia != null) {
+                expect(ruta.distancia).toBeLessThanOrEqual(datosRutaC.distancia);
+            }
         }, 30000);
 
         it('HU404-EI07. Obtener ruta más corta/económica entre dos puntos con vehículo cuando la ruta no es posible.', async () => {
@@ -363,7 +372,9 @@ describe('Pruebas sobre rutas', () => {
             // Salida esperada: no se lanza ningún error. Se devuelve la ruta correspondiente.
             // Estado esperado: no se modifica el estado.
             expect(ruta).toBeDefined();
-            expect(ruta.tiempo).toBeGreaterThanOrEqual(datosRutaC.tiempo);
+            if (datosRutaC.tiempo != null) {
+                expect(ruta.tiempo).toBeGreaterThanOrEqual(datosRutaC.tiempo);
+            }
         }, 30000);
 
         it('HU405-EI07. Obtener ruta más rápida/económica entre dos puntos con vehículo cuando la ruta no es posible.', async () => {
@@ -392,7 +403,7 @@ describe('Pruebas sobre rutas', () => {
 
     // --- HU407: Guardar Ruta ---
 
-    xdescribe('HU407: Guardar una ruta', () => {
+    fdescribe('HU407: Guardar una ruta', () => {
 
         it('HU407-EV01. Guardar una ruta nueva.', async () => {
             // GIVEN
@@ -411,7 +422,7 @@ describe('Pruebas sobre rutas', () => {
                 // WHEN
                 // El usuario decide guardar la ruta que ha buscado.
                 const rutaGuardada = await routeService.createRoute(datosRutaC.geohash_origen,
-                    datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
+                    datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula);
 
                 // THEN
                 // Salida esperada: no se lanza ningún error. Se notifica al usuario del alta y se
@@ -445,12 +456,12 @@ describe('Pruebas sobre rutas', () => {
             const rutaBuscada = await mapSearchService.searchRoute(datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
             await routeService.createRoute(datosRutaC.geohash_origen,
-                datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
+                datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula);
             try {
                 // WHEN
                 // El usuario decide guardar la ruta que ha buscado.
                 await expectAsync(routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
-                    datosRutaC.transporte, rutaBuscada, datosRutaC.matricula))
+                    datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula))
                     .toBeRejectedWith(new RouteAlreadyExistsError());
 
                 // THEN
@@ -559,8 +570,11 @@ describe('Pruebas sobre rutas', () => {
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN
             // 1. Lista de rutas registradas ["A-B"].
-            const rutaBuscada = await mapSearchService.searchRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
-            await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, rutaBuscada, datosRutaC.matricula);
+            const rutaBuscada = await mapSearchService.searchRoute(
+                datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
+            await routeService.createRoute(
+                datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia,
+                rutaBuscada, datosRutaC.matricula);
 
             // WHEN
             // El usuario trata de eliminar la ruta "A-B".

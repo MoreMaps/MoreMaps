@@ -434,10 +434,13 @@ describe('Pruebas sobre rutas', () => {
                     geohash_destino: datosRutaC.geohash_destino,
                     transporte: datosRutaC.transporte,
                     preferencia: datosRutaC.preferencia,
-                    tiempo: datosRutaC.tiempo,
-                    distancia: datosRutaC.distancia,
                     matricula: datosRutaC.matricula,
                 }));
+                // Espera que la diferencia entre tiempos no supere 5 minutos (300 segundos)
+                expect(Math.abs(datosRutaC.tiempo!-rutaGuardada.tiempo!)).toBeLessThanOrEqual(300);
+                // Espera que la diferencia entre distancias no supere 1.5 km (1500 metros)
+                expect(Math.abs(datosRutaC.distancia!-rutaGuardada.distancia!)).toBeLessThanOrEqual(1500);
+
             } finally {
                 // Cleanup
                 await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);

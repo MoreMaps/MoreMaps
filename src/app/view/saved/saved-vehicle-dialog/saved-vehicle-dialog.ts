@@ -98,12 +98,7 @@ export class SavedVehicleDialog implements OnInit {
     // --- ACCIONES VISTA ---
 
     onNewRoute(): void {
-        this.snackBar.open('Función no implementada.', 'OK', {
-            duration: 3000,
-            horizontalPosition: 'start',
-            verticalPosition: 'bottom'
-        });
-        this.handleAction('route');
+        this.handleAction('route-vehicle');
     }
 
     onEdit(): void {

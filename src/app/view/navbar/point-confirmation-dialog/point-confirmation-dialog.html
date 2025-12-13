@@ -1,0 +1,21 @@
+<div class="confirmation-container">
+    <h2 class="dialog-title">Confirmar ubicación</h2>
+
+    <div class="info-card">
+        <div class="icon-wrapper">
+            <mat-icon>location_on</mat-icon>
+        </div>
+        <div class="info-text">
+            <h3 class="place-name">{{ data.placeName }}</h3>
+            <p class="coords">Lat: {{ data.lat | number:'1.4-6' }}</p>
+            <p class="coords">Lon: {{ data.lon | number:'1.4-6' }}</p>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button (click)="cancel()" mat-button>Cancelar</button>
+        <button (click)="confirm()" class="confirm-btn" color="primary" mat-flat-button>
+            Confirmar
+        </button>
+    </div>
+</div>

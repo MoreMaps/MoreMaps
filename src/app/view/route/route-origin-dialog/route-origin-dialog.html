@@ -1,0 +1,37 @@
+<div class="add-poi-container">
+    @if (data?.totalSteps) {
+        <mat-progress-bar mode="determinate" [value]="(data.currentStep / data.totalSteps) * 100"></mat-progress-bar>
+        <p class="step-indicator" style="font-size: 0.8rem; opacity: 0.7; margin-top: 4px; margin-bottom: 0;">
+            Paso {{data.currentStep}} de {{data.totalSteps}}
+        </p>
+    }
+
+    <div style="display: flex; align-items: center; width: 100%; margin: 1rem 0 1.5rem 0;">
+        @if (data?.showBack) {
+            <button mat-icon-button (click)="closeWithAction('BACK')" style="margin-right: 8px; flex-shrink: 0;">
+                <mat-icon>arrow_back</mat-icon>
+            </button>
+        }
+
+        <div style="flex: 1; text-align: left;">
+            <h2 class="dialog-title" style="margin: 0; line-height: 1.2;">{{ data?.title || 'Calcular Ruta' }}</h2>
+            <p class="dialog-subtitle" style="margin: 4px 0 0 0;">{{ data?.subtitle || 'Selecciona una opción' }}</p>
+        </div>
+    </div>
+
+    <div class="actions-container">
+        <button class="method-btn" (click)="closeWithAction('saved')">
+            <mat-icon>bookmarks</mat-icon>
+            <span>Desde mis guardados</span>
+        </button>
+
+        <button class="method-btn" (click)="closeWithAction('search')">
+            <mat-icon>add_location_alt</mat-icon>
+            <span>Buscar un lugar</span>
+        </button>
+    </div>
+
+    <button class="cancel-btn" (click)="closeWithAction(null)">
+        Cancelar
+    </button>
+</div>

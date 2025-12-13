@@ -1,3 +1,14 @@
+export enum FUEL_TYPE {
+    GASOLINA ='Gasolina',
+    DIESEL = 'Diésel',
+    ELECTRICO = 'Eléctrico',
+    HEV = 'Híbrido (HEV)',
+    PHEV = 'Híbrido Enchufable (PHEV)',
+    GLP = 'Gases licuados del petróleo (GLP)',
+    GNC = 'Gas Natural Comprimido (GNC)',
+    HIDROGENO = 'Hidrógeno',
+}
+
 export class VehicleModel {
     alias: string
     matricula: string

@@ -8,7 +8,7 @@ export class RouteService {
 
     // HU402-403: Obtener coste asociado a ruta
     async getRouteCost(ruta: RouteResultModel, transporte: TIPO_TRANSPORTE, consumoMedio?: number): Promise<number> {
-        return 0.0;
+        return 10.0;
     }
 
     // HU407: Guardar ruta

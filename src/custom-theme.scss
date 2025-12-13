@@ -907,3 +907,66 @@ mat-error,
     color: var(--color-dark-teal);
 }
 
+// MAT-MENUs
+.custom-navbar-menu {
+    border-radius: var(--radius-md) !important;
+    background-color: var(--color-white) !important;
+
+    box-shadow: var(--shadow-sm) !important;
+
+    .mat-mdc-menu-content {
+        padding: 8px !important;
+    }
+
+    /* Estilo de los botones internos */
+    .mat-mdc-menu-item {
+        border-radius: 16px; /* Botones internos también redondos */
+        margin-bottom: 4px;
+        color: var(--color-purple-dark) !important;
+        min-height: 48px;
+        transition: background 0.2s;
+
+        /* Iconos */
+        mat-icon {
+            color: var(--color-purple-dark) !important;
+            margin-right: 12px;
+        }
+
+        /* Efecto Hover */
+        &:hover {
+            background-color: var(--color-lavender) !important;
+        }
+    }
+}
+
+:host-context(.dark-theme) {
+    .custom-navbar-menu {
+        background-color: var(--color-purple-dark) !important;
+        .mat-mdc-menu-item {
+            color: var(--color-lavender) !important;
+
+            mat-icon {
+                color: var(--color-lavender) !important;
+            }
+
+            &:hover {
+                background-color: var(--color-mint-green-light) !important;
+            }
+        }
+    }
+}
+
+
+.mat-mdc-snack-bar-label, .mdc-snackbar__label {
+    /* Aquí definimos el z-index para la tarjeta del snackbar */
+    z-index: 9999 !important;
+}
+
+.mat-mdc-dialog-surface {
+    background: transparent !important; /* Fuerza la transparencia */
+    box-shadow: none !important;        /* Quita la sombra gris externa */
+}
+
+.cdk-global-scrollblock {
+    overflow: hidden !important; /* Fuerza a que no haya scroll en el body */
+}

@@ -13,7 +13,8 @@ import {APIAccessError} from '../../errors/APIAccessError';
 import {Geohash} from 'geofire-common';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {RouteResultModel} from '../../data/RouteResultModel';
-import {Geometry} from 'geojson';       // Este import es para evitar que el compilador dé un error
+import {WrongRouteParamsError} from '../../errors/Route/WrongRouteParamsError';
+import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 
 @Injectable({
     providedIn: 'root'
@@ -124,7 +125,53 @@ export class MapSearchAPI implements MapSearchRepository {
      * @param preferencia preferencia escogida
      */
     async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
-        return new RouteResultModel(0.0, 0.0, '' as unknown as Geometry);
+        // Comprobar que los parametros están bien
+        if (!origen || !destino || !transporte || !preferencia) {
+            throw new WrongRouteParamsError();
+        }
+
+        // 1. Obtener [lon, lan] de origen y destino que espera ORS.
+        const coordsOrigen = MapSearchAPI.decodeGeohash(origen);
+        const coordsDestino = MapSearchAPI.decodeGeohash(destino);
+
+        // 2. Preparar el body.
+        const body = {
+          coordinates: [coordsOrigen, coordsDestino],
+          preference: preferencia,
+        };
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                'Content-Type': 'application/json',
+                'Authorization': this.apiKey // para POST, el API key va en el header
+            })
+        }
+
+        // 3. Hacer la petición.
+        try {
+            // geojson es el endpoint que devuelve la geometría completa
+            const url = `${this.baseUrl}/v2/directions/${transporte}/geojson`;
+            const response : any = await firstValueFrom(
+                this.http.post(url, body, httpOptions)
+            );
+
+            // 4. Extraer datos
+            const feature = response.features[0];
+            const distance = feature.properties.summary.distance; // metros
+            const time = feature.properties.summary.duration; // segundos
+            const geometry = feature.geometry; // GeoJSON
+
+            return new RouteResultModel(time, distance, geometry);
+
+        } catch (error: any) {
+            if (error.status === 400) {
+                console.warn('Ruta imposible detectada por el API');
+                throw new ImpossibleRouteError();
+            }
+
+            console.error('Error calculando ruta: ', error);
+            throw new APIAccessError();
+        }
     }
 
     /**
@@ -177,4 +224,43 @@ export class MapSearchAPI implements MapSearchRepository {
         return result;
     }
 
+    /**
+     * Decodifica un Geohash directamente a [Lon., Lat.]
+     * Formato compatible con OpenRouteService
+     */
+    static decodeGeohash(geohash: string): [number, number] {
+        const BITS = [16, 8, 4, 2, 1];
+        const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz';
+        let is_even = true;
+        let lat = [-90.0, 90.0];
+        let lon = [-180.0, 180.0];
+        let lat_err = 90.0;
+        let lon_err = 180.0;
+
+        for (let i = 0; i < geohash.length; i++) {
+            const c = geohash[i];
+            const cd = BASE32.indexOf(c);
+            for (let j = 0; j < 5; j++) {
+                const mask = BITS[j];
+                if (is_even) {
+                    lon_err /= 2;
+                    if (cd & mask) {
+                        lon[0] = (lon[0] + lon[1]) / 2;
+                    } else {
+                        lon[1] = (lon[0] + lon[1]) / 2;
+                    }
+                } else {
+                    lat_err /= 2;
+                    if (cd & mask) {
+                        lat[0] = (lat[0] + lat[1]) / 2;
+                    } else {
+                        lat[1] = (lat[0] + lat[1]) / 2;
+                    }
+                }
+                is_even = !is_even;
+            }
+        }
+        // Devolvemos [Longitud, Latitud]
+        return [(lon[0] + lon[1]) / 2, (lat[0] + lat[1]) / 2];
+    }
 }

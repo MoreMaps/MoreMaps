@@ -9,6 +9,7 @@ import {POIDB} from '../../../services/POI/POIDB';
 import {POISearchModel} from '../../../data/POISearchModel';
 import {Geohash, geohashForLocation} from 'geofire-common';
 import {MatTooltip} from '@angular/material/tooltip';
+import {Point} from 'leaflet';
 
 @Component({
     selector: 'app-poi-details-dialog',
@@ -24,6 +25,7 @@ export class PoiDetailsDialog {
     @Output() save = new EventEmitter<void>(); // void = solo envía una señal
     @Output() next = new EventEmitter<void>(); // void = solo envía una señal
     @Output() prev = new EventEmitter<void>(); // void = solo envía una señal
+    @Output() center = new EventEmitter<void>();
 
     private data = inject<any>(MAT_DIALOG_DATA);
 
@@ -54,6 +56,10 @@ export class PoiDetailsDialog {
 
     onPrevious(): void {
         this.prev.emit();
+    }
+
+    onCenter(): void {
+        this.center.emit();
     }
 
     public updatePOI(poi: POISearchModel, index: number, savedPois: Geohash[]): void {

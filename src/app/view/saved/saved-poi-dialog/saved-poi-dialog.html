@@ -40,14 +40,25 @@
                 }
 
                 <div class="actions-list">
-                    <button class="action-item" (click)="onNewRoute()">
+                    <button class="action-item" [matMenuTriggerFor]="routeMenu">
                         <div class="icon-circle green">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="action-svg">
                                 <path d="M5 12h14m-7-7l7 7-7 7"/>
                             </svg>
                         </div>
-                        <span class="action-label green-text">NUEVA RUTA</span>
+                        <span class="action-label green-text">NUEVA RUTA...</span>
                     </button>
+
+                    <mat-menu #routeMenu="matMenu">
+                        <button mat-menu-item (click)="onRouteFromHere()">
+                            <mat-icon>trip_origin</mat-icon>
+                            <span>Desde aquí</span>
+                        </button>
+                        <button mat-menu-item (click)="onRouteToHere()">
+                            <mat-icon>location_on</mat-icon>
+                            <span>Hasta aquí</span>
+                        </button>
+                    </mat-menu>
 
                     <button class="action-item" (click)="onShowOnMap()">
                         <div class="icon-circle green">
@@ -120,12 +131,11 @@
 
     @if (isDeleting()) {
         <app-delete-confirmation-popup
-        [geohash]="displayData.item.geohash"
-        [poiName]="displayData.displayName"
-        [auth]="auth"
-        (close)="onCancelDelete()"
-        (success)="onDeleteSuccess($event)">
+            [geohash]="displayData.item.geohash"
+            [poiName]="displayData.displayName"
+            [auth]="auth"
+            (close)="onCancelDelete()"
+            (success)="onDeleteSuccess($event)">
         </app-delete-confirmation-popup>
     }
-
 </div>

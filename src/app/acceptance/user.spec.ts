@@ -16,6 +16,7 @@ import {Auth} from '@angular/fire/auth';
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
+    let uid: string
     let firestore: Firestore;
     let auth: Auth;
 
@@ -38,13 +39,15 @@ describe('Pruebas sobre usuarios', () => {
         auth = TestBed.inject(Auth);
 
         // get datos de ramon
-        try {
-            await userService.login(ramon.email, ramon.pwd);
-        } catch(error) {
-            await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
+
+        await userService.login(ramon.email, ramon.pwd);
+        const uid = auth.currentUser?.uid;
+        if (!uid) {
+            throw new Error("No se pudo obtener el UID de Ramón tras el login.")
         }
-        finally {
-            const userDocRef = doc(firestore, `users/${auth.currentUser?.uid}`);
+
+        try{
+            const userDocRef = doc(firestore, `users/${uid}`);
             const docSnap = await getDoc(userDocRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -57,6 +60,17 @@ describe('Pruebas sobre usuarios', () => {
             } else throw new UserNotFoundError();
         }
     });
+
+    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
+    afterAll(async () => {
+        try {
+            if (auth.currentUser) await userService.logout();
+            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de user.spec.ts.');
+            else { console.info('Logout en afterAll de user.spec.ts funcionó correctamente.'); }
+        } catch (error) {
+            console.error(error);
+        }
+    })
 
     describe('HU101: Registrar Usuario', () => {
 

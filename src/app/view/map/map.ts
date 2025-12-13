@@ -41,6 +41,8 @@ import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
+import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
+import {RouteDB} from '../../services/Route/RouteDB';
 
 // --- IMPORTS PARA EDICIÓN DE RUTA (Traídos del Navbar) ---
 import {RouteOriginDialog, RouteOriginMethod} from '../route/route-origin-dialog/route-origin-dialog';
@@ -109,9 +111,11 @@ const destinationIcon = L.icon({
         MapSearchService,
         POIService,
         VehicleService,
+        RouteService,
         {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
         {provide: POI_REPOSITORY, useClass: POIDB},
-        {provide: VEHICLE_REPOSITORY, useClass: VehicleDB}
+        {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
+        {provide: ROUTE_REPOSITORY, useClass: RouteDB}
     ],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
@@ -490,8 +494,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
 
         // 5. GUARDAR
-        instance.save.subscribe(() => {
-            this.showSnackbar('Ruta guardada (Simulación)', 'OK');
+        instance.save.subscribe(async () => {
+            // TODO: REEMPLAZAR UNDEFINED EN MERGE POR COSTE
+            await this.routeService.createRoute(
+                this.currentRouteState.startHash, this.currentRouteState.endHash, this.currentRouteState.transport,
+                this.currentRouteState.preference, undefined, this.currentRouteState.matricula);
+            this.showSnackbar('Ruta guardada', 'OK');
         });
     }
 

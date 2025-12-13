@@ -131,8 +131,8 @@ export class MapSearchAPI implements MapSearchRepository {
         }
 
         // 1. Obtener [lon, lan] de origen y destino que espera ORS.
-        const coordsOrigen = this.decodeGeohash(origen);
-        const coordsDestino = this.decodeGeohash(destino);
+        const coordsOrigen = MapSearchAPI.decodeGeohash(origen);
+        const coordsDestino = MapSearchAPI.decodeGeohash(destino);
 
         // 2. Preparar el body.
         const body = {
@@ -228,7 +228,7 @@ export class MapSearchAPI implements MapSearchRepository {
      * Decodifica un Geohash directamente a [Lon., Lat.]
      * Formato compatible con OpenRouteService
      */
-    public decodeGeohash(geohash: string): [number, number] {
+    static decodeGeohash(geohash: string): [number, number] {
         const BITS = [16, 8, 4, 2, 1];
         const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz';
         let is_even = true;

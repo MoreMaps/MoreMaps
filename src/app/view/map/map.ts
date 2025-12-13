@@ -338,11 +338,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                         const savedPoi = new POISearchModel(latNum, lonNum, name);
                         this.selectPOI(savedPoi, false);
                     } else {
-                        this.searchByCoords(latNum, lonNum);
+                        await this.searchByCoords(latNum, lonNum);
                     }
                 } else {
                     if (name) {
-                        this.searchByPlaceName(name);
+                        await this.searchByPlaceName(name);
                     }
                 }
             }
@@ -389,8 +389,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.clearRouteMarkers();
 
             // 4. Pintar Marcadores Inicio y Fin
-            const startCoords = this.decodeGeohash(startHash);
-            const endCoords = this.decodeGeohash(endHash);
+            const startCoords = MapSearchAPI.decodeGeohash(startHash);
+            const endCoords = MapSearchAPI.decodeGeohash(endHash);
 
             this.routeStartMarker = L.marker([startCoords[1], startCoords[0]], {
                 icon: customIcon
@@ -942,41 +942,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         activeMarker.openPopup();
     }
 
-    decodeGeohash(geohash: string): [number, number] {
-        const BITS = [16, 8, 4, 2, 1];
-        const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz';
-        let is_even = true;
-        let lat = [-90.0, 90.0];
-        let lon = [-180.0, 180.0];
-        let lat_err = 90.0;
-        let lon_err = 180.0;
-
-        for (let i = 0; i < geohash.length; i++) {
-            const c = geohash[i];
-            const cd = BASE32.indexOf(c);
-            for (let j = 0; j < 5; j++) {
-                const mask = BITS[j];
-                if (is_even) {
-                    lon_err /= 2;
-                    if (cd & mask) {
-                        lon[0] = (lon[0] + lon[1]) / 2;
-                    } else {
-                        lon[1] = (lon[0] + lon[1]) / 2;
-                    }
-                } else {
-                    lat_err /= 2;
-                    if (cd & mask) {
-                        lat[0] = (lat[0] + lat[1]) / 2;
-                    } else {
-                        lat[1] = (lat[0] + lat[1]) / 2;
-                    }
-                }
-                is_even = !is_even;
-            }
-        }
-        return [(lon[0] + lon[1]) / 2, (lat[0] + lat[1]) / 2];
-    }
-
     /**
      * Gestiona la edición de un parámetro de la ruta reutilizando la lógica de pasos.
      */
@@ -1139,29 +1104,29 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private async executeSearchMethod(method: AddPoiMethod, confirm: boolean): Promise<any | 'BACK' | null> {
-        let potentialPOI: POISearchModel | null = null;
+            let potentialPOI: POISearchModel | null = null;
 
-        try {
-            if (method === 'coords') {
-                const dialogRef = this.dialog.open(CoordsSearchDialogComponent, {width: '90%', maxWidth: '400px'});
-                const coords = await firstValueFrom(dialogRef.afterClosed());
+            try {
+                if (method === 'coords') {
+                    const dialogRef = this.dialog.open(CoordsSearchDialogComponent, {width: '90%', maxWidth: '400px'});
+                    const coords = await firstValueFrom(dialogRef.afterClosed());
 
-                if (!coords) return 'BACK';
+                    if (!coords) return 'BACK';
 
-                const snackBarRef = this.snackBar.open('Obteniendo dirección...', '', {duration: 0});
+                    const snackBarRef = this.snackBar.open('Obteniendo dirección...', '', {duration: 0});
 
-                try {
-                    potentialPOI = await this.mapSearchService.searchPOIByCoords(coords.lat, coords.lon);
-                } finally {
-                    snackBarRef.dismiss();
-                }
+                    try {
+                        potentialPOI = await this.mapSearchService.searchPOIByCoords(coords.lat, coords.lon);
+                    } finally {
+                        snackBarRef.dismiss();
+                    }
 
-                if (!potentialPOI) {
-                    this.snackBar.open('No se pudo obtener la dirección.', 'OK', {duration: 3000});
-                    return 'BACK';
-                }
+                    if (!potentialPOI) {
+                        this.snackBar.open('No se pudo obtener la dirección.', 'OK', {duration: 3000});
+                        return 'BACK';
+                    }
 
-            } else if (method === 'name') {
+                } else if (method === 'name') {
                 const dialogRef = this.dialog.open(PlaceNameSearchDialogComponent, {width: '90%', maxWidth: '400px'});
                 const nameStr = await firstValueFrom(dialogRef.afterClosed());
 

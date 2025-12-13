@@ -20,6 +20,6 @@ export class RouteService {
 
     // HU410: Eliminar ruta
     async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
-        return false;
+        return this.routeDb.deleteRoute(origen, destino, transporte, matricula);
     }
 }

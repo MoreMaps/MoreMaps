@@ -568,7 +568,7 @@ describe('Pruebas sobre rutas', () => {
 
     // --- HU410: Eliminar Ruta ---
 
-    xdescribe('HU410: Eliminar una ruta guardada', () => {
+    fdescribe('HU410: Eliminar una ruta guardada', () => {
 
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN

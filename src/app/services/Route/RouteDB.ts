@@ -1,12 +1,15 @@
 import {inject, Injectable} from '@angular/core';
 import {RouteRepository} from './RouteRepository';
 import {Auth} from '@angular/fire/auth';
-import {doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';
+import {deleteDoc, doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';
 import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
-import {DBAccessError} from '../../errors/DBAccessError';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {DBAccessError} from '../../errors/DBAccessError';
+import {MissingRouteError} from '../../errors/Route/MissingRouteError';
+import {RouteResultModel} from '../../data/RouteResultModel';
+import {DBAccessError} from '../../errors/DBAccessError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 
 @Injectable({
@@ -35,7 +38,7 @@ export class RouteDB implements RouteRepository {
 
             // Si existe, lanzamos el error
             if (docSnap.exists()) throw new RouteAlreadyExistsError();
-5
+
             // Si no existe, procedemos a guardar
             const route = new RouteModel(origen, destino, transporte, preferencia, modelo?.distancia, modelo?.tiempo, '', false, matricula);
             await setDoc(routeDocRef, route.toJSON());
@@ -52,7 +55,37 @@ export class RouteDB implements RouteRepository {
     }
 
     async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
-        return false;
+        this.safetyChecks();
+
+        try {
+            // Obtener los datos del POI que se va a borrar
+            const routeRef = doc(this.firestore, `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`);
+            const routeSnap = await getDoc(routeRef);
+
+            // Si no existe, se lanza un error
+            if (!routeSnap.exists()) throw new MissingRouteError();
+
+            // Borrar documento
+            await deleteDoc(routeRef);
+            return true;
+        } catch (error: any) {
+            // Si el error es de Firebase, loguearlo
+            if (error.code) {
+                console.error("ERROR de Firebase: " + error);
+                throw new DBAccessError();
+            }
+            // Si no, es un error propio y se puede propagar
+            throw error;
+        }
+    }
+
+    /**
+     * Comprobación de sesión activa.
+     * @private
+     */
+    private safetyChecks() {
+        const currentUser = this.auth.currentUser!.uid;
+        if (!currentUser) throw new SessionNotActiveError();
     }
 
     /**

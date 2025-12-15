@@ -180,7 +180,7 @@ describe('Pruebas sobre usuarios', () => {
         });
     });
 
-    fdescribe('HU106: Eliminar cuenta', () => {
+    describe('HU106: Eliminar cuenta', () => {
 
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN

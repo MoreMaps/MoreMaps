@@ -36,6 +36,7 @@ import {RouteAlreadyExistsError} from '../errors/Route/RouteAlreadyExistsError';
 import {RouteResultModel} from '../data/RouteResultModel';
 import {MissingRouteError} from '../errors/Route/MissingRouteError';
 import {InvalidDataError} from '../errors/InvalidDataError';
+import {deleteDoc, doc, Firestore} from '@angular/fire/firestore';
 
 
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
@@ -46,8 +47,10 @@ describe('Pruebas sobre rutas', () => {
     let mapSearchService: MapSearchService;
     let vehicleService: VehicleService;
     let routeService: RouteService;
-
     let auth: Auth;
+
+    // TODO: QUITAR EN MERGE
+    let firestore: Firestore;
 
     // Datos de prueba
     const datosRamon = USER_TEST_DATA[0];
@@ -87,6 +90,9 @@ describe('Pruebas sobre rutas', () => {
         routeService = TestBed.inject(RouteService);
         mapSearchService = TestBed.inject(MapSearchService);
         auth = TestBed.inject(Auth);
+
+        // TODO: QUITAR EN MERGE
+        firestore = TestBed.inject(Firestore);
 
         // 1. Iniciar sesión
         await userService.login(datosRamon.email, datosRamon.pwd);
@@ -443,7 +449,11 @@ describe('Pruebas sobre rutas', () => {
 
             } finally {
                 // Cleanup
-                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+                // TODO: MOVER A MÉTODO PROPIO
+                const routeRef =
+                    doc(firestore, `items/${auth.currentUser!.uid}/routes/
+                    ${datosRutaC.geohash_origen}-${datosRutaC.geohash_destino}-${datosRutaC.matricula ? datosRutaC.matricula : datosRutaC.transporte}`);
+                await deleteDoc(routeRef);
             }
 
         }, 30000);
@@ -472,7 +482,11 @@ describe('Pruebas sobre rutas', () => {
                 // Estado esperado: no se modifica el estado.
             } finally {
                 // Cleanup
-                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+                // TODO: MOVER A MÉTODO PROPIO
+                const routeRef =
+                    doc(firestore, `items/${auth.currentUser!.uid}/routes/
+                    ${datosRutaC.geohash_origen}-${datosRutaC.geohash_destino}-${datosRutaC.matricula ? datosRutaC.matricula : datosRutaC.transporte}`);
+                await deleteDoc(routeRef);
             }
 
         }, 30000);
@@ -564,7 +578,6 @@ describe('Pruebas sobre rutas', () => {
             // Estado esperado: no se modifica el estado.
         },30000);
     });
-    */
 
     // --- HU410: Eliminar Ruta ---
 
@@ -594,7 +607,6 @@ describe('Pruebas sobre rutas', () => {
             // Estado esperado: la lista de ruta se actualiza a la lista vacía.
             expect(resultado).toBeTrue();
 
-            // TODO descomentar cuando estén implementados
             // const list = await mapSearchService.getRouteList();
             // expect(list.length).toBe(0);
         }, 30000);
@@ -618,7 +630,6 @@ describe('Pruebas sobre rutas', () => {
         }, 30000);
     });
 
-    /* COMENTADO HASTA LA SIGUIENTE ITERACIÓN
     // --- HU411: Modificar Ruta ---
 
     describe('HU411: Modificar una ruta guardada', () => {

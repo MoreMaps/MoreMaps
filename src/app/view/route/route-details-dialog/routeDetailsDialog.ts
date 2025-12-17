@@ -8,6 +8,7 @@ import {PREFERENCIA, TIPO_TRANSPORTE} from '../../../data/RouteModel';
 import {MatTooltip} from '@angular/material/tooltip';
 import {MatOption, MatSelect} from '@angular/material/select';
 import {FormsModule} from '@angular/forms';
+import {RouteCostResult} from '../../../services/Route/route.service';
 
 export interface RouteDialogData {
     origenName: string;
@@ -18,7 +19,7 @@ export interface RouteDialogData {
     matricula?: string;              // Opcional
     nombreVehiculo?: string;         // Opcional
     vehicleAlias?: string;           // Opcional (para mostrar nombre amigable)
-    coste?: number;                  // Coste calculado
+    coste?: RouteCostResult;         // Coste calculado
 }
 
 @Component({

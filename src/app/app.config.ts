@@ -11,6 +11,12 @@ import {provideHttpClient} from '@angular/common/http';
 import {MapSearchService} from './services/map-search-service/map-search.service';
 import {MAP_SEARCH_REPOSITORY} from './services/map-search-service/MapSearchRepository';
 import { MapSearchAPI } from "./services/map-search-service/MapSearchAPI";
+import {ElectricityPriceService} from './services/electricity-price-service/electricity-price-service';
+import {ElectricityPriceCache} from './services/electricity-price-service/ElectricityPriceCache';
+import {ELECTRICITY_PRICE_REPOSITORY} from './services/electricity-price-service/ElectricityPriceRepository';
+import {FuelPriceService} from './services/fuel-price-service/fuel-price-service';
+import {FuelPriceCache} from './services/fuel-price-service/FuelPriceCache';
+import {FUEL_PRICE_REPOSITORY} from './services/fuel-price-service/FuelPriceRepository';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,5 +30,10 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
       MapSearchService,
       { provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI },
+      // todo: revisar si esto es correcto
+      ElectricityPriceService,
+      { provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceCache },
+      FuelPriceService,
+      { provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceCache },
   ]
 };

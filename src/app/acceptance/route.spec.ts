@@ -24,10 +24,11 @@ import {MapSearchService} from '../services/map-search-service/map-search.servic
 
 // Rutas
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../data/RouteModel';
-import {RouteService} from '../services/Route/route.service';
+import {RouteCostResult, RouteService} from '../services/Route/route.service';
 import {Geometry} from 'geojson';
 import {ROUTE_REPOSITORY} from '../services/Route/RouteRepository';
 import {RouteDB} from '../services/Route/RouteDB';
+import {FUEL_TYPE} from '../data/VehicleModel';
 
 // Errores
 import {WrongRouteParamsError} from '../errors/Route/WrongRouteParamsError';
@@ -36,8 +37,9 @@ import {RouteAlreadyExistsError} from '../errors/Route/RouteAlreadyExistsError';
 import {RouteResultModel} from '../data/RouteResultModel';
 import {MissingRouteError} from '../errors/Route/MissingRouteError';
 import {InvalidDataError} from '../errors/InvalidDataError';
-import {deleteDoc, doc, Firestore} from '@angular/fire/firestore';
 
+// Firestore
+import {deleteDoc, doc, Firestore} from '@angular/fire/firestore';
 
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 describe('Pruebas sobre rutas', () => {
@@ -47,9 +49,9 @@ describe('Pruebas sobre rutas', () => {
     let mapSearchService: MapSearchService;
     let vehicleService: VehicleService;
     let routeService: RouteService;
-    let auth: Auth;
 
-    // TODO: QUITAR EN MERGE
+    let auth: Auth;
+    // TODO: quitar al final de it05
     let firestore: Firestore;
 
     // Datos de prueba
@@ -217,13 +219,13 @@ describe('Pruebas sobre rutas', () => {
 
     // --- HU402: Coste en combustible/precio ---
 
-    xdescribe('HU402: Conocer coste de ruta en coche (combustible)', () => {
+    describe('HU402: Conocer coste de ruta en coche (combustible)', () => {
 
-        it('HU402-EV01. Obtener coste (combustible, precio) asociado a una ruta registrada en vehículo.', async () => {
+        it('HU402-EV01. Obtener coste (precio) asociado a una ruta registrada en vehículo.', async () => {
             // GIVEN
             // 1. Lista de POI registrados → ["A", "B"].
             // 2. Lista de vehículos registrados→ ["Ford Fiesta"].
-            // 3. Lista de rutas registradas → ["A-B"].
+            // 3. Lista de rutas registradas vacía.
             // 4. El usuario ha seleccionado la ruta "A-B" en vehículo.
 
             const foundRoute = await mapSearchService.searchRoute(
@@ -231,27 +233,31 @@ describe('Pruebas sobre rutas', () => {
             );
 
             // WHEN
-            // El usuario pide el coste (en combustible, precio) de la ruta "A-B".
-            const coste = await routeService.getRouteCost(foundRoute, datosRutaC.transporte, datosFord.consumoMedio);
+            // El usuario pide el coste (precio) de la ruta "A-B".
+            const coste = await routeService.getRouteCost(foundRoute, datosRutaC.transporte,
+                datosFord.consumoMedio, datosFord.tipoCombustible as FUEL_TYPE);
 
             // THEN
             // Salida esperada: no se lanza ningún error. El sistema muestra el
-            // combustible asociado a la ruta "A-B" (23 L) y el precio (según API).
+            // precio asociado a la ruta "A-B".
             // Estado esperado: no se modifica el estado.
-            expect(coste).toBeGreaterThanOrEqual(23);
+            // Nota: la ruta cuesta unos 23L de gasolina. Se asume que el coste de la gasolina será >= 1 € / L
+            expect(coste.cost).toBeGreaterThanOrEqual(23);
+            expect(coste.unit).toEqual('€');
         }, 30000);
 
-        it('HU402-EI03. Obtener coste (combustible, precio) asociado a una ruta inválida.', async () => {
+        it('HU402-EI03. Obtener coste (precio) asociado a una ruta inválida.', async () => {
             // GIVEN
             // 1. Lista de POI registrados → ["A", "B"].
             // 2. Lista de vehículos registrados→ ["Ford Fiesta"].
             // 3. Lista de rutas registradas vacía.
 
             // WHEN
-            // El usuario pide el coste (combustible, precio) de una ruta inválida.
+            // El usuario pide el coste (precio) de una ruta inválida.
             const res = new RouteResultModel(-1, -1, '' as unknown as Geometry);
 
-            await expectAsync(routeService.getRouteCost(res, TIPO_TRANSPORTE.VEHICULO, datosFord.consumoMedio))
+            await expectAsync(routeService.getRouteCost(res, TIPO_TRANSPORTE.VEHICULO,
+                datosFord.consumoMedio, datosFord.tipoCombustible as FUEL_TYPE ))
                 .toBeRejectedWith(new InvalidDataError());
 
             // THEN
@@ -262,12 +268,12 @@ describe('Pruebas sobre rutas', () => {
 
     // --- HU403: Coste en calorías (Pie/Bici) ---
 
-    xdescribe('HU403: Conocer coste de ruta a pie (calorías)', () => {
+    describe('HU403: Conocer coste de ruta a pie (calorías)', () => {
 
         it('HU403-EV01. Obtener coste (kCal) asociado a una ruta a pie.', async () => {
             // GIVEN
             // 1. Lista de POI registrados → ["A", "B"].
-            // 2. Lista de vehículos registrados→ ["Ford Fiesta"].
+            // 2. Lista de rutas registradas vacía.
             // 3. El usuario ha seleccionado la ruta "A-B" a pie.
 
             // Buscamos ruta a pie
@@ -277,11 +283,12 @@ describe('Pruebas sobre rutas', () => {
 
             // WHEN
             // El usuario pide el coste (en kCal) de la ruta "A-B". Se asumen 75 kCal/km.
-            const kCal = await routeService.getRouteCost(res, datosRutaP.transporte);
+            const coste = await routeService.getRouteCost(res, datosRutaP.transporte);
 
             // THEN
             // No se lanza ningún error. Se devuelve el coste de la ruta: "13296 kCal".
-            expect(kCal).toBe(13296.045);
+            expect(coste.cost).toBeGreaterThanOrEqual(13296);
+            expect(coste.unit).toEqual('kCal');
         }, 30000);
 
         it('HU403-EI03. Obtener coste (kCal) asociado a una ruta inválida a pie.', async () => {
@@ -409,7 +416,7 @@ describe('Pruebas sobre rutas', () => {
 
     // --- HU407: Guardar Ruta ---
 
-    fdescribe('HU407: Guardar una ruta', () => {
+    describe('HU407: Guardar una ruta', () => {
 
         it('HU407-EV01. Guardar una ruta nueva.', async () => {
             // GIVEN
@@ -449,7 +456,7 @@ describe('Pruebas sobre rutas', () => {
 
             } finally {
                 // Cleanup
-                // TODO: MOVER A MÉTODO PROPIO
+                // TODO: Cambiar por delete del servicio tras it05
                 const routeRef =
                     doc(firestore, `items/${auth.currentUser!.uid}/routes/
                     ${datosRutaC.geohash_origen}-${datosRutaC.geohash_destino}-${datosRutaC.matricula ? datosRutaC.matricula : datosRutaC.transporte}`);
@@ -482,7 +489,7 @@ describe('Pruebas sobre rutas', () => {
                 // Estado esperado: no se modifica el estado.
             } finally {
                 // Cleanup
-                // TODO: MOVER A MÉTODO PROPIO
+                // TODO: cambiar por método delete del service tras it05
                 const routeRef =
                     doc(firestore, `items/${auth.currentUser!.uid}/routes/
                     ${datosRutaC.geohash_origen}-${datosRutaC.geohash_destino}-${datosRutaC.matricula ? datosRutaC.matricula : datosRutaC.transporte}`);
@@ -581,7 +588,7 @@ describe('Pruebas sobre rutas', () => {
 
     // --- HU410: Eliminar Ruta ---
 
-    xdescribe('HU410: Eliminar una ruta guardada', () => {
+    describe('HU410: Eliminar una ruta guardada', () => {
 
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN

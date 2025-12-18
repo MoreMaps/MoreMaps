@@ -36,7 +36,7 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {CoordsNotFoundError} from '../../errors/CoordsNotFoundError';
 import {RouteDetailsDialog} from '../route/route-details-dialog/routeDetailsDialog';
 import {RouteResultModel} from '../../data/RouteResultModel';
-import {RouteService} from '../../services/Route/route.service';
+import {RouteCostResult, RouteService} from '../../services/Route/route.service';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
@@ -53,6 +53,7 @@ import {PlaceNameSearchDialogComponent} from '../navbar/placename-search-dialog/
 import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-dialog/savedSelectorData';
 import {PointConfirmationDialog} from '../navbar/point-confirmation-dialog/point-confirmation-dialog';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
+import {FUEL_TYPE, VehicleModel} from '../../data/VehicleModel';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -384,7 +385,22 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             const result: RouteResultModel = await this.mapSearchService.searchRoute(
                 startHash, endHash, transport as TIPO_TRANSPORTE, preference as PREFERENCIA
             );
-            const coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE);
+
+            let coste: RouteCostResult | null;
+
+            try{
+                if( transport == TIPO_TRANSPORTE.A_PIE || transport == TIPO_TRANSPORTE.BICICLETA ) {
+                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE);
+                }
+                else {
+                    const datosVehiculo: VehicleModel = await this.vehicleService.readVehicle(matricula!);
+
+                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE,
+                        datosVehiculo.consumoMedio, datosVehiculo.tipoCombustible as FUEL_TYPE)
+                }
+            } catch(error) {
+                coste = null;
+            }
 
             if (this.loadingSnackBarRef) this.loadingSnackBarRef.dismiss();
 
@@ -452,7 +468,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         routeResult: RouteResultModel,
         startName: string, endName: string,
         transport: any, preference: string,
-        coste: number, matricula?: string,
+        coste: RouteCostResult | null, matricula?: string,
     ){
         this.closePOIDetailsDialog();
 

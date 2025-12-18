@@ -1070,19 +1070,29 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 const newTransport = await this.getRouteOption<TIPO_TRANSPORTE | 'BACK'>('transport', 3, 4);
 
                 if (newTransport && newTransport !== 'BACK') {
-                    nextTransport = newTransport as TIPO_TRANSPORTE;
-                    dataChanged = true;
+                    // Variable temporal para la matrícula candidata
+                    let candidateMatricula: string | undefined = undefined;
 
+                    // Si elige vehículo, hay que preguntar cuál (incluso si ya tenía uno, podría querer cambiar de coche)
                     if (newTransport === TIPO_TRANSPORTE.VEHICULO) {
                         const savedVehicle = await this.selectSavedItem('vehiculos', 'Selecciona tu vehículo', true);
-                        if (savedVehicle && savedVehicle !== 'BACK') {
-                            nextMatricula = savedVehicle.matricula;
-                        } else {
-                            return; // Cancelado selección vehículo
-                        }
-                    } else {
-                        nextMatricula = undefined;
+
+                        // Si cancela o da atrás en la selección de coche, no hacemos nada
+                        if (!savedVehicle) return;
+                        if (savedVehicle === 'BACK') return;
+
+                        candidateMatricula = savedVehicle.matricula;
                     }
+
+                    // Si el transporte es el mismo Y la matrícula es la misma (o ambas undefined en caso de bici/pie)
+                    if (newTransport === this.currentRouteState.transport &&
+                        candidateMatricula === this.currentRouteState.matricula) {
+                        return; // no hacemos nada
+                    }
+
+                    nextTransport = newTransport as TIPO_TRANSPORTE;
+                    nextMatricula = candidateMatricula;
+                    dataChanged = true;
                 }
                 break;
         }
@@ -1118,6 +1128,9 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     /** Envía la nueva preferencia a probar.
      * */
     updatePreference(newPref: PREFERENCIA) {
+        if (newPref === this.currentRouteState.preference) {
+            return;
+        }
         this.calculateAndDrawRoute(
             this.currentRouteState.startHash,
             this.currentRouteState.endHash,

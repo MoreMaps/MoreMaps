@@ -481,7 +481,15 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 this.showSnackbar('Error calculando la ruta', 'Cerrar');
             console.error(e);
 
-            // NO borramos nada de la ruta anterior si la hubiera.
+            /* NO borramos nada de la ruta anterior cuando exista.
+            Si no había ruta anterior, limpiamos la URL. */
+            if (!this.routeLayer) {
+                this.router.navigate([], {
+                    relativeTo: this.route,
+                    queryParams: {}, // Limpiamos params para quitar mode=route
+                    replaceUrl: true
+                });
+            }
         }
     }
 

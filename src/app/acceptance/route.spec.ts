@@ -28,6 +28,7 @@ import {RouteCostResult, RouteService} from '../services/Route/route.service';
 import {Geometry} from 'geojson';
 import {ROUTE_REPOSITORY} from '../services/Route/RouteRepository';
 import {RouteDB} from '../services/Route/RouteDB';
+import {FUEL_TYPE} from '../data/VehicleModel';
 
 // Errores
 import {WrongRouteParamsError} from '../errors/Route/WrongRouteParamsError';
@@ -36,11 +37,12 @@ import {RouteAlreadyExistsError} from '../errors/Route/RouteAlreadyExistsError';
 import {RouteResultModel} from '../data/RouteResultModel';
 import {MissingRouteError} from '../errors/Route/MissingRouteError';
 import {InvalidDataError} from '../errors/InvalidDataError';
-import {FUEL_TYPE} from '../data/VehicleModel';
 
+// Firestore
+import {deleteDoc, doc, Firestore} from '@angular/fire/firestore';
 
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
-fdescribe('Pruebas sobre rutas', () => {
+describe('Pruebas sobre rutas', () => {
 
     let userService: UserService;
     let poiService: POIService;
@@ -49,6 +51,8 @@ fdescribe('Pruebas sobre rutas', () => {
     let routeService: RouteService;
 
     let auth: Auth;
+    // TODO: quitar al final de it05
+    let firestore: Firestore;
 
     // Datos de prueba
     const datosRamon = USER_TEST_DATA[0];
@@ -88,6 +92,9 @@ fdescribe('Pruebas sobre rutas', () => {
         routeService = TestBed.inject(RouteService);
         mapSearchService = TestBed.inject(MapSearchService);
         auth = TestBed.inject(Auth);
+
+        // TODO: QUITAR EN MERGE
+        firestore = TestBed.inject(Firestore);
 
         // 1. Iniciar sesión
         await userService.login(datosRamon.email, datosRamon.pwd);
@@ -212,7 +219,7 @@ fdescribe('Pruebas sobre rutas', () => {
 
     // --- HU402: Coste en combustible/precio ---
 
-    fdescribe('HU402: Conocer coste de ruta en coche (precio)', () => {
+    describe('HU402: Conocer coste de ruta en coche (combustible)', () => {
 
         it('HU402-EV01. Obtener coste (precio) asociado a una ruta registrada en vehículo.', async () => {
             // GIVEN
@@ -449,7 +456,11 @@ fdescribe('Pruebas sobre rutas', () => {
 
             } finally {
                 // Cleanup
-                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+                // TODO: Cambiar por delete del servicio tras it05
+                const routeRef =
+                    doc(firestore, `items/${auth.currentUser!.uid}/routes/
+                    ${datosRutaC.geohash_origen}-${datosRutaC.geohash_destino}-${datosRutaC.matricula ? datosRutaC.matricula : datosRutaC.transporte}`);
+                await deleteDoc(routeRef);
             }
 
         }, 30000);
@@ -478,7 +489,11 @@ fdescribe('Pruebas sobre rutas', () => {
                 // Estado esperado: no se modifica el estado.
             } finally {
                 // Cleanup
-                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+                // TODO: cambiar por método delete del service tras it05
+                const routeRef =
+                    doc(firestore, `items/${auth.currentUser!.uid}/routes/
+                    ${datosRutaC.geohash_origen}-${datosRutaC.geohash_destino}-${datosRutaC.matricula ? datosRutaC.matricula : datosRutaC.transporte}`);
+                await deleteDoc(routeRef);
             }
 
         }, 30000);
@@ -570,7 +585,6 @@ fdescribe('Pruebas sobre rutas', () => {
             // Estado esperado: no se modifica el estado.
         },30000);
     });
-    */
 
     // --- HU410: Eliminar Ruta ---
 
@@ -600,7 +614,6 @@ fdescribe('Pruebas sobre rutas', () => {
             // Estado esperado: la lista de ruta se actualiza a la lista vacía.
             expect(resultado).toBeTrue();
 
-            // TODO descomentar cuando estén implementados
             // const list = await mapSearchService.getRouteList();
             // expect(list.length).toBe(0);
         }, 30000);
@@ -624,7 +637,6 @@ fdescribe('Pruebas sobre rutas', () => {
         }, 30000);
     });
 
-    /* COMENTADO HASTA LA SIGUIENTE ITERACIÓN
     // --- HU411: Modificar Ruta ---
 
     describe('HU411: Modificar una ruta guardada', () => {

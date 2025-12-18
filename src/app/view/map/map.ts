@@ -427,7 +427,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             }
 
             // 5. Limpiar mapa
-            this.resetMapState();
+            this.clearMapSearchData();
             this.clearRouteMarkers();
 
             // 6. Pintar Marcadores Inicio y Fin
@@ -672,19 +672,27 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.listMarkers!.forEach(marker => marker.remove());
         this.listMarkers = [];
     }
-
+    /** Limpia la memoria, el mapa visual y la URL
+     * */
     private resetMapState(): void {
+        // Limpia datos visuales
+        this.clearMapSearchData();
+
+        // Limpia la URL (Solo usar esto cuando salimos del modo ruta o búsqueda totalmente)
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: {},
+            replaceUrl: true
+        });
+    }
+    /** Limpia la memoria y el mapa visual.
+     * */
+    private clearMapSearchData(): void {
         this.deleteCurrentMarker();
         this.deleteMarkers();
         this.listPOIs.set([]);
         this.currentIndex.set(-1);
         this.poiDialogRef = null;
-
-        this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: {},
-            replaceUrl: true // Importante para no llenar el historial del navegador
-        });
     }
 
     private async updateSaved(): Promise<void> {

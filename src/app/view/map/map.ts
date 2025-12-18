@@ -390,12 +390,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
             try{
                 if( transport == TIPO_TRANSPORTE.A_PIE || transport == TIPO_TRANSPORTE.BICICLETA ) {
-                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE);
+                    coste = await this.routeService.getRouteCost(result.distancia, transport as TIPO_TRANSPORTE);
                 }
                 else {
                     const datosVehiculo: VehicleModel = await this.vehicleService.readVehicle(matricula!);
 
-                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE,
+                    coste = await this.routeService.getRouteCost(result.distancia, transport as TIPO_TRANSPORTE,
                         datosVehiculo.consumoMedio, datosVehiculo.tipoCombustible as FUEL_TYPE)
                 }
             } catch(error) {

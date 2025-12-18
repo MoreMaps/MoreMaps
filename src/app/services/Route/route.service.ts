@@ -22,35 +22,39 @@ export class RouteService {
     // HU402-403: Obtener coste asociado a ruta
     /**
      * Obtiene el coste (en € o kCal) asociado a una ruta.
-     * @param ruta
+     * @param distancia
      * @param transporte
      * @param consumoMedio
      * @param tipoCombustible
      * @throws {ElectricityPriceNotFoundError} Si la llamada a electrictyPriceService falla.
      * @throws {FuelPriceNotFoundError} Si la llamada a fuelPriceService falla.
      * @throws {APIAccessError} Si hay un error accediendo a la API.
+     * @throws {InvalidDataError} Si faltan parámetros o son incorrectos.
      */
-    async getRouteCost(ruta: RouteResultModel, transporte: TIPO_TRANSPORTE, consumoMedio?: number,
+    async getRouteCost(distancia: number, transporte: TIPO_TRANSPORTE, consumoMedio?: number,
                        tipoCombustible?: FUEL_TYPE): Promise<RouteCostResult> {
-        if( ruta.distancia < 0 || ruta.tiempo < 0 ) {
+        if( distancia < 0 ) {
+            console.error('La distancia de la ruta es negativa.');
             throw new InvalidDataError();
         }
 
-        const distanciaKm = ruta.distancia / 1000; // en km
+        const distanciaKm = distancia / 1000; // en km
 
-        // todo en HU403: a pie y bici
+        const kCalPie = 75;     // kCal/km a pie
+        const kCalBici = 23;    // kCal/km en bici
+
         switch (transporte) {
             case TIPO_TRANSPORTE.A_PIE:
-                return { cost: 10.0, unit: 'kCal' };
+                return { cost: distanciaKm * kCalPie, unit: 'kCal' };
 
             case TIPO_TRANSPORTE.BICICLETA:
-                return { cost: 10.0, unit: 'kCal' };
+                return { cost: distanciaKm * kCalBici, unit: 'kCal' };
 
             case TIPO_TRANSPORTE.VEHICULO:
                 // Si faltan datos, se devuelve 0
-                if (consumoMedio === undefined || !tipoCombustible ) {
-                    console.warn('Faltan datos para calcular el coste del vehículo.');
-                    return { cost: 0, unit: '€' };
+                if (consumoMedio === undefined || consumoMedio < 0 || !tipoCombustible ) {
+                    console.error('Faltan datos para calcular el coste del vehículo.');
+                    throw new InvalidDataError();
                 }
 
                 const cantidadEnergia = (distanciaKm / 100) * consumoMedio; // en l o kW

@@ -228,7 +228,9 @@ describe('Pruebas sobre usuarios', () => {
         it('HU105-EI01: Cerrar una sesión cuando no hay sesión activa', async () => {
             // GIVEN
             //  no hay ninguna sesión activa
-
+            if (auth.currentUser) {
+                await auth.signOut();
+            }
             // WHEN
             //  se intenta cerrar sesión
             await expectAsync(userService.logout()).toBeRejectedWith(new SessionNotActiveError());
@@ -260,7 +262,7 @@ describe('Pruebas sobre usuarios', () => {
             //  lista de usuarios registrados incluye a "ramon"
             //   no se ha iniciado sesión
             if (auth.currentUser) {
-                pending('User is logged in: aborting...');
+                await auth.signOut();
             }
 
             // WHEN

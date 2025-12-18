@@ -69,6 +69,20 @@ import {FUEL_TYPE, VehicleModel} from '../../data/VehicleModel';
 export class SpinnerSnackComponent {
 }
 
+// --- MINI-COMPONENTE: DIÁLOGO DE CARGA BLOQUEANTE ---
+@Component({
+    selector: 'app-loading-route-dialog',
+    template: `
+        <div style="opacity: 1; background-color: rgba(255, 255, 255, 1); display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px;">
+            <mat-spinner diameter="50" color="primary"></mat-spinner>
+            <span style="font-size: 1.1em; font-weight: 500;">Calculando la mejor ruta...</span>
+            <span style="font-size: 0.9em; color: gray;">Por favor, espera un momento.</span>
+        </div>`,
+    standalone: true,
+    imports: [MatProgressSpinnerModule]
+})
+export class LoadingRouteDialogComponent {}
+
 const customIcon = L.icon({
     iconUrl: 'assets/images/poi/customMarker.png',
     iconSize: [27, 35],
@@ -147,6 +161,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private vehicleService = inject(VehicleService);
     private routeSubscription: Subscription | null = null;
     isRouteMode : boolean = false;
+    private isRouteLoading: boolean = false;
+
 
     // Estado de la ruta
     private currentRouteState = {
@@ -366,8 +382,21 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.clearRoute();
             return;
         }
+
+        let loadingDialogRef : MatDialogRef<LoadingRouteDialogComponent> | null = null;
+
         try {
-            // 1. GUARDAR ESTADO ACTUAL
+            // 1. Activar bloqueo
+            this.isRouteLoading = true;
+
+            // 2. Mostrar diálogo bloqueante
+            loadingDialogRef = this.dialog.open(LoadingRouteDialogComponent, {
+                disableClose: true,
+                hasBackdrop: true,
+                panelClass: 'loading-dialog-panel'
+            });
+
+            // 3. Guardar estado actual
             this.currentRouteState = {
                 startHash, endHash, startName, endName,
                 transport: transport as TIPO_TRANSPORTE,
@@ -376,12 +405,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 vehicleAlias: undefined
             };
 
-            this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
-                horizontalPosition: 'left', verticalPosition: 'bottom', duration: 0
-            });
-
-
-            // 2. Llamada a API
+            // 4. Llamada a API
             const result: RouteResultModel = await this.mapSearchService.searchRoute(
                 startHash, endHash, transport as TIPO_TRANSPORTE, preference as PREFERENCIA
             );
@@ -402,13 +426,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 coste = null;
             }
 
-            if (this.loadingSnackBarRef) this.loadingSnackBarRef.dismiss();
-
-            // 3. Limpiar mapa
+            // 5. Limpiar mapa
             this.resetMapState();
             this.clearRouteMarkers();
 
-            // 4. Pintar Marcadores Inicio y Fin
+            // 6. Pintar Marcadores Inicio y Fin
             const startCoords = MapSearchAPI.decodeGeohash(startHash);
             const endCoords = MapSearchAPI.decodeGeohash(endHash);
 
@@ -420,12 +442,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 icon: destinationIcon
             }).addTo(this.map!).bindPopup(`Destino: ${endName}`);
 
-            // 5. Pintar Geometría de Ruta
+            // 7. Pintar Geometría de Ruta
             if (result.geometry) {
                 this.drawRouteGeometry(result.geometry);
             }
 
-            // 6. Obtener nombre del vehículo y Abrir Diálogo
+            // 8. Obtener nombre del vehículo y Abrir Diálogo
             let vehicleAlias = matricula || '';
             if (matricula && transport === TIPO_TRANSPORTE.VEHICULO) {
                 const myVehicles = await this.vehicleService.getVehicleList();
@@ -434,11 +456,15 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             }
             if (vehicleAlias != '') this.currentRouteState.vehicleAlias = vehicleAlias;
 
+            // Cerramos el diálogo bloqueante de carga
+            if (loadingDialogRef) loadingDialogRef.close();
+            this.isRouteLoading = false;
+
             // Abrimos el diálogo pasando el alias correcto y la preferencia
             this.openRouteDetailsDialog(result, startName, endName, transport, preference, coste, vehicleAlias);
 
         } catch (e) {
-            if (this.loadingSnackBarRef) this.loadingSnackBarRef.dismiss();
+            if (loadingDialogRef) loadingDialogRef.close();
             if (e instanceof ImpossibleRouteError)
                 this.showSnackbar('No existe una ruta entre los dos puntos.', 'Cerrar');
             else
@@ -552,6 +578,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
     private setupLocationEventHandlers() {
         if (this.map) this.map.on('locationfound', (e: L.LocationEvent) => {
+
             this.mapUpdateService.lastKnownLocation = e.latlng;
 
             if (this.loadingSnackBarRef) {
@@ -791,7 +818,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private setupMapClickHandler(): void {
         if (this.map) this.map.on('click', async (e: L.LeafletMouseEvent) => {
 
-            if (this.routeLayer) return;
+            if (this.isRouteLoading || this.routeLayer) return; // ignorar clics en ambos casos
 
             const lat = e.latlng.lat;
             const lon = e.latlng.lng;

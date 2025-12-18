@@ -31,7 +31,7 @@ import {RouteDB} from '../services/Route/RouteDB';
 import {FUEL_TYPE} from '../data/VehicleModel';
 
 // Errores
-import {WrongRouteParamsError} from '../errors/Route/WrongRouteParamsError';
+import {WrongParamsError} from '../errors/WrongParamsError';
 import {ImpossibleRouteError} from '../errors/Route/ImpossibleRouteError';
 import {RouteAlreadyExistsError} from '../errors/Route/RouteAlreadyExistsError';
 import {RouteResultModel} from '../data/RouteResultModel';
@@ -188,7 +188,7 @@ describe('Pruebas sobre rutas', () => {
                 datosRutaC.geohash_destino,
                 undefined as any,
                 datosRutaC.preferencia
-            )).toBeRejectedWith(new WrongRouteParamsError());
+            )).toBeRejectedWith(new WrongParamsError('ruta'));
 
             // THEN
             // Se lanza el error WrongRouteParamsError.

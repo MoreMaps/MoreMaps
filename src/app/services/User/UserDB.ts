@@ -1,13 +1,13 @@
 import {UserModel} from '../../data/UserModel';
 import {UserRepository} from './UserRepository';
-import {inject, Injectable, signal} from '@angular/core';
-import {Observable} from 'rxjs';
-import {Auth, authState, updateProfile, User, signInWithEmailAndPassword, createUserWithEmailAndPassword} from '@angular/fire/auth';
-import {collection, Firestore, query, where, doc, getDocs, setDoc, deleteDoc, getDoc} from '@angular/fire/firestore';
-import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
-import {UserNotFoundError} from '../../errors/UserNotFoundError';
-import {InvalidCredentialError} from '../../errors/InvalidCredentialError';
-import {DBAccessError} from '../../errors/DBAccessError';
+import {inject, Injectable} from '@angular/core';
+import {
+    Auth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    updateProfile
+} from '@angular/fire/auth';
+import {collection, deleteDoc, doc, Firestore, getDocs, query, setDoc, where} from '@angular/fire/firestore';
 
 @Injectable({
     providedIn: 'root'
@@ -16,153 +16,64 @@ export class UserDB implements UserRepository {
     private auth = inject(Auth);
     private firestore = inject(Firestore);
 
-    // Signal para el usuario actual
-    currentUser = signal<User | null>(null);
-
-    // Observable del estado de autenticación
-    authState$: Observable<User | null> = authState(this.auth);
-
-    constructor() {
-        // Actualizar signal cuando cambie el estado de autenticación
-        this.authState$.subscribe(user => {
-            this.currentUser.set(user);
-        });
-    }
-
+    /**
+     * Crea un usuario en Firebase Auth y sus datos correspondientes en Firestore.
+     * @throws error error de Firestore
+     */
     async createUser(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
-        // Crear usuario en Firebase Auth
-        let userCredential;
-        try{
-            userCredential = await createUserWithEmailAndPassword(this.auth, email, pwd);
-        } catch(error) {
-            throw error;
-        }
-
+        // 1. Crear usuario en Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(this.auth, email, pwd);
         const firebaseUser = userCredential.user;
         const uid = firebaseUser.uid;
 
         try {
+            // 2. Intentar actualizar perfil Auth para el nombre del usuario
             await updateProfile(firebaseUser, {displayName: `${nombre} ${apellidos}`});
-        } catch (profileErr) {
-            console.warn('updateProfile failed:', profileErr);
-        }
 
-        const userModel = new UserModel(uid, email, nombre, apellidos);
+            // 3. Crear modelo y referencia al documento de Firestore
+            const userModel = new UserModel(uid, email, nombre, apellidos);
+            const userDocRef = doc(this.firestore, `users/${uid}`);
 
-        const userDocRef = doc(this.firestore, `users/${uid}`);
-        try {
+            // 4. Escribir en Firestore
             await setDoc(userDocRef, userModel.toJSON());
+
             return userModel;
         } catch (error) {
-            console.error('Firestore write failed: ', error);
+            // ERROR CRÍTICO: Falla la escritura en DB o el updateProfile. Rollback
             try {
-                await firebaseUser.delete()
+                await firebaseUser.delete();
             } catch (error) {
-                console.error('Failed to rollback and delete the user: ', error);
+                console.error('FATAL: Inconsistencia de datos. Usuario creado en Auth, pero no en Firestore. Rollback ha fallado.', error);
             }
             throw error;
         }
     }
 
-
+    /**
+     * Borra el usuario autenticado.
+     */
     async deleteAuthUser(): Promise<boolean> {
         const user = this.auth.currentUser;
-        if (!user) throw new SessionNotActiveError();
 
-        try {
-            // 1. Primero intenta borrar de Firestore
-            const userDocRef = doc(this.firestore, `users/${user.uid}`);
+        // 1. Borrar de Firestore
+        const userDocRef = doc(this.firestore, `users/${user?.uid}`);
+        await deleteDoc(userDocRef);
 
-            // Verificar si el documento existe antes de borrarlo
-            const docSnap = await getDoc(userDocRef);
-            if (!docSnap.exists()) {
-                console.warn('El documento del usuario no existe en Firestore');
-                throw new UserNotFoundError();
-            }
+        // 2. Luego borra de Firebase Auth (esto cierra la sesión automáticamente)
+        await user!.delete();
 
-            await deleteDoc(userDocRef);
-
-            // 2. Luego borra de Firebase Auth (esto cierra la sesión automáticamente)
-            await user.delete();
-
-            return true;
-        } catch (error: any) {
-            console.error('ERROR al borrar usuario:', error);
-
-            // Re-lanzar errores customizados que ya hayamos lanzado
-            if (error instanceof UserNotFoundError ||
-                error instanceof SessionNotActiveError) {
-                throw error;
-            }
-
-            // Manejo de errores específicos de Firebase
-            switch (error.code) {
-                case 'auth/requires-recent-login':
-                    // El usuario necesita re-autenticarse antes de borrar
-                    throw new SessionNotActiveError();
-                case 'auth/user-not-found':
-                case 'auth/invalid-credential':
-                    // El usuario ya no existe en Auth
-                    throw new UserNotFoundError();
-                default:
-                    // Error desconocido
-                    throw new Error('Error desconocido: ' + error);
-            }
-        }
+        return true;
     }
 
     /**
      * Recibe un email y una contraseña e intenta iniciar sesión en Firebase.
      * @param email correo del usuario
      * @param password contraseña del usuario
-     * @returns Promise con true si se ha podido iniciar sesión; excepción en caso contrario.
+     * @returns true si se ha podido iniciar sesión; error en caso contrario
      */
     async validateCredentials(email: string, password: string): Promise<boolean> {
-        // Intento de inicio de sesión
-        try {
-            // Inicio de sesión en Firebase
-            await signInWithEmailAndPassword(this.auth, email, password);
-            // Devuelve true si no ha habido errores
-            return true;
-        } catch (error: any) {
-            // Gestión del error de Firebase
-            switch (error.code) {
-                // email o contraseña inválidos
-                case 'auth/invalid-credential': {
-                    if (await this.userExists(email)) {
-                        throw new InvalidCredentialError();
-                    }
-                    throw new UserNotFoundError();
-                }
-                // usuario no encontrado
-                case 'auth/user-not-found': {
-                    throw new UserNotFoundError();
-                }
-                // contraseña incorrecta
-                case 'auth/wrong-password': {
-                    throw new InvalidCredentialError();
-                }
-            }
-            console.error(error);
-            return false;
-        }
-    }
-
-    /**
-     * Comprueba exista una cuenta registrada con un correo específico.
-     * @param email correo sobre el que comprobar si existe una centa registrada
-     * @private
-     * @returns Promise con true si existe; false si no existe.
-     */
-    private async userExists (email: string): Promise<boolean> {
-        try{
-            const userRef = collection(this.firestore, 'users');
-            const q = query(userRef, where('email', '==', email));
-            const querySnapshot = await getDocs(q);
-            return !querySnapshot.empty;
-        } catch (error) {
-            return false;
-        }
+        await signInWithEmailAndPassword(this.auth, email, password);
+        return true;
     }
 
     /**
@@ -170,20 +81,11 @@ export class UserDB implements UserRepository {
      * @returns Promise con true si se ha podido cerrar sesión; false en caso de excepción.
      */
     async logoutUser(): Promise<boolean> {
-        // Obtiene el usuario de la sesión; si no hay, ya se ha cerrado la sesión
-        const user = this.auth.currentUser;
-        if (!user) throw new SessionNotActiveError();
-
         try {
             await this.auth.signOut();
             return true;
         } catch (error: any) {
-            console.error('ERROR de Firebase al cerrar sesión:', error);
-
-            if (error.code === 'auth/invalid-credential') {
-                throw new UserNotFoundError();
-            }
-            throw new DBAccessError();
+            return false;
         }
     }
 }

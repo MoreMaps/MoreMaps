@@ -13,7 +13,7 @@ import {APIAccessError} from '../../errors/APIAccessError';
 import {Geohash} from 'geofire-common';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {RouteResultModel} from '../../data/RouteResultModel';
-import {WrongRouteParamsError} from '../../errors/Route/WrongRouteParamsError';
+import {WrongParamsError} from '../../errors/WrongParamsError';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 
 @Injectable({
@@ -127,7 +127,7 @@ export class MapSearchAPI implements MapSearchRepository {
     async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
         // Comprobar que los parametros están bien
         if (!origen || !destino || !transporte || !preferencia) {
-            throw new WrongRouteParamsError();
+            throw new WrongParamsError('ruta');
         }
 
         // 1. Obtener [lon, lan] de origen y destino que espera ORS.

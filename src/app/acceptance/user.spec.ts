@@ -230,6 +230,7 @@ describe('Pruebas sobre usuarios', () => {
             //  no hay ninguna sesión activa
             if (auth.currentUser) {
                 await auth.signOut();
+                console.log(!auth.currentUser);
             }
             // WHEN
             //  se intenta cerrar sesión

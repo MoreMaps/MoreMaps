@@ -73,7 +73,8 @@ export class SpinnerSnackComponent {
 @Component({
     selector: 'app-loading-route-dialog',
     template: `
-        <div style="opacity: 1; background-color: rgba(255, 255, 255, 1); display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px;">
+        <div
+            style="opacity: 1; background-color: rgba(255, 255, 255, 1); display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px;">
             <mat-spinner diameter="50" color="primary"></mat-spinner>
             <span style="font-size: 1.1em; font-weight: 500;">Calculando la mejor ruta...</span>
             <span style="font-size: 0.9em; color: gray;">Por favor, espera un momento.</span>
@@ -81,7 +82,8 @@ export class SpinnerSnackComponent {
     standalone: true,
     imports: [MatProgressSpinnerModule]
 })
-export class LoadingRouteDialogComponent {}
+export class LoadingRouteDialogComponent {
+}
 
 const customIcon = L.icon({
     iconUrl: 'assets/images/poi/customMarker.png',
@@ -160,7 +162,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private routeEndMarker: L.Marker | null = null;
     private vehicleService = inject(VehicleService);
     private routeSubscription: Subscription | null = null;
-    isRouteMode : boolean = false;
+    isRouteMode: boolean = false;
     private isRouteLoading: boolean = false;
 
 
@@ -379,11 +381,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         // Comprobación
         if (startHash === endHash) {
             this.showSnackbar('El origen y el destino no pueden ser el mismo.', 'Cerrar');
-            this.clearRoute();
+            // no se limpia la ruta anterior si ya existe una
             return;
         }
 
-        let loadingDialogRef : MatDialogRef<LoadingRouteDialogComponent> | null = null;
+        let loadingDialogRef: MatDialogRef<LoadingRouteDialogComponent> | null = null;
 
         try {
             // 1. Activar bloqueo
@@ -396,7 +398,37 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 panelClass: 'loading-dialog-panel'
             });
 
-            // 3. Guardar estado actual
+            // 3. Llamada a API. Antes de borrar, verificamos que la ruta existe
+            const result: RouteResultModel = await this.mapSearchService.searchRoute(
+                startHash, endHash, transport as TIPO_TRANSPORTE, preference as PREFERENCIA
+            );
+
+            // 4. Cálculo de costes
+            let coste: RouteCostResult | null;
+            try {
+                if (transport == TIPO_TRANSPORTE.A_PIE || transport == TIPO_TRANSPORTE.BICICLETA) {
+                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE);
+                } else {
+                    const datosVehiculo: VehicleModel = await this.vehicleService.readVehicle(matricula!);
+
+                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE,
+                        datosVehiculo.consumoMedio, datosVehiculo.tipoCombustible as FUEL_TYPE)
+                }
+            } catch (error) {
+                coste = null;
+            }
+
+            // ------ A PARTIR DE AQUÍ, PODEMOS CAMBIAR LA RUTA ------
+
+            // 5. Cerrar diálogo de la ruta anterior y limpiar mapa
+            if (this.routeDialogRef) {
+                this.routeDialogRef.close();
+                this.routeDialogRef = null;
+            }
+            this.clearMapSearchData();
+            this.clearRouteMarkers();
+
+            // 6. Guardar estado de la ruta y pintar marcadores Inicio y Fin
             this.currentRouteState = {
                 startHash, endHash, startName, endName,
                 transport: transport as TIPO_TRANSPORTE,
@@ -404,33 +436,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 matricula: matricula,
                 vehicleAlias: undefined
             };
-
-            // 4. Llamada a API
-            const result: RouteResultModel = await this.mapSearchService.searchRoute(
-                startHash, endHash, transport as TIPO_TRANSPORTE, preference as PREFERENCIA
-            );
-
-            let coste: RouteCostResult | null;
-
-            try{
-                if( transport == TIPO_TRANSPORTE.A_PIE || transport == TIPO_TRANSPORTE.BICICLETA ) {
-                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE);
-                }
-                else {
-                    const datosVehiculo: VehicleModel = await this.vehicleService.readVehicle(matricula!);
-
-                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE,
-                        datosVehiculo.consumoMedio, datosVehiculo.tipoCombustible as FUEL_TYPE)
-                }
-            } catch(error) {
-                coste = null;
-            }
-
-            // 5. Limpiar mapa
-            this.clearMapSearchData();
-            this.clearRouteMarkers();
-
-            // 6. Pintar Marcadores Inicio y Fin
             const startCoords = MapSearchAPI.decodeGeohash(startHash);
             const endCoords = MapSearchAPI.decodeGeohash(endHash);
 
@@ -452,7 +457,9 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             if (matricula && transport === TIPO_TRANSPORTE.VEHICULO) {
                 const myVehicles = await this.vehicleService.getVehicleList();
                 const found = myVehicles.find((v: any) => v.matricula === matricula);
-                if (found) {vehicleAlias = found.alias}
+                if (found) {
+                    vehicleAlias = found.alias
+                }
             }
             if (vehicleAlias != '') this.currentRouteState.vehicleAlias = vehicleAlias;
 
@@ -464,12 +471,17 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.openRouteDetailsDialog(result, startName, endName, transport, preference, coste, vehicleAlias);
 
         } catch (e) {
+            // Cerramos el diálogo de carga bloqueante
             if (loadingDialogRef) loadingDialogRef.close();
+
+            // Mostramos el error
             if (e instanceof ImpossibleRouteError)
                 this.showSnackbar('No existe una ruta entre los dos puntos.', 'Cerrar');
             else
                 this.showSnackbar('Error calculando la ruta', 'Cerrar');
             console.error(e);
+
+            // NO borramos nada de la ruta anterior si la hubiera.
         }
     }
 
@@ -487,7 +499,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         }).addTo(this.map!);
 
         // Ajustar zoom a la ruta
-        this.map?.fitBounds(this.routeLayer.getBounds(), { padding: [50, 200] });
+        this.map?.fitBounds(this.routeLayer.getBounds(), {padding: [50, 200]});
     }
 
     private openRouteDetailsDialog(
@@ -495,11 +507,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         startName: string, endName: string,
         transport: any, preference: string,
         coste: RouteCostResult | null, matricula?: string,
-    ){
+    ) {
         this.closePOIDetailsDialog();
 
         this.routeDialogRef = this.dialog.open(RouteDetailsDialog, {
-            position: { bottom: '30px', right: '30px' },
+            position: {bottom: '30px', right: '30px'},
             width: '90vw',
             maxWidth: '400px',
             hasBackdrop: false,
@@ -543,8 +555,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                     this.currentRouteState.startHash, this.currentRouteState.endHash, this.currentRouteState.transport,
                     this.currentRouteState.preference, undefined, this.currentRouteState.matricula);
                 this.showSnackbar('Ruta guardada', 'OK');
-            }
-            catch (error) {
+            } catch (error) {
                 this.showSnackbar('Fallo al guardar ruta: ' + error, 'OK');
             }
         });
@@ -672,6 +683,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.listMarkers!.forEach(marker => marker.remove());
         this.listMarkers = [];
     }
+
     /** Limpia la memoria, el mapa visual y la URL
      * */
     private resetMapState(): void {
@@ -685,6 +697,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             replaceUrl: true
         });
     }
+
     /** Limpia la memoria y el mapa visual.
      * */
     private clearMapSearchData(): void {
@@ -785,11 +798,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 this.snackBar.open(
                     `No se encontró ninguna dirección en las coordenadas (${lat}, ${lon}).`,
                     'OK',
-                    { duration: 5000 }
+                    {duration: 5000}
                 );
             } else {
                 const msg = error.message ? error.message : 'Error desconocido';
-                this.snackBar.open(`Error al buscar: ${msg}`, 'Cerrar', { duration: 5000 });
+                this.snackBar.open(`Error al buscar: ${msg}`, 'Cerrar', {duration: 5000});
             }
             console.error(`Error al buscar por coordenadas: ${error}`);
         }
@@ -1007,33 +1020,41 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     /**
-     * Gestiona la edición de un parámetro de la ruta reutilizando la lógica de pasos.
+     * Gestiona la edición de un parámetro de la ruta.
      */
     async editRouteAttribute(step: number) {
-        if (this.routeDialogRef) this.routeDialogRef.close();
+        // Variables temporales basadas en el estado actual
+        let nextStartName = this.currentRouteState.startName;
+        let nextStartHash = this.currentRouteState.startHash;
+        let nextEndName = this.currentRouteState.endName;
+        let nextEndHash = this.currentRouteState.endHash;
+        let nextTransport = this.currentRouteState.transport;
+        let nextMatricula = this.currentRouteState.matricula;
 
-        let newData: any = null;
+        let dataChanged = false;
 
         switch (step) {
             case 1: // ORIGEN
-                newData = await this.getPointFromUser(
+                const originData = await this.getPointFromUser(
                     'Cambiar Origen', '¿Desde dónde quieres salir?',
                     1, 4, true
                 );
-                if (newData && newData !== 'BACK') {
-                    this.currentRouteState.startName = newData.name;
-                    this.currentRouteState.startHash = newData.hash || geohashForLocation([newData.lat, newData.lon], 7);
+                if (originData && originData !== 'BACK') {
+                    nextStartName = originData.name;
+                    nextStartHash = originData.hash || geohashForLocation([originData.lat, originData.lon], 7);
+                    dataChanged = true;
                 }
                 break;
 
             case 2: // DESTINO
-                newData = await this.getPointFromUser(
+                const destData = await this.getPointFromUser(
                     'Cambiar Destino', '¿A dónde quieres ir?',
                     2, 4, true
                 );
-                if (newData && newData !== 'BACK') {
-                    this.currentRouteState.endName = newData.name;
-                    this.currentRouteState.endHash = newData.hash || geohashForLocation([newData.lat, newData.lon], 7);
+                if (destData && destData !== 'BACK') {
+                    nextEndName = destData.name;
+                    nextEndHash = destData.hash || geohashForLocation([destData.lat, destData.lon], 7);
+                    dataChanged = true;
                 }
                 break;
 
@@ -1041,49 +1062,63 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 const newTransport = await this.getRouteOption<TIPO_TRANSPORTE | 'BACK'>('transport', 3, 4);
 
                 if (newTransport && newTransport !== 'BACK') {
-                    this.currentRouteState.transport = newTransport as TIPO_TRANSPORTE;
+                    nextTransport = newTransport as TIPO_TRANSPORTE;
+                    dataChanged = true;
 
                     if (newTransport === TIPO_TRANSPORTE.VEHICULO) {
                         const savedVehicle = await this.selectSavedItem('vehiculos', 'Selecciona tu vehículo', true);
-
                         if (savedVehicle && savedVehicle !== 'BACK') {
-                            this.currentRouteState.matricula = savedVehicle.matricula;
-                            this.currentRouteState.vehicleAlias = savedVehicle.alias;
+                            nextMatricula = savedVehicle.matricula;
                         } else {
-                            this.reopenRouteDialog();
-                            return;
+                            return; // Cancelado selección vehículo
                         }
                     } else {
-                        this.currentRouteState.matricula = undefined;
-                        this.currentRouteState.vehicleAlias = undefined;
+                        nextMatricula = undefined;
                     }
                 }
                 break;
         }
 
-        if (!newData && step !== 3) {
-            this.reopenRouteDialog();
-            return;
-        }
+        if (!dataChanged) return;
 
-        this.recalculateCurrentRoute();
+        // Llamamos a la función principal con los DATOS CANDIDATOS
+        // Si falla, no pasará nada y el usuario seguirá viendo lo que veía.
+        this.calculateAndDrawRoute(
+            nextStartHash,
+            nextEndHash,
+            nextStartName,
+            nextEndName,
+            nextTransport,
+            this.currentRouteState.preference, // Mantenemos preferencia actual
+            nextMatricula
+        );
     }
 
+    /** Invierte valores de origen y destino temporalmente y los envía a valorar.
+     * */
     swapOriginDest() {
-        const tempHash = this.currentRouteState.startHash;
-        const tempName = this.currentRouteState.startName;
-
-        this.currentRouteState.startHash = this.currentRouteState.endHash;
-        this.currentRouteState.startName = this.currentRouteState.endName;
-        this.currentRouteState.endHash = tempHash;
-        this.currentRouteState.endName = tempName;
-
-        this.recalculateCurrentRoute();
+        this.calculateAndDrawRoute(
+            this.currentRouteState.endHash,   // Start <- End
+            this.currentRouteState.startHash, // End <- Start
+            this.currentRouteState.endName,   // StartName <- EndName
+            this.currentRouteState.startName, // EndName <- StartName
+            this.currentRouteState.transport,
+            this.currentRouteState.preference,
+            this.currentRouteState.matricula
+        );
     }
-
+    /** Envía la nueva preferencia a probar.
+     * */
     updatePreference(newPref: PREFERENCIA) {
-        this.currentRouteState.preference = newPref;
-        this.recalculateCurrentRoute();
+        this.calculateAndDrawRoute(
+            this.currentRouteState.startHash,
+            this.currentRouteState.endHash,
+            this.currentRouteState.startName,
+            this.currentRouteState.endName,
+            this.currentRouteState.transport,
+            newPref, // Nueva preferencia
+            this.currentRouteState.matricula
+        );
     }
 
     private recalculateCurrentRoute() {
@@ -1168,29 +1203,29 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private async executeSearchMethod(method: AddPoiMethod, confirm: boolean): Promise<any | 'BACK' | null> {
-            let potentialPOI: POISearchModel | null = null;
+        let potentialPOI: POISearchModel | null = null;
 
-            try {
-                if (method === 'coords') {
-                    const dialogRef = this.dialog.open(CoordsSearchDialogComponent, {width: '90%', maxWidth: '400px'});
-                    const coords = await firstValueFrom(dialogRef.afterClosed());
+        try {
+            if (method === 'coords') {
+                const dialogRef = this.dialog.open(CoordsSearchDialogComponent, {width: '90%', maxWidth: '400px'});
+                const coords = await firstValueFrom(dialogRef.afterClosed());
 
-                    if (!coords) return 'BACK';
+                if (!coords) return 'BACK';
 
-                    const snackBarRef = this.snackBar.open('Obteniendo dirección...', '', {duration: 0});
+                const snackBarRef = this.snackBar.open('Obteniendo dirección...', '', {duration: 0});
 
-                    try {
-                        potentialPOI = await this.mapSearchService.searchPOIByCoords(coords.lat, coords.lon);
-                    } finally {
-                        snackBarRef.dismiss();
-                    }
+                try {
+                    potentialPOI = await this.mapSearchService.searchPOIByCoords(coords.lat, coords.lon);
+                } finally {
+                    snackBarRef.dismiss();
+                }
 
-                    if (!potentialPOI) {
-                        this.snackBar.open('No se pudo obtener la dirección.', 'OK', {duration: 3000});
-                        return 'BACK';
-                    }
+                if (!potentialPOI) {
+                    this.snackBar.open('No se pudo obtener la dirección.', 'OK', {duration: 3000});
+                    return 'BACK';
+                }
 
-                } else if (method === 'name') {
+            } else if (method === 'name') {
                 const dialogRef = this.dialog.open(PlaceNameSearchDialogComponent, {width: '90%', maxWidth: '400px'});
                 const nameStr = await firstValueFrom(dialogRef.afterClosed());
 
@@ -1205,7 +1240,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 }
 
                 if (results && results.length > 0) {
-                    if (!confirm) return { name: nameStr };
+                    if (!confirm) return {name: nameStr};
 
                     const selectedResult = await this.selectSavedItem(
                         'search-results',

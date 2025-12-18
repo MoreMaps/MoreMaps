@@ -51,9 +51,14 @@ export class RouteDetailsDialog {
     ) {
     }
 
-    // Helpers para formateo
+    /** Devuelve la distancia en kilómetros
+     * */
     get distanceKm(): string {
-        return (this.data.routeResult.distancia / 1000).toFixed(2) + ' km';
+        const km = this.data.routeResult.distancia / 1000;
+        return km.toLocaleString('de-DE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }) + ' km';
     }
 
     get durationString(): string {
@@ -63,6 +68,15 @@ export class RouteDetailsDialog {
 
         if (h > 0) return `${h} h ${m} min`;
         return `${m} min`;
+    }
+
+    get costString(): string {
+        if (!this.data.coste || !this.data.coste.cost) return '';
+
+        return this.data.coste.cost.toLocaleString('de-DE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })
     }
 
     get iconTransporte(): string {

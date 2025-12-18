@@ -73,7 +73,7 @@
             <div class="sub-stats">
                 <span class="dist">{{ distanceKm }}</span>
                 @if (data.coste?.cost && data.coste!.cost > 0) {
-                    <span class="cost">{{ data.coste!.cost | number:'1.2-2' }} {{ data.coste!.unit }}</span>
+                    <span class="cost">{{ costString }} {{ data.coste!.unit }}</span>
                 }
             </div>
         </div>

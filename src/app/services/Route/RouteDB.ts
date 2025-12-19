@@ -16,10 +16,6 @@ export class RouteDB implements RouteRepository {
     private auth = inject(Auth);
     private firestore = inject(Firestore);
 
-    async getRouteCost(ruta: RouteResultModel, transporte: TIPO_TRANSPORTE, consumoMedio?: number): Promise<number> {
-        return 0.0;
-    }
-
     async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
         this.safetyChecks();
 
@@ -35,9 +31,10 @@ export class RouteDB implements RouteRepository {
 
             // Si existe, lanzamos el error
             if (docSnap.exists()) throw new RouteAlreadyExistsError();
-5
+
             // Si no existe, procedemos a guardar
-            const route = new RouteModel(origen, destino, transporte, preferencia, modelo?.distancia, modelo?.tiempo, '', false, matricula);
+            const route = new RouteModel(origen, destino, transporte, preferencia, modelo?.distancia,
+                modelo?.tiempo, '', false, matricula);
             await setDoc(routeDocRef, route.toJSON());
             return route;
         } catch(error: any) {

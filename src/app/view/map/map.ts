@@ -559,11 +559,10 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         // 5. GUARDAR
         instance.save.subscribe(async () => {
-            // TODO: REEMPLAZAR UNDEFINED EN MERGE POR COSTE
             try {
                 await this.routeService.createRoute(
                     this.currentRouteState.startHash, this.currentRouteState.endHash, this.currentRouteState.transport,
-                    this.currentRouteState.preference, undefined, this.currentRouteState.matricula);
+                    this.currentRouteState.preference, routeResult, this.currentRouteState.matricula);
                 this.showSnackbar('Ruta guardada', 'OK');
             } catch (error) {
                 this.showSnackbar('Fallo al guardar ruta: ' + error, 'OK');

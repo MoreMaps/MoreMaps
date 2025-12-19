@@ -8,4 +8,7 @@ export interface UserRepository{
     deleteAuthUser() : Promise<boolean>
     validateCredentials(email: string, password: string): Promise<boolean>
     logoutUser(): Promise<boolean>;
+    userExists(email: string): Promise<boolean>;
+    sessionActive(): Promise<boolean>;
+    passwordValid(password: string): Promise<boolean>;
 }

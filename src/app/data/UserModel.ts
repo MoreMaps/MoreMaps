@@ -19,4 +19,8 @@ export class UserModel {
             apellidos: this.apellidos
         };
     }
+
+    static fromJSON(json: UserModel) {
+        return new UserModel(json.uid, json.email, json.nombre, json.apellidos);
+    }
 }

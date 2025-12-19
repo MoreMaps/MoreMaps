@@ -7,48 +7,37 @@ import {WrongLoginError} from '../../errors/WrongLoginError';
 import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
 import {UserNotFoundError} from '../../errors/UserNotFoundError';
 import {WrongParamsError} from '../../errors/WrongParamsError';
-import {Auth, authState, User} from '@angular/fire/auth';
-import {Observable} from 'rxjs';
 
-@Injectable({ providedIn: 'root' })
+import {MissingParamsError} from '../../errors/MissingParamsError';
+
+@Injectable({providedIn: 'root'})
 export class UserService {
-    private userDb : UserRepository = inject(USER_REPOSITORY);
-    private auth: Auth = inject(Auth);
-
-    // Signal para el usuario actual
-    currentUser = signal<User | null>(null);
-
-    // Observable del estado de autenticación
-    authState$: Observable<User | null> = authState(this.auth);
-
-    constructor() {
-        // Actualizar signal cuando cambie el estado de autenticación
-        this.authState$.subscribe(user => {
-            this.currentUser.set(user);
-        });
-    }
+    private userDb: UserRepository = inject(USER_REPOSITORY);
 
     // HU101 Crear usuario
+    /** Crea el usuario si este no existe ya.
+     * @throws MissingParamsError si algún parámetro falta.
+     * @throws UserAlreadyExistsError si ya existe el usuario.
+     * @throws WrongPasswordFormatError si la contraseña no cumple con los criterios mínimos.
+     * */
     async signUp(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
-        try {
-            return await this.userDb.createUser(email, pwd, nombre, apellidos);
+        // Comprobar si hay algún parámetro vacío
+        if (!email || !pwd || !nombre || !apellidos) {
+            throw new MissingParamsError();
         }
-        catch (error: any) {
-            if (error && typeof error.code === 'string') {
-                switch (error.code) {
-                    case 'auth/email-already-in-use':
-                        throw new UserAlreadyExistsError();
-                    case 'auth/invalid-password':
-                        throw new WrongPasswordFormatError();
-                    case 'auth/password-does-not-meet-requirements':
-                        throw new WrongPasswordFormatError();
-                    default:
-                        throw new Error('Error desconocido de Firebase: ' + error.code);
-                }
-            } else {
-                throw Error('Error desconocido: ' + error.code);
-            }
+
+        // Comprobar si las credenciales son válidas
+        if (!await this.userDb.passwordValid(pwd)) {
+            throw new WrongPasswordFormatError();
         }
+
+        // Comprobar si el usuario existe
+        if (await this.userDb.userExists(email)) {
+            throw new UserAlreadyExistsError();
+        }
+
+        // Si no existe, intenta crearlo
+        return await this.userDb.createUser(email, pwd, nombre, apellidos);
     }
 
     // HU102 Iniciar sesión
@@ -58,13 +47,13 @@ export class UserService {
      * @throws WrongLoginError si no se puede iniciar sesión.
      */
     async login(email: string, pwd: string): Promise<boolean> {
-        if( !email || !pwd ){
+        if (!email || !pwd) {
             throw new WrongParamsError('usuario');
         }
         try {
             await this.userDb.validateCredentials(email, pwd);
             return true;
-        } catch(error: any) {
+        } catch (error: any) {
             switch (error.code) {
                 // El usuario no existe
                 case 'auth/invalid-credential':
@@ -84,11 +73,13 @@ export class UserService {
      * @throws SessionNotActiveError si la sesión no está activa
      */
     async logout(): Promise<boolean> {
-        if (!this.auth.currentUser) throw new SessionNotActiveError();
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
         try {
             return await this.userDb.logoutUser();
-        }
-        catch (error: any) {
+        } catch (error: any) {
             // Error de Firebase
             switch (error.code) {
                 // El usuario no existe
@@ -103,7 +94,11 @@ export class UserService {
 
     // HU106 Eliminar cuenta
     async deleteUser(): Promise<boolean> {
-        if (!this.auth.currentUser) throw new SessionNotActiveError();
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
         try {
             // 1. Borramos el perfil de Auth y el documento /users
             return this.userDb.deleteAuthUser();

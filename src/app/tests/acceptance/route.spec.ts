@@ -1,42 +1,42 @@
 import {TestBed} from '@angular/core/testing';
-import {appConfig} from '../app.config';
+import {appConfig} from '../../app.config';
 import {geohashForLocation} from 'geofire-common';
 import {Auth} from '@angular/fire/auth';
 
 // Usuarios
-import {POI_TEST_DATA, ROUTE_TEST_DATA, USER_TEST_DATA, VEHICLE_TEST_DATA} from './test-data';
-import {USER_REPOSITORY} from '../services/User/UserRepository';
-import {UserService} from '../services/User/user.service';
-import {UserDB} from '../services/User/UserDB';
+import {POI_TEST_DATA, ROUTE_TEST_DATA, USER_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
+import {USER_REPOSITORY} from '../../services/User/UserRepository';
+import {UserService} from '../../services/User/user.service';
+import {UserDB} from '../../services/User/UserDB';
 
 // Vehículos
-import {VEHICLE_REPOSITORY} from '../services/Vehicle/VehicleRepository';
-import {VehicleService} from '../services/Vehicle/vehicle.service';
-import {VehicleDB} from '../services/Vehicle/VehicleDB';
+import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
+import {VehicleService} from '../../services/Vehicle/vehicle.service';
+import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 
 // POI y MapSearch
-import {POI_REPOSITORY} from '../services/POI/POIRepository';
-import {POIDB} from '../services/POI/POIDB';
-import {POIService} from '../services/POI/poi.service';
-import {MAP_SEARCH_REPOSITORY} from '../services/map-search-service/MapSearchRepository';
-import {MapSearchAPI} from '../services/map-search-service/MapSearchAPI';
-import {MapSearchService} from '../services/map-search-service/map-search.service';
+import {POI_REPOSITORY} from '../../services/POI/POIRepository';
+import {POIDB} from '../../services/POI/POIDB';
+import {POIService} from '../../services/POI/poi.service';
+import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
+import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
+import {MapSearchService} from '../../services/map-search-service/map-search.service';
 
 // Rutas
-import {PREFERENCIA, TIPO_TRANSPORTE} from '../data/RouteModel';
-import {RouteCostResult, RouteService} from '../services/Route/route.service';
+import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
+import {RouteCostResult, RouteService} from '../../services/Route/route.service';
 import {Geometry} from 'geojson';
-import {ROUTE_REPOSITORY} from '../services/Route/RouteRepository';
-import {RouteDB} from '../services/Route/RouteDB';
-import {FUEL_TYPE} from '../data/VehicleModel';
+import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
+import {RouteDB} from '../../services/Route/RouteDB';
+import {FUEL_TYPE} from '../../data/VehicleModel';
 
 // Errores
-import {WrongParamsError} from '../errors/WrongParamsError';
-import {ImpossibleRouteError} from '../errors/Route/ImpossibleRouteError';
-import {RouteAlreadyExistsError} from '../errors/Route/RouteAlreadyExistsError';
-import {RouteResultModel} from '../data/RouteResultModel';
-import {MissingRouteError} from '../errors/Route/MissingRouteError';
-import {InvalidDataError} from '../errors/InvalidDataError';
+import {WrongParamsError} from '../../errors/WrongParamsError';
+import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
+import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
+import {RouteResultModel} from '../../data/RouteResultModel';
+import {MissingRouteError} from '../../errors/Route/MissingRouteError';
+import {InvalidDataError} from '../../errors/InvalidDataError';
 
 // Firestore
 import {deleteDoc, doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';

@@ -1,13 +1,13 @@
 import {TestBed} from '@angular/core/testing'
-import {USER_TEST_DATA} from './test-data';
-import {USER_REPOSITORY} from '../services/User/UserRepository';
-import {UserModel} from '../data/UserModel';
-import {UserService} from '../services/User/user.service';
-import {UserDB} from '../services/User/UserDB';
-import {UserNotFoundError} from '../errors/UserNotFoundError';
-import {WrongPasswordFormatError} from '../errors/WrongPasswordFormatError';
-import {SessionNotActiveError} from '../errors/SessionNotActiveError';
-import {appConfig} from '../app.config';
+import {USER_TEST_DATA} from '../test-data';
+import {USER_REPOSITORY} from '../../services/User/UserRepository';
+import {UserModel} from '../../data/UserModel';
+import {UserService} from '../../services/User/user.service';
+import {UserDB} from '../../services/User/UserDB';
+import {UserNotFoundError} from '../../errors/UserNotFoundError';
+import {WrongPasswordFormatError} from '../../errors/WrongPasswordFormatError';
+import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {appConfig} from '../../app.config';
 import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
 import {Auth} from '@angular/fire/auth';
 

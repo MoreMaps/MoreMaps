@@ -1,24 +1,24 @@
 // it02: HU201, HU202, HU203, HU204, HU205, HU206, HU501, HU604
 import {TestBed} from '@angular/core/testing'
-import {POI_TEST_DATA, USER_TEST_DATA} from './test-data';
-import {USER_REPOSITORY} from '../services/User/UserRepository';
-import {UserService} from '../services/User/user.service';
-import {UserDB} from '../services/User/UserDB';
-import {appConfig} from '../app.config';
+import {POI_TEST_DATA, USER_TEST_DATA} from '../test-data';
+import {USER_REPOSITORY} from '../../services/User/UserRepository';
+import {UserService} from '../../services/User/user.service';
+import {UserDB} from '../../services/User/UserDB';
+import {appConfig} from '../../app.config';
 import {doc, Firestore, setDoc} from '@angular/fire/firestore';
 import {Auth} from '@angular/fire/auth';
-import {POIService} from '../services/POI/poi.service';
-import {POIModel} from '../data/POIModel';
-import {POI_REPOSITORY} from '../services/POI/POIRepository';
-import {POIDB} from '../services/POI/POIDB';
-import {LongitudeRangeError} from '../errors/LongitudeRangeError';
-import {MissingPOIError} from '../errors/MissingPOIError';
-import {PlaceNameNotFoundError} from '../errors/PlaceNameNotFoundError';
-import {DescriptionLengthError} from '../errors/DescriptionLengthError';
-import {MapSearchService} from '../services/map-search-service/map-search.service';
-import {MAP_SEARCH_REPOSITORY} from '../services/map-search-service/MapSearchRepository';
-import {MapSearchAPI} from '../services/map-search-service/MapSearchAPI';
-import {POISearchModel} from '../data/POISearchModel';
+import {POIService} from '../../services/POI/poi.service';
+import {POIModel} from '../../data/POIModel';
+import {POI_REPOSITORY} from '../../services/POI/POIRepository';
+import {POIDB} from '../../services/POI/POIDB';
+import {LongitudeRangeError} from '../../errors/LongitudeRangeError';
+import {MissingPOIError} from '../../errors/MissingPOIError';
+import {PlaceNameNotFoundError} from '../../errors/PlaceNameNotFoundError';
+import {DescriptionLengthError} from '../../errors/DescriptionLengthError';
+import {MapSearchService} from '../../services/map-search-service/map-search.service';
+import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
+import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
+import {POISearchModel} from '../../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
 
 describe('Pruebas sobre POI', () => {

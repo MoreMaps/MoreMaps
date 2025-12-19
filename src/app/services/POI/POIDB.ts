@@ -53,7 +53,7 @@ export class POIDB implements POIRepository {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError();
+                throw new DBAccessError(error);
             }
             // Si no, es un error propio y se puede propagar
             throw error;
@@ -83,7 +83,7 @@ export class POIDB implements POIRepository {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError();
+                throw new DBAccessError(error);
             }
             // Si no, es un error propio y se puede propagar
             throw error;
@@ -117,7 +117,7 @@ export class POIDB implements POIRepository {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError();
+                throw new DBAccessError(error);
             }
             // Si no, es un error propio y se puede propagar
             throw error;
@@ -147,7 +147,7 @@ export class POIDB implements POIRepository {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError();
+                throw new DBAccessError(error);
             }
             // Si no, es un error propio y se puede propagar
             throw error;
@@ -178,7 +178,7 @@ export class POIDB implements POIRepository {
             }
         } catch(error) {
             console.error("ERROR de Firebase: " + error);
-            throw new DBAccessError();
+            throw new DBAccessError(error as string);
         }
 
         return list;

@@ -51,12 +51,12 @@ export class VehicleDB implements VehicleRepository {
             // Si no existe, procedemos a guardar
             if (vehiculo) await setDoc(vehicleDocRef, vehiculo.toJSON());
             return vehiculo;
-        } catch (e) {
-            if (e instanceof VehicleAlreadyExistsError) throw e;
+        } catch (error) {
+            if (error instanceof VehicleAlreadyExistsError) throw error;
 
             // Error desconocido
-            console.error('Error creando vehículo: ', e);
-            throw new DBAccessError();
+            console.error('Error creando vehículo: ', error);
+            throw new DBAccessError(error as string);
         }
     }
 
@@ -81,7 +81,7 @@ export class VehicleDB implements VehicleRepository {
             }
         } catch(error) {
             console.error("ERROR de Firebase: " + error);
-            throw new DBAccessError();
+            throw new DBAccessError(error as string);
         }
 
         return list;
@@ -193,7 +193,7 @@ export class VehicleDB implements VehicleRepository {
         } catch (error: any) {
             // Loguear error de Firebase
             console.error("ERROR de Firebase: " + error);
-            throw new DBAccessError();
+            throw new DBAccessError(error);
         }
 
         // Si no se han podido obtener, el vehículo solicitado no existe.
@@ -229,7 +229,7 @@ export class VehicleDB implements VehicleRepository {
                 case 'not-found':
                     throw new MissingVehicleError();
             }
-            throw new DBAccessError();
+            throw new DBAccessError(error);
         }
     }
 

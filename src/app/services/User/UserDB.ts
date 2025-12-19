@@ -5,9 +5,10 @@ import {
     Auth,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
-    updateProfile
+    updateProfile, validatePassword
 } from '@angular/fire/auth';
-import {collection, deleteDoc, doc, Firestore, getDocs, query, setDoc, where} from '@angular/fire/firestore';
+import {addDoc, collection, deleteDoc, doc, Firestore, getDocs, query, setDoc, where} from '@angular/fire/firestore';
+import {DBAccessError} from '../../errors/DBAccessError';
 
 @Injectable({
     providedIn: 'root'
@@ -21,31 +22,24 @@ export class UserDB implements UserRepository {
      * @throws error error de Firestore
      */
     async createUser(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
-        // 1. Crear usuario en Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(this.auth, email, pwd);
-        const firebaseUser = userCredential.user;
-        const uid = firebaseUser.uid;
-
         try {
-            // 2. Intentar actualizar perfil Auth para el nombre del usuario
-            await updateProfile(firebaseUser, {displayName: `${nombre} ${apellidos}`});
+            // Crear usuario en Auth
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, pwd);
 
-            // 3. Crear modelo y referencia al documento de Firestore
-            const userModel = new UserModel(uid, email, nombre, apellidos);
-            const userDocRef = doc(this.firestore, `users/${uid}`);
+            // Intentar actualizar perfil de Auth para el nombre del usuario
+            await updateProfile(userCredential.user, {displayName: `${nombre} ${apellidos}`});
 
-            // 4. Escribir en Firestore
-            await setDoc(userDocRef, userModel.toJSON());
+            // Crear el modelo de usuario
+            const userModel = new UserModel(userCredential!.user.uid, email, nombre, apellidos);
+
+            // Escribir en Firestore
+            await setDoc(doc(this.firestore, `users/${(userCredential.user.uid)}`), userModel.toJSON());
 
             return userModel;
-        } catch (error) {
-            // ERROR CRÍTICO: Falla la escritura en DB o el updateProfile. Rollback
-            try {
-                await firebaseUser.delete();
-            } catch (error) {
-                console.error('FATAL: Inconsistencia de datos. Usuario creado en Auth, pero no en Firestore. Rollback ha fallado.', error);
-            }
-            throw error;
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            throw new DBAccessError(error);
         }
     }
 
@@ -55,11 +49,11 @@ export class UserDB implements UserRepository {
     async deleteAuthUser(): Promise<boolean> {
         const user = this.auth.currentUser;
 
-        // 1. Borrar de Firestore
+        // Borrar de Firestore
         const userDocRef = doc(this.firestore, `users/${user?.uid}`);
         await deleteDoc(userDocRef);
 
-        // 2. Luego borra de Firebase Auth (esto cierra la sesión automáticamente)
+        // Borra de Auth y cierra la sesión automáticamente
         await user!.delete();
 
         return true;
@@ -77,6 +71,16 @@ export class UserDB implements UserRepository {
     }
 
     /**
+     * Recibe un email y comprueba si existe una cuenta en Firestore que lo utilice.
+     * @param email correo de un posible usuario
+     * */
+    async userExists(email: string): Promise<boolean> {
+        const q = query(collection(this.firestore, `/users`), where('mail', '==', email));
+        const res = await getDocs(q);
+        return !res.empty;
+    }
+
+    /**
      * Intenta cerrar sesión en Firebase.
      * @returns Promise con true si se ha podido cerrar sesión; false en caso de excepción.
      */
@@ -87,5 +91,19 @@ export class UserDB implements UserRepository {
         } catch (error: any) {
             return false;
         }
+    }
+
+    /**
+     * Comprueba si la sesión está activa
+     * @returns Promise con true si la sesión está activa.
+     */
+    async sessionActive(): Promise<boolean> {
+        return !!this.auth.currentUser;
+    }
+
+    /** Comprueba si la contraseña cumple la política de seguridad
+     * */
+    async passwordValid(password: string): Promise<boolean> {
+        return (await validatePassword(this.auth, password)).isValid;
     }
 }

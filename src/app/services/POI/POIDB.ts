@@ -3,7 +3,6 @@ import {inject, Injectable} from '@angular/core';
 import {POIModel} from '../../data/POIModel';
 import {Auth} from '@angular/fire/auth';
 import {Geohash} from 'geofire-common';
-import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
 import {
     collection,
     deleteDoc,
@@ -31,8 +30,6 @@ export class POIDB implements POIRepository {
      * @param poi datos del POI (latitud, longitud, topónimo, geohash, alias, descripción, fijado)
      */
     async createPOI(poi: POIModel): Promise<POIModel> {
-        this.safetyChecks();
-
         const userUid = this.auth.currentUser!.uid;
         const path = `items/${userUid}/pois/${poi.geohash}`;
 
@@ -65,7 +62,7 @@ export class POIDB implements POIRepository {
      * @param geohash geohash del POI
      */
     async readPOI(geohash: Geohash): Promise<POIModel> {
-        this.safetyChecks();
+
 
         try {
             const poiSnap = await getDoc(
@@ -96,7 +93,6 @@ export class POIDB implements POIRepository {
      * @param update datos a actualizar del POI
      */
     async updatePOI(geohash: Geohash, update: Partial<POIModel>): Promise<boolean> {
-        this.safetyChecks();
 
         try {
             // Obtener los datos del POI que se va a actualizar
@@ -129,7 +125,6 @@ export class POIDB implements POIRepository {
      * @param geohash geohash del POI
      */
     async deletePOI(geohash: Geohash): Promise<boolean> {
-        this.safetyChecks();
 
         try {
             // Obtener los datos del POI que se va a borrar
@@ -158,8 +153,6 @@ export class POIDB implements POIRepository {
      * Devuelve una lista con todos los puntos de interés (POI).
      */
     async getPOIList(): Promise<POIModel[]> {
-        this.safetyChecks();
-
         let list: POIModel[] = [];
 
         // Referencia a la colección
@@ -189,7 +182,6 @@ export class POIDB implements POIRepository {
      * @param poi datos completos del POI
      */
     async pinPOI(poi: POIModel): Promise<boolean> {
-        this.safetyChecks();
 
         // Referencia a la colección
         const docPath = `/items/${this.auth.currentUser!.uid}/pois/${poi.geohash}`;
@@ -210,14 +202,4 @@ export class POIDB implements POIRepository {
             throw error;
         }
     }
-
-    /**
-     * Comprobación de sesión activa.
-     * @private
-     */
-    private safetyChecks() {
-        const currentUser = this.auth.currentUser!.uid;
-        if (!currentUser) throw new SessionNotActiveError();
-    }
-
 }

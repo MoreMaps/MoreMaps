@@ -11,4 +11,5 @@ export interface UserRepository{
     userExists(email: string): Promise<boolean>;
     sessionActive(): Promise<boolean>;
     passwordValid(password: string): Promise<boolean>;
+    getCurrentUser(): Promise<UserModel>;
 }

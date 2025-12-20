@@ -1,14 +1,15 @@
-import {inject, Injectable, signal} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {UserModel} from '../../data/UserModel';
 import {USER_REPOSITORY, UserRepository} from './UserRepository';
-import {UserAlreadyExistsError} from '../../errors/UserAlreadyExistsError';
-import {WrongPasswordFormatError} from '../../errors/WrongPasswordFormatError';
-import {WrongLoginError} from '../../errors/WrongLoginError';
-import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
-import {UserNotFoundError} from '../../errors/UserNotFoundError';
+import {UserAlreadyExistsError} from '../../errors/User/UserAlreadyExistsError';
+import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatError';
+import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
+import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongParamsError} from '../../errors/WrongParamsError';
 
 import {MissingParamsError} from '../../errors/MissingParamsError';
+import {SessionAlreadyActiveError} from '../../errors/User/SessionAlreadyActiveError';
+import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
 
 @Injectable({providedIn: 'root'})
 export class UserService {
@@ -19,7 +20,8 @@ export class UserService {
      * @throws MissingParamsError si algún parámetro falta.
      * @throws UserAlreadyExistsError si ya existe el usuario.
      * @throws WrongPasswordFormatError si la contraseña no cumple con los criterios mínimos.
-     * */
+     *
+     */
     async signUp(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
         // Comprobar si hay algún parámetro vacío
         if (!email || !pwd || !nombre || !apellidos) {
@@ -36,7 +38,7 @@ export class UserService {
             throw new UserAlreadyExistsError();
         }
 
-        // Si no existe, intenta crearlo
+        // Crea un nuevo usuario
         return await this.userDb.createUser(email, pwd, nombre, apellidos);
     }
 
@@ -44,32 +46,37 @@ export class UserService {
     /**
      * Inicia sesión con el correo y la contraseña especificados.
      * @throws WrongParamsError si algún parámetro no está completo.
-     * @throws WrongLoginError si no se puede iniciar sesión.
+     * @throws UserNotFoundError si no existe el usuario.
+     * @throws SessionAlreadyActiveError si la sesión ya existe.
+     * @throws InvalidCredentialError si el email/contraseña son inválidos.
      */
     async login(email: string, pwd: string): Promise<boolean> {
+        // Comprueba si hay algún parámetro vacío
         if (!email || !pwd) {
             throw new WrongParamsError('usuario');
         }
-        try {
-            await this.userDb.validateCredentials(email, pwd);
-            return true;
-        } catch (error: any) {
-            switch (error.code) {
-                // El usuario no existe
-                case 'auth/invalid-credential':
-                    throw new UserNotFoundError();
-                default:
-                    // Error desconocido de login
-                    throw new WrongLoginError();
-            }
+
+        // Comprueba que el usuario existe
+        if (!await this.userDb.userExists(email)) {
+            throw new UserNotFoundError();
         }
+
+        // Comprueba que la sesión NO esté activa
+        if (await this.userDb.sessionActive()) {
+            throw new SessionAlreadyActiveError();
+        }
+
+        // Intenta iniciar sesión
+        if (!await this.userDb.validateCredentials(email, pwd)) {
+            throw new InvalidCredentialError();
+        }
+        return true;
     }
 
 
     // HU105 Cerrar sesión
     /**
      * Cierra la sesión actual.
-     * @throws UserNotFoundError si el usuario no se encuentra
      * @throws SessionNotActiveError si la sesión no está activa
      */
     async logout(): Promise<boolean> {
@@ -77,45 +84,25 @@ export class UserService {
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
         }
-        try {
-            return await this.userDb.logoutUser();
-        } catch (error: any) {
-            // Error de Firebase
-            switch (error.code) {
-                // El usuario no existe
-                case 'auth/invalid-credential':
-                    throw new UserNotFoundError();
-                default:
-                    // Error desconocido
-                    throw new Error('Error desconocido: ' + error);
-            }
-        }
+        // Cierra sesión
+        return await this.userDb.logoutUser();
     }
 
     // HU106 Eliminar cuenta
+    /**
+     * Borra al usuario con la sesión activa.
+     * @throws UserNotFoundError si el usuario no se encuentra
+     * @throws SessionNotActiveError si la sesión no está activa
+     */
     async deleteUser(): Promise<boolean> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
         }
 
-        try {
-            // 1. Borramos el perfil de Auth y el documento /users
-            return this.userDb.deleteAuthUser();
-            // TODO en it06 - borrar /items
-        } catch (error: any) {
-            switch (error.code) {
-                case 'auth/requires-recent-login':
-                    // El usuario necesita re-autenticarse antes de borrar
-                    throw new SessionNotActiveError();
-                case 'auth/user-not-found':
-                case 'auth/invalid-credential':
-                    // El usuario ya no existe en Auth
-                    throw new UserNotFoundError();
-                default:
-                    // Error desconocido
-                    throw new Error('Error desconocido: ' + error);
-            }
-        }
+
+        // Borramos el perfil de Auth y el documento de 'users'
+        // TODO:  en it06 - borrar /items
+        return this.userDb.deleteAuthUser();
     }
 }

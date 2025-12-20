@@ -20,7 +20,7 @@ export class UserModel {
         };
     }
 
-    static fromJSON(json: UserModel) {
+    static fromJSON(json: any) {
         return new UserModel(json.uid, json.email, json.nombre, json.apellidos);
     }
 }

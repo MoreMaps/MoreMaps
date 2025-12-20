@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {VehicleRepository} from './VehicleRepository';
 import {Auth} from '@angular/fire/auth';
 import {VehicleModel} from '../../data/VehicleModel';
-import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 import {DBAccessError} from '../../errors/DBAccessError';

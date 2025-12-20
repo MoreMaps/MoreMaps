@@ -3,7 +3,6 @@ import {CommonModule, NgOptimizedImage} from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
-import {Auth} from '@angular/fire/auth';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatSnackBar, MatSnackBarRef} from '@angular/material/snack-bar';
 import {BreakpointObserver} from '@angular/cdk/layout';
@@ -31,7 +30,7 @@ import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {SpinnerSnackComponent} from '../map/map';
 import {SavedPoiDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
-import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {MapSearchService} from '../../services/map-search-service/map-search.service';
 import {firstValueFrom} from 'rxjs';
 import {RouteOptionsDialogComponent} from '../route/route-options-dialog/route-options-dialog';
@@ -76,7 +75,6 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
     ]
 })
 export class SavedItemsComponent implements OnDestroy {
-    private auth = inject(Auth);
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
     private activeSnackRef: MatSnackBarRef<any> | null = null;

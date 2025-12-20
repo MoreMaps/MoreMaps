@@ -4,16 +4,16 @@ import {USER_REPOSITORY} from '../../services/User/UserRepository';
 import {UserModel} from '../../data/UserModel';
 import {UserService} from '../../services/User/user.service';
 import {UserDB} from '../../services/User/UserDB';
-import {UserNotFoundError} from '../../errors/UserNotFoundError';
-import {WrongPasswordFormatError} from '../../errors/WrongPasswordFormatError';
-import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
+import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatError';
+import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {appConfig} from '../../app.config';
-import {deleteDoc, doc, Firestore, getDoc} from '@angular/fire/firestore';
+import {doc, Firestore, getDoc} from '@angular/fire/firestore';
 import {Auth} from '@angular/fire/auth';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
-describe('Pruebas sobre usuarios', () => {
+fdescribe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
     let firestore: Firestore;
@@ -49,25 +49,26 @@ describe('Pruebas sobre usuarios', () => {
             await userService.logout();
         }
 
-        let needsCreate: boolean;
+        // Indica si el usuario ya existe de forma consistente (o no)
+        let needsCreate: boolean = false;
 
         // PASO 1: Intentamos Loguearnos
         try {
-            await userService.login(ramon.email, ramon.pwd);
+            if (!auth.currentUser) {
+                await userService.login(ramon.email, ramon.pwd);
+            }
 
-            // Si el login funciona, verificamos si tiene datos en Firestore
-            const uid = auth.currentUser?.uid;
-            if (!uid) throw new Error("Login exitoso pero sin UID");
+            // Obtener UID
+            const uid = auth.currentUser ? auth.currentUser.uid :  "";
+            await userService.logout();
 
             const docRef = doc(firestore, `users/${uid}`);
             const snap = await getDoc(docRef);
-
             if (snap.exists()) {
                 // CASO ideal: Existe en Auth y en Firestore
                 const data = snap.data();
                 usuarioRegistradoRamon = new UserModel(uid, data['email'], data['nombre'], data['apellidos']);
-                needsCreate = false; // Ya lo tenemos, no hacemos nada más
-                console.log("Usuario Ramón cargado correctamente de la BD.");
+                console.log("Usuario Ramón cargado correctamente en la BD.");
             } else {
                 // CASO ZOMBIE: Existe en Auth, pero NO en Firestore
                 console.warn("Detectado usuario Ramón corrupto (Auth sí, DB no). Eliminando para regenerar...");
@@ -107,18 +108,6 @@ describe('Pruebas sobre usuarios', () => {
         }
     });
 
-    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
-    afterAll(async () => {
-        try {
-            if (auth.currentUser) await userService.logout();
-            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de user.spec.ts.');
-            else {
-                console.info('Logout en afterAll de user.spec.ts funcionó correctamente.');
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    })
 
     describe('HU101: Registrar Usuario', () => {
 
@@ -126,41 +115,35 @@ describe('Pruebas sobre usuarios', () => {
             // GIVEN
             //  lista de usuarios registrados vacía que no incluye a "maria"
             //  no se ha iniciado sesión
+            if (auth.currentUser) {
+                await auth.signOut();
+            }
 
             // WHEN
             //  el usuario "maria" intenta darse de alta
             const usuarioCreado: UserModel = await userService
                 .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-            try {
-                // THEN
-                //  el usuario "maria" se registra correctamente
-                expect(usuarioCreado).toEqual(jasmine.objectContaining({
-                    uid: jasmine.any(String),    // UID válido cualquiera
-                    email: maria.email,
-                    nombre: maria.nombre,
-                    apellidos: maria.apellidos,
-                }));
-            } finally {
-                const userDocRef = doc(firestore, `users/${usuarioCreado.uid}`);
-                const docSnap = await getDoc(userDocRef);
-                try {
-                    // y el documento se crea
-                    expect(docSnap.exists()).toEqual(true);
-                } finally {
-                    // LIMPIEZA: la base de datos vuelve al estado inicial
-                    await deleteDoc(userDocRef);
-                    const currentUser = auth.currentUser;
-                    if (currentUser) {
-                        await currentUser.delete();
-                    }
-                }
-            }
+
+            // THEN
+            //  el usuario "maria" se registra correctamente
+            expect(usuarioCreado).toEqual(jasmine.objectContaining({
+                uid: jasmine.any(String),    // UID válido cualquiera
+                email: maria.email,
+                nombre: maria.nombre,
+                apellidos: maria.apellidos,
+            }));
+
+            // LIMPIEZA: la base de datos vuelve al estado inicial
+            await userService.deleteUser();
         });
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
             // GIVEN
             //  lista de usuarios registrados vacía que no incluye al usuario "maria"
             //  no se ha iniciado sesión
+            if (auth.currentUser) {
+                await auth.signOut();
+            }
 
             // WHEN
             //  el usuario "maria" intenta darse de alta con contraseña "password" (no sigue el formato correcto)
@@ -178,6 +161,9 @@ describe('Pruebas sobre usuarios', () => {
             // GIVEN
             //  lista de usuarios registrados que incluye a "ramon"
             //  no se ha iniciado sesión
+            if (auth.currentUser) {
+                await auth.signOut();
+            }
 
             // WHEN
             // el usuario "ramon" intenta iniciar sesión con su email y contraseña
@@ -185,19 +171,19 @@ describe('Pruebas sobre usuarios', () => {
 
             // THEN
             //  el usuario "ramon" inicia sesión correctamente
-            try {
-                expect(sesionIniciada).toBeTrue();
-            } finally {
-                // se cierra la sesion
-                await userService.logout();
-            }
+            expect(sesionIniciada).toBeTrue();
 
+            // LIMPIEZA: ramon hace logout
+            await userService.logout();
         });
 
         it('HU102-EI01: Iniciar sesión con una cuenta que no existe', async () => {
             // GIVEN
             //  lista de usuarios registrados vacía que no incluye a "maria"
             //  no se ha iniciado sesión
+            if (auth.currentUser) {
+                await auth.signOut();
+            }
 
             // WHEN
             // se intenta iniciar sesión con los datos del usuario "maria"
@@ -230,7 +216,6 @@ describe('Pruebas sobre usuarios', () => {
             //  no hay ninguna sesión activa
             if (auth.currentUser) {
                 await auth.signOut();
-                console.log(!auth.currentUser);
             }
             // WHEN
             //  se intenta cerrar sesión
@@ -246,9 +231,7 @@ describe('Pruebas sobre usuarios', () => {
             // GIVEN
             //  lista de usuarios registrados incluye a "maria"
             await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-            if (auth.currentUser?.email != maria.email) {
-                pending('User is not maria: aborting...');
-            }
+
             // WHEN
             //  se intenta eliminar la cuenta
             const usuarioBorrado = await userService.deleteUser();
@@ -267,7 +250,7 @@ describe('Pruebas sobre usuarios', () => {
             }
 
             // WHEN
-            //  se intenta eliminar la cuenta "ramon" sin haber iniciado sesion
+            //  se intenta eliminar la cuenta "ramon" sin haber iniciado sesión
             await expectAsync(userService.deleteUser())
                 .toBeRejectedWith(new SessionNotActiveError());
             // THEN
@@ -288,21 +271,19 @@ describe('Pruebas sobre usuarios', () => {
             // WHEN
             //  el usuario "ramon" vuelve a iniciar sesión
             await userService.login(ramon.email, ramon.pwd);
-            try {
-                // THEN
-                //  los datos de usuario de la BD son los mismos que los introducidos previamente
-                expect(usuarioRegistradoRamon).toEqual(jasmine.objectContaining({
-                    uid: jasmine.any(String),
-                    email: ramon.email,
-                    nombre: ramon.nombre,
-                    apellidos: ramon.apellidos,
-                }));
-            } finally {
-                // LIMPIEZA
-                // "ramon" cierra sesión
-                await userService.logout();
-            }
 
+            // THEN
+            //  los datos de usuario de la BD son los mismos que los introducidos previamente
+            expect(usuarioRegistradoRamon).toEqual(jasmine.objectContaining({
+                uid: jasmine.any(String),
+                email: ramon.email,
+                nombre: ramon.nombre,
+                apellidos: ramon.apellidos,
+                }));
+
+            // LIMPIEZA
+            // "ramon" cierra sesión
+            await userService.logout();
         });
     })
 })

@@ -6,7 +6,7 @@ import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {DBAccessError} from '../../errors/DBAccessError';
-import {SessionNotActiveError} from '../../errors/SessionNotActiveError';
+import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 
 @Injectable({

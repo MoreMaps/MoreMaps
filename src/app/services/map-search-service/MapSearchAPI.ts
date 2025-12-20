@@ -65,7 +65,6 @@ export class MapSearchAPI implements MapSearchRepository {
                 api_key: this.apiKey,
                 text: placeName,
                 size: size.toString(),
-                'boundary.country': 'ES',
                 layers: 'address,venue,street,locality'
             }
         });

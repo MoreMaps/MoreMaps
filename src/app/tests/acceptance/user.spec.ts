@@ -109,6 +109,7 @@ fdescribe('Pruebas sobre usuarios', () => {
     });
 
 
+
     describe('HU101: Registrar Usuario', () => {
 
         it('HU101-EV01: Registrar nuevo usuario válido', async () => {

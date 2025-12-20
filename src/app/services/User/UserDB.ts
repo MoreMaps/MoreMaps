@@ -39,7 +39,8 @@ export class UserDB implements UserRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            throw new DBAccessError(error);
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 
@@ -61,7 +62,8 @@ export class UserDB implements UserRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            throw new DBAccessError(error);
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 
@@ -78,13 +80,14 @@ export class UserDB implements UserRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            throw new DBAccessError(error);
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 
     /**
      * Recibe un email y comprueba si existe una cuenta en Firestore que lo utilice
-     * @param email dirección de correo de un posible usuario
+     * @param email Dirección de correo de un posible usuario
      * @returns Promise con true si existe, false si no existe
      */
     async userExists(email: string): Promise<boolean> {
@@ -104,7 +107,8 @@ export class UserDB implements UserRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            throw new DBAccessError(error);
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 

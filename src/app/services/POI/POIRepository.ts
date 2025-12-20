@@ -9,13 +9,17 @@ export interface POIRepository {
     // Operaciones CRUDE
     createPOI(poi: POISearchModel): Promise<POIModel>;
 
-    readPOI(geohash: Geohash): Promise<POIModel>;
-    // con este update podemos hacer checks manuales, y evitar cambios a otros atributos que no sean alias o descripción
+    getPOI(geohash: Geohash): Promise<POIModel>;
+
     updatePOI(geohash: Geohash, update: Partial<POIModel>): Promise<boolean>;
 
     deletePOI(geohash: Geohash): Promise<boolean>;
 
     getPOIList(): Promise<POIModel[]>;
 
+    // Fijar POI
     pinPOI(poi: POIModel): Promise<boolean>;
+
+    // Métodos auxiliares
+    poiExists(geohash: Geohash): Promise<boolean>;
 }

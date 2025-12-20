@@ -33,7 +33,7 @@ import {Geohash, geohashForLocation} from 'geofire-common';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
-import {CoordsNotFoundError} from '../../errors/CoordsNotFoundError';
+import {CoordsNotFoundError} from '../../errors/POI/CoordsNotFoundError';
 import {RouteDetailsDialog} from '../route/route-details-dialog/routeDetailsDialog';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {RouteCostResult, RouteService} from '../../services/Route/route.service';

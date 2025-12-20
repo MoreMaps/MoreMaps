@@ -9,14 +9,11 @@ import {
     doc,
     Firestore,
     getDoc,
-    getDocs,
+    getDocs, query,
     setDoc,
-    updateDoc
+    updateDoc, where
 } from '@angular/fire/firestore';
-import {MissingPOIError} from '../../errors/MissingPOIError';
-import {DescriptionLengthError} from '../../errors/DescriptionLengthError';
 import {DBAccessError} from '../../errors/DBAccessError';
-import {POIAlreadyExistsError} from '../../errors/POIAlreadyExistsError';
 
 @Injectable({
     providedIn: 'root'
@@ -27,33 +24,21 @@ export class POIDB implements POIRepository {
 
     /**
      * Registra un punto de interés (POI) en la base de datos.
-     * @param poi datos del POI (latitud, longitud, topónimo, geohash, alias, descripción, fijado)
+     * @param poi datos del POI (latitud, longitud, topónimo, geohash)
      */
     async createPOI(poi: POIModel): Promise<POIModel> {
-        const userUid = this.auth.currentUser!.uid;
-        const path = `items/${userUid}/pois/${poi.geohash}`;
-
         try{
             // Referencia al documento
-            const vehicleDocRef = doc(this.firestore, path);
+            const poiDocRef = doc(this.firestore, `items/${this.auth.currentUser?.uid}/pois/${poi.geohash}`);
 
-            // Obtener el snapshot para ver si existe
-            const docSnap = await getDoc(vehicleDocRef);
-
-            // Si existe, lanzamos el error
-            if (docSnap.exists()) throw new POIAlreadyExistsError();
-
-            // Si no existe, procedemos a guardar
-            await setDoc(vehicleDocRef, poi.toJSON());
+            // Crear POI
+            await setDoc(poiDocRef, poi.toJSON());
             return poi;
-        } catch(error: any) {
-            // Si el error es de Firebase, loguearlo
-            if (error.code) {
-                console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError(error);
-            }
-            // Si no, es un error propio y se puede propagar
-            throw error;
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 
@@ -61,29 +46,20 @@ export class POIDB implements POIRepository {
      * Lee los datos de la base de datos correspondientes al punto de interés (POI) con el geohash especificado.
      * @param geohash geohash del POI
      */
-    async readPOI(geohash: Geohash): Promise<POIModel> {
-
-
+    async getPOI(geohash: Geohash): Promise<POIModel> {
         try {
+            // Documento del POI
             const poiSnap = await getDoc(
                 doc(this.firestore, `items/${this.auth.currentUser!.uid}/pois/${geohash}`)
             );
 
-            if (!poiSnap.exists()) {
-                throw new MissingPOIError();
-            }
-
             // Devolver POI
             return POIModel.fromJSON(poiSnap.data());
-
-        } catch (error: any) {
-            // Si el error es de Firebase, loguearlo
-            if (error.code) {
-                console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError(error);
-            }
-            // Si no, es un error propio y se puede propagar
-            throw error;
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 
@@ -93,30 +69,18 @@ export class POIDB implements POIRepository {
      * @param update datos a actualizar del POI
      */
     async updatePOI(geohash: Geohash, update: Partial<POIModel>): Promise<boolean> {
-
         try {
             // Obtener los datos del POI que se va a actualizar
             const poiRef = doc(this.firestore, `items/${this.auth.currentUser!.uid}/pois/${geohash}`);
-            const poiSnap = await getDoc(poiRef);
-
-            // Si no existe, se lanza un error
-            if (!poiSnap.exists()) throw new MissingPOIError();
-
-            // Comprobar reglas de negocio (el formulario también lo hace)
-            // Descripción demasiado larga (>150 chars)
-            if (update.description && update.description?.length > 150) throw new DescriptionLengthError();
 
             // Actualizar documento (únicamente los campos enviados)
             await updateDoc(poiRef, update);
             return true;
-        } catch (error: any) {
-            // Si el error es de Firebase, loguearlo
-            if (error.code) {
-                console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError(error);
-            }
-            // Si no, es un error propio y se puede propagar
-            throw error;
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 
@@ -125,56 +89,46 @@ export class POIDB implements POIRepository {
      * @param geohash geohash del POI
      */
     async deletePOI(geohash: Geohash): Promise<boolean> {
-
         try {
             // Obtener los datos del POI que se va a borrar
             const poiRef = doc(this.firestore, `items/${this.auth.currentUser!.uid}/pois/${geohash}`);
-            const poiSnap = await getDoc(poiRef);
-
-            // Si no existe, se lanza un error
-            if (!poiSnap.exists()) throw new MissingPOIError();
 
             // Borrar documento
-            // TODO: PROPAGAR A RUTAS
+            // TODO: PROPAGAR A RUTAS EN IT06
             await deleteDoc(poiRef);
             return true;
-        } catch (error: any) {
-            // Si el error es de Firebase, loguearlo
-            if (error.code) {
-                console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError(error);
-            }
-            // Si no, es un error propio y se puede propagar
-            throw error;
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 
     /**
-     * Devuelve una lista con todos los puntos de interés (POI).
+     * Devuelve una lista con todos los puntos de interés (POI) del usuario actual.
      */
     async getPOIList(): Promise<POIModel[]> {
-        let list: POIModel[] = [];
-
-        // Referencia a la colección
-        const collectionPath = `/items/${this.auth.currentUser!.uid}/pois`;
-
         try {
             // Obtener items de la colección
-            const itemsRef = collection(this.firestore, collectionPath);
+            const itemsRef = collection(this.firestore,  `items/${this.auth.currentUser!.uid}/pois`);
             const snapshot = await getDocs(itemsRef);
 
+            // Mapear todos los documentos a POIModel
+            let list: POIModel[] = [];
             if (!snapshot.empty) {
                 list = snapshot.docs.map(doc => {
                     const data = doc.data();
                     return POIModel.fromJSON(data);
                 });
             }
-        } catch(error) {
-            console.error("ERROR de Firebase: " + error);
-            throw new DBAccessError(error as string);
+            return list;
         }
-
-        return list;
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
+        }
     }
 
     /**
@@ -182,24 +136,27 @@ export class POIDB implements POIRepository {
      * @param poi datos completos del POI
      */
     async pinPOI(poi: POIModel): Promise<boolean> {
-
-        // Referencia a la colección
-        const docPath = `/items/${this.auth.currentUser!.uid}/pois/${poi.geohash}`;
-
         // Actualiza el documento para que invertir el boolean pinned del POI
         try {
-            await updateDoc(doc(this.firestore, docPath), {pinned: !poi.pinned});
-            poi.pinned = !poi.pinned;
-            console.log(`Cambiado pinned de POI ${poi.geohash} a: ${poi.pinned}`)
+            await updateDoc(doc(this.firestore, `items/${this.auth.currentUser!.uid}/pois/${poi.geohash}`), {pinned: !poi.pinned});
             return true;
-        } catch (error: any) {
-            console.log(`Error al cambiar pinned del POI: ${error}`);
-            switch (error.code) {
-                case 'invalid-argument':
-                case 'not-found':
-                    throw new MissingPOIError();
-            }
-            throw error;
         }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
+        }
+    }
+
+    /**
+     * Recibe un geohash y comprueba si existe un POI en Firestore que lo utilice
+     * @param geohash Geohash de un POI
+     * @returns Promise con true si existe, false si no existe
+     */
+    async poiExists(geohash: Geohash): Promise<boolean> {
+        const q = query(collection(this.firestore,
+            `items/${this.auth.currentUser?.uid}/pois`), where('geohash', '==', geohash));
+        const res = await getDocs(q);
+        return !res.empty;
     }
 }

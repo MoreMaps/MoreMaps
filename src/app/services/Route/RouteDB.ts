@@ -41,7 +41,7 @@ export class RouteDB implements RouteRepository {
             // Si el error es de Firebase, loguearlo
             if (error.code) {
                 console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError(error);
+                throw new DBAccessError();
             }
             // Si no, es un error propio y se puede propagar
             throw error;

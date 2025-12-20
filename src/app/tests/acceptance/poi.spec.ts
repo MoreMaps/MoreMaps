@@ -11,17 +11,17 @@ import {POIService} from '../../services/POI/poi.service';
 import {POIModel} from '../../data/POIModel';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
-import {LongitudeRangeError} from '../../errors/LongitudeRangeError';
-import {MissingPOIError} from '../../errors/MissingPOIError';
-import {PlaceNameNotFoundError} from '../../errors/PlaceNameNotFoundError';
-import {DescriptionLengthError} from '../../errors/DescriptionLengthError';
+import {LongitudeRangeError} from '../../errors/POI/LongitudeRangeError';
+import {MissingPOIError} from '../../errors/POI/MissingPOIError';
+import {PlaceNameNotFoundError} from '../../errors/POI/PlaceNameNotFoundError';
+import {DescriptionLengthError} from '../../errors/POI/DescriptionLengthError';
 import {MapSearchService} from '../../services/map-search-service/map-search.service';
 import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
 import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
 
-describe('Pruebas sobre POI', () => {
+fdescribe('Pruebas sobre POI', () => {
     let userService: UserService;
     let poiService: POIService;
     let mapSearchService: MapSearchService;
@@ -76,17 +76,6 @@ describe('Pruebas sobre POI', () => {
             throw error;
         }
     });
-
-    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
-    afterAll(async () => {
-        try {
-            if (auth.currentUser) await userService.logout();
-            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de poi.spec.ts.');
-            else { console.info('Logout en afterAll de poi.spec.ts funcionó correctamente.'); }
-        } catch (error) {
-            console.error(error);
-        }
-    })
 
     // Las pruebas empiezan a partir de AQUÍ
 
@@ -144,28 +133,26 @@ describe('Pruebas sobre POI', () => {
             // Lista de POI registrados es ["A"]
 
             // WHEN
-            // Se intenta dar de alta el POI “B” por topónimo ("València")
+            // Se intenta dar de alta el POI “B” por topónimo ("Valencia")
             const listaPoiEncontrados: POISearchModel[] = await mapSearchService.searchPOIByPlaceName(poiB.placeName);
             const poiBuscado: POISearchModel = listaPoiEncontrados[0];
             const poiCreado = await poiService.createPOI(poiBuscado)
-            try {
-                // THEN
-                // Se da de alta el POI
-                // La lista de POI es ["A", "B"]
-                expect(poiCreado).toEqual(jasmine.objectContaining({
-                        lat: poiBuscado.lat,
-                        lon: poiBuscado.lon,
-                        placeName: poiBuscado.placeName,
-                        geohash: geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7),
-                        pinned: false
-                    })
-                );
-            } finally {
-                // CLEANUP
-                // Se borra el POI "B"
-                await poiService.deletePOI(poiCreado.geohash);
-            }
 
+            // THEN
+            // Se da de alta el POI
+            // La lista de POI es ["A", "B"]
+            expect(poiCreado).toEqual(jasmine.objectContaining({
+                    lat: poiBuscado.lat,
+                    lon: poiBuscado.lon,
+                    placeName: poiBuscado.placeName,
+                    geohash: geohashForLocation([poiBuscado.lat, poiBuscado.lon], 7),
+                    pinned: false
+                })
+            );
+
+            // CLEANUP
+            // Se borra el POI "B"
+            await poiService.deletePOI(poiCreado.geohash);
         });
 
         it('HU202-EI03: Dar de alta un POI por topónimo que no corresponde a ningún sitio', async () => {
@@ -195,17 +182,16 @@ describe('Pruebas sobre POI', () => {
             // WHEN
             // El usuario maria consulta su lista de POI registrados
             let list = await poiService.getPOIList();
-            try {
-                // THEN
-                // Se devuelve una lista vacía y se indica que no hay POI registrados.
-                expect(list.length).toBe(0);
-            } finally {
-                // CLEANUP
-                // borrar a maria
-                await userService.deleteUser();
-                // volver a ramon
-                await userService.login(ramon.email, ramon.pwd);
-            }
+
+            // THEN
+            // Se devuelve una lista vacía y se indica que no hay POI registrados.
+            expect(list.length).toBe(0);
+
+            // CLEANUP
+            // borrar a maria
+            await userService.deleteUser();
+            // volver a ramon
+            await userService.login(ramon.email, ramon.pwd);
         });
 
         it('HU203-EV02: Consultar el listado no vacío de POI', async () => {

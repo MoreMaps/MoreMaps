@@ -32,10 +32,10 @@ export const POI_TEST_DATA: POIModel[] = [
     ),
     // POI B: Valencia
     new POIModel(
-        39.473910,
-        -0.376380,
+        39.464773,
+        -0.363258,
         "Valencia",
-        geohashForLocation([39.473910, -0.376380], 7),
+        geohashForLocation([39.464773, -0.363258], 7),
         false,
         "València",
         "Ciudad que frecuento",

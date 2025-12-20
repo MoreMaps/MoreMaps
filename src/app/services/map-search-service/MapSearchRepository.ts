@@ -8,8 +8,8 @@ export const MAP_SEARCH_REPOSITORY = new InjectionToken<MapSearchRepository>('Ma
 
 export interface MapSearchRepository {
     // Buscar POI
-    searchPOIByCoords(lat: number, lon: number): Promise<POISearchModel>;
-    searchPOIByPlaceName(placeName: string): Promise<POISearchModel[]>;
+    searchPOIByCoords(lat: number, lon: number, size: number): Promise<POISearchModel[]>;
+    searchPOIByPlaceName(placeName: string, size: number): Promise<POISearchModel[]>;
 
     // Buscar una ruta entre dos POI
     searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel>;

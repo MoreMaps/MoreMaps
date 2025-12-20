@@ -56,7 +56,7 @@ export class VehicleDB implements VehicleRepository {
 
             // Error desconocido
             console.error('Error creando vehículo: ', error);
-            throw new DBAccessError(error as string);
+            throw new DBAccessError();
         }
     }
 
@@ -81,7 +81,7 @@ export class VehicleDB implements VehicleRepository {
             }
         } catch(error) {
             console.error("ERROR de Firebase: " + error);
-            throw new DBAccessError(error as string);
+            throw new DBAccessError();
         }
 
         return list;
@@ -193,7 +193,7 @@ export class VehicleDB implements VehicleRepository {
         } catch (error: any) {
             // Loguear error de Firebase
             console.error("ERROR de Firebase: " + error);
-            throw new DBAccessError(error);
+            throw new DBAccessError();
         }
 
         // Si no se han podido obtener, el vehículo solicitado no existe.
@@ -229,7 +229,7 @@ export class VehicleDB implements VehicleRepository {
                 case 'not-found':
                     throw new MissingVehicleError();
             }
-            throw new DBAccessError(error);
+            throw new DBAccessError();
         }
     }
 
@@ -270,5 +270,9 @@ export class VehicleDB implements VehicleRepository {
         if (consumoMedio)
             if (consumoMedio < MIN_CONSUMO_MEDIO)
                 throw new Error(`El consumo medio debe ser un número positivo y mayor o igual que ${MIN_CONSUMO_MEDIO}`)
+
+        if (vehiculo.matricula && /[aeiou]/i.test(vehiculo.matricula)) {
+            throw new Error(`La matrícula no puede contener vocales`);
+        }
     }
 }

@@ -108,6 +108,17 @@ fdescribe('Pruebas sobre usuarios', () => {
         }
     });
 
+    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
+    afterAll(async () => {
+        try {
+            if (auth.currentUser) await userService.logout();
+            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de vehicle.spec.ts.');
+            else { console.info('Logout en afterAll de vehicle.spec.ts funcionó correctamente.'); }
+        } catch (error) {
+            console.error(error);
+        }
+    })
+
 
 
     describe('HU101: Registrar Usuario', () => {

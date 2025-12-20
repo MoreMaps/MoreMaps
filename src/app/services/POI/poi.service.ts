@@ -20,7 +20,7 @@ export class POIService {
      * @param poi El resultado de búsqueda de la API; incluye latitud, longitud y topónimo.
      * @returns El POI creado.
      * @throws SessionNotActiveError si la sesión no está activa.
-     * @throws POIAlreadyExistsError si el POI existe.
+     * @throws POIAlreadyExistsError si el POI ya existe.
      */
     async createPOI(poi: POISearchModel): Promise<POIModel> {
         // Comprueba que la sesión está activa
@@ -52,7 +52,7 @@ export class POIService {
             throw new SessionNotActiveError();
         }
 
-        // Obtener lista llamando a Firebase
+        // Obtener lista de POI
         let poiList = await this.poiDb.getPOIList();
         if (poiList.length > 0) {
             poiList.sort((a, b) => {

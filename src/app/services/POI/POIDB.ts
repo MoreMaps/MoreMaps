@@ -24,7 +24,7 @@ export class POIDB implements POIRepository {
 
     /**
      * Registra un punto de interés (POI) en la base de datos.
-     * @param poi datos del POI (latitud, longitud, topónimo, geohash)
+     * @param poi Datos del POI (latitud, longitud, topónimo, geohash).
      */
     async createPOI(poi: POIModel): Promise<POIModel> {
         try{
@@ -44,7 +44,7 @@ export class POIDB implements POIRepository {
 
     /**
      * Lee los datos de la base de datos correspondientes al punto de interés (POI) con el geohash especificado.
-     * @param geohash geohash del POI
+     * @param geohash Geohash del POI.
      */
     async getPOI(geohash: Geohash): Promise<POIModel> {
         try {
@@ -65,8 +65,8 @@ export class POIDB implements POIRepository {
 
     /**
      * Actualiza los datos de la base de datos correspondientes al punto de interés (POI) con el geohash especificado.
-     * @param geohash geohash del POI
-     * @param update datos a actualizar del POI
+     * @param geohash Geohash del POI.
+     * @param update Partial con los datos a actualizar.
      */
     async updatePOI(geohash: Geohash, update: Partial<POIModel>): Promise<boolean> {
         try {
@@ -86,7 +86,7 @@ export class POIDB implements POIRepository {
 
     /**
      * Elimina los datos de la base de datos correspondientes al punto de interés (POI) con el geohash especificado.
-     * @param geohash geohash del POI
+     * @param geohash Geohash del POI.
      */
     async deletePOI(geohash: Geohash): Promise<boolean> {
         try {

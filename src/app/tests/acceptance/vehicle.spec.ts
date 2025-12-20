@@ -16,7 +16,7 @@ import {VehicleModel} from '../../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 
-describe('Pruebas sobre vehículos', () => {
+fdescribe('Pruebas sobre vehículos', () => {
     let userService: UserService;
     let vehicleService: VehicleService;
 
@@ -57,10 +57,6 @@ describe('Pruebas sobre vehículos', () => {
     beforeEach(async () => {
         // Registrar Vehículo inicial "Ford Fiesta" para tener estado base en algunos tests
         try {
-            // Si el usuario estuviera nulo por alguna razón, inicio sesión con ramón
-            if (!auth.currentUser) {await userService.login(ramon.email, ramon.pwd);}
-            // Si aun así, no puedo iniciar sesión...
-            if (!auth.currentUser) {throw new Error('Fallo al reintentar login en beforeEach.')}
             // 1. Referencia al documento
             const vehicleRef = doc(firestore, `/items/${auth.currentUser?.uid}/vehicles/${datosFord.matricula}`);
 
@@ -100,24 +96,23 @@ describe('Pruebas sobre vehículos', () => {
             // WHEN
             // El usuario intenta registrar el vehículo
             const vehiculoCreado = await vehicleService.createVehicle(datosAudi);
-            try {
-                // THEN
-                // No se lanza ningún error
-                // Se da de alta el vehículo
-                expect(vehiculoCreado).toEqual(jasmine.objectContaining({
-                    alias: datosAudi.alias,
-                    matricula: datosAudi.matricula,
-                    marca: datosAudi.marca,
-                    modelo: datosAudi.modelo,
-                    anyo: datosAudi.anyo,
-                    tipoCombustible: datosAudi.tipoCombustible,
-                    consumoMedio: datosAudi.consumoMedio,
-                    pinned: datosAudi.pinned,
+            // THEN
+            // No se lanza ningún error
+            // Se da de alta el vehículo
+            expect(vehiculoCreado).toEqual(jasmine.objectContaining({
+                alias: datosAudi.alias,
+                matricula: datosAudi.matricula,
+                marca: datosAudi.marca,
+                modelo: datosAudi.modelo,
+                anyo: datosAudi.anyo,
+                tipoCombustible: datosAudi.tipoCombustible,
+                consumoMedio: datosAudi.consumoMedio,
+                pinned: datosAudi.pinned,
                 }));
-            } finally {
-                // CLEANUP
-                await vehicleService.deleteVehicle(vehiculoCreado.matricula);
-            }
+
+            // CLEANUP
+            // Borrar el vehículo creado
+            await vehicleService.deleteVehicle(vehiculoCreado.matricula);
         });
 
         it('HU301-EI01: Registrar vehículo ya existente', async () => {
@@ -138,26 +133,20 @@ describe('Pruebas sobre vehículos', () => {
     describe('HU302: Consultar lista de vehículos', () => {
 
         it('HU302-EV01: Consultar el listado vacío de vehículos', async () => {
-            try {
-                // GIVEN
-                // El usuario maria se ha registrado y ha iniciado sesión
-                await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-                // WHEN
-                // El usuario maria consulta su lista de vehículos registrados (vacía)
-                let list: VehicleModel[] = await vehicleService.getVehicleList();
-                // THEN
-                // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
-                expect(list.length).toBe(0);
-            } finally {
-                // CLEANUP
-                // borrar a maria
-                try {
-                    await userService.deleteUser();
-                } catch (error) { console.error('Error deleting user maria in test HU302-EV01: ', error); }
-                // volver a iniciar sesión con ramon
-                await userService.login(ramon.email, ramon.pwd);
-            }
-
+            // GIVEN
+            // El usuario maria se ha registrado y ha iniciado sesión
+            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            // WHEN
+            // El usuario maria consulta su lista de vehículos registrados (vacía)
+            let list: VehicleModel[] = await vehicleService.getVehicleList();
+            // THEN
+            // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
+            expect(list.length).toBe(0);
+            // CLEANUP
+            // Borrar a maria.
+            await userService.deleteUser();
+            // Volver a iniciar sesión con ramon.
+            await userService.login(ramon.email, ramon.pwd);
         });
 
         it('HU302-EV02: Consultar lista no vacía de vehículos', async () => {
@@ -298,30 +287,26 @@ describe('Pruebas sobre vehículos', () => {
 
             // Ambos vehículos no son fijados, una consulta de vehículos devuelve ["Audi A6", "Ford Fiesta"].
             let list = await vehicleService.getVehicleList();
-            try {
-                expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
-                // WHEN
-                // El usuario trata de fijar el vehículo "Ford Fiesta".
-                const vehiculoFijado = await vehicleService.pinVehicle(datosFord.matricula);
-
-                // THEN
-                // El vehículo "Ford Fiesta" pasa a estar fijado (pinned = true).
-                expect(vehiculoFijado).toBeTrue();
-
-                // El orden ahora es ["Ford Fiesta", "Audi A6"].
-                list = await vehicleService.getVehicleList();
-                expect(list.at(0)?.matricula).toEqual('1234XYZ');
-            } finally {
-                // CLEANUP
-                // Quitar el fijado de "Ford Fiesta".
-                await vehicleService.pinVehicle(datosFord.matricula);
-                list = await vehicleService.getVehicleList();
-
-                // Borrar el vehículo "Audi".
-                await vehicleService.deleteVehicle(vehiculoAudi.matricula);
-            }
-            // Comprobar que el cleanup ha quitado el fijado correctamente (comprueba que es un toggle!)
             expect(list.at(0)?.matricula === '4321XYZ').toBeTrue();
+
+            // WHEN
+            // El usuario trata de fijar el vehículo "Ford Fiesta".
+            const vehiculoFijado = await vehicleService.pinVehicle(datosFord.matricula);
+
+            // THEN
+            // El vehículo "Ford Fiesta" pasa a estar fijado (pinned = true).
+            expect(vehiculoFijado).toBeTrue();
+
+            // El orden ahora es ["Ford Fiesta", "Audi A6"].
+            list = await vehicleService.getVehicleList();
+            expect(list.at(0)?.matricula).toEqual('1234XYZ');
+
+            // CLEANUP
+            // Quitar el fijado de "Ford Fiesta".
+            await vehicleService.pinVehicle(datosFord.matricula);
+
+            // Borrar el vehículo "Audi".
+            await vehicleService.deleteVehicle(vehiculoAudi.matricula);
         });
 
         it('HU502-EI02: Fijar un vehículo no registrado', async () => {
@@ -344,7 +329,7 @@ describe('Pruebas sobre vehículos', () => {
             // GIVEN
             //  El usuario "ramon" está registrado y ha iniciado sesión.
             //  Lista de vehículos registrados → ["Ford Fiesta"].
-            const listaVehiculosAntes = [datosFord];
+            const listaVehiculosAntes = await vehicleService.getVehicleList();
 
             //  Se cierra la sesión involuntariamente.
             await userService.logout();

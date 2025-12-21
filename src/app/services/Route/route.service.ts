@@ -30,10 +30,10 @@ export class RouteService {
      * @param transporte
      * @param consumoMedio
      * @param tipoCombustible
-     * @throws {ElectricityPriceNotFoundError} Si la llamada a electricityPriceService falla.
-     * @throws {FuelPriceNotFoundError} Si la llamada a fuelPriceService falla.
-     * @throws {APIAccessError} Si hay un error accediendo a la API.
-     * @throws {InvalidDataError} Si faltan parámetros o son incorrectos.
+     * @throws ElectricityPriceNotFoundError Si la llamada a electricityPriceService falla.
+     * @throws FuelPriceNotFoundError Si la llamada a fuelPriceService falla.
+     * @throws APIAccessError Si hay un error accediendo a la API.
+     * @throws InvalidDataError Si faltan parámetros o son incorrectos.
      */
     async getRouteCost(distancia: number, transporte: TIPO_TRANSPORTE, consumoMedio?: number,
                        tipoCombustible?: FUEL_TYPE): Promise<RouteCostResult> {
@@ -94,8 +94,8 @@ export class RouteService {
      * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.).
      * @param modelo Resultado de la búsqueda (duración, distancia de la ruta).
      * @returns El RouteModel guardado.
-     * @throws SessionNotActiveError si la sesión no está activa.
-     * @throws RouteAlreadyExistsError si ya existe la ruta.
+     * @throws SessionNotActiveError Si la sesión no está activa.
+     * @throws RouteAlreadyExistsError Si ya existe la ruta.
      */
     async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa

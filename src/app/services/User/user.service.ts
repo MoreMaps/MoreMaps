@@ -83,6 +83,7 @@ export class UserService {
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
         }
+
         // Cierra sesión
         return await this.userDb.logoutUser();
     }
@@ -99,6 +100,11 @@ export class UserService {
             throw new SessionNotActiveError();
         }
 
+        // Comprueba que el usuario existe
+        const curr = await this.userDb.getCurrentUser();
+        if (!await this.userDb.userExists(curr.email)) {
+            throw new UserNotFoundError();
+        }
 
         // Borramos el perfil de Auth y el documento de 'users'
         // TODO:  en it06 - borrar /items

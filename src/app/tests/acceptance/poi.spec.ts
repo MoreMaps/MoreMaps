@@ -21,7 +21,7 @@ import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
 
-fdescribe('Pruebas sobre POI', () => {
+describe('Pruebas sobre POI', () => {
     let userService: UserService;
     let poiService: POIService;
     let mapSearchService: MapSearchService;

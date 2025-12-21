@@ -24,8 +24,7 @@ import {MapSearchService} from '../../services/map-search-service/map-search.ser
 
 // Rutas
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {RouteCostResult, RouteService} from '../../services/Route/route.service';
-import {Geometry} from 'geojson';
+import {RouteService} from '../../services/Route/route.service';
 import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
 import {RouteDB} from '../../services/Route/RouteDB';
 import {FUEL_TYPE} from '../../data/VehicleModel';
@@ -35,11 +34,10 @@ import {WrongParamsError} from '../../errors/WrongParamsError';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 import {RouteResultModel} from '../../data/RouteResultModel';
-import {MissingRouteError} from '../../errors/Route/MissingRouteError';
 import {InvalidDataError} from '../../errors/InvalidDataError';
 
 // Firestore
-import {deleteDoc, doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';
+import {deleteDoc, doc, Firestore} from '@angular/fire/firestore';
 
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 describe('Pruebas sobre rutas', () => {
@@ -93,7 +91,7 @@ describe('Pruebas sobre rutas', () => {
         mapSearchService = TestBed.inject(MapSearchService);
         auth = TestBed.inject(Auth);
 
-        // TODO: QUITAR EN MERGE
+        // TODO: QUITAR EN IT05
         firestore = TestBed.inject(Firestore);
 
         // 1. Iniciar sesión

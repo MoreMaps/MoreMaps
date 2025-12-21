@@ -16,7 +16,7 @@ import {VehicleModel} from '../../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 
-fdescribe('Pruebas sobre vehículos', () => {
+describe('Pruebas sobre vehículos', () => {
     let userService: UserService;
     let vehicleService: VehicleService;
 

@@ -6,8 +6,6 @@ import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {DBAccessError} from '../../errors/DBAccessError';
-import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
-import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 
 @Injectable({
     providedIn: 'root'
@@ -16,48 +14,59 @@ export class RouteDB implements RouteRepository {
     private auth = inject(Auth);
     private firestore = inject(Firestore);
 
-    async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
-        this.safetyChecks();
-
-        const userUid = this.auth.currentUser!.uid;
-        const path = `items/${userUid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
+    /**
+     * Crea una ruta nueva.
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
+     * @param matricula Matrícula del vehículo (opcional)
+     * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.)
+     * @param modelo Resultado de la búsqueda (duración, distancia de la ruta)
+     */
+    async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
 
         try{
             // Referencia al documento
             const routeDocRef = doc(this.firestore, path);
 
-            // Obtener el snapshot para ver si existe
-            const docSnap = await getDoc(routeDocRef);
-
-            // Si existe, lanzamos el error
-            if (docSnap.exists()) throw new RouteAlreadyExistsError();
-
-            // Si no existe, procedemos a guardar
+            // Crear nuevo RouteModel
             const route = new RouteModel(origen, destino, transporte, preferencia, modelo?.distancia,
                 modelo?.tiempo, '', false, matricula);
+
             await setDoc(routeDocRef, route.toJSON());
             return route;
-        } catch(error: any) {
-            // Si el error es de Firebase, loguearlo
-            if (error.code) {
-                console.error("ERROR de Firebase: " + error);
-                throw new DBAccessError();
-            }
-            // Si no, es un error propio y se puede propagar
-            throw error;
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
         }
     }
 
+    /**
+     * Borra una ruta concreta.
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
+     * @param matricula Matrícula del vehículo (opcional)
+     */
     async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
         return false;
     }
 
     /**
-     * Comprobación de sesión activa.
-     * @private
+     * Comprueba si existe una ruta como la que se va a guardar
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
+     * @param matricula Matrícula del vehículo (opcional)
+     * @returns Promise con true si existe, false si no existe
      */
-    private safetyChecks() {
-        const currentUser = this.auth.currentUser!.uid;
-        if (!currentUser) throw new SessionNotActiveError();
+    async routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
+        const docRef = doc(this.firestore, path);
+        const snap = await getDoc(docRef);
+        return snap.exists();
     }
 }

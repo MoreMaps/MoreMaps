@@ -7,7 +7,8 @@ export class FuelPriceService {
     private fuelPriceAPI: FuelPriceRepository = inject(FUEL_PRICE_REPOSITORY);
 
     /**
-     * Obtiene el precio del combustible en €/L ó €/Kg.
+     * Obtiene el precio de un tipo de combustible.
+     * @param type Tipo de combustible (ej: "Gasolina")
      */
     async getPrice(type: FUEL_TYPE): Promise<number> {
         const map = await this.fuelPriceAPI.processStations();

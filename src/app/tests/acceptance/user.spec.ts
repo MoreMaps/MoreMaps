@@ -13,7 +13,7 @@ import {Auth} from '@angular/fire/auth';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
-fdescribe('Pruebas sobre usuarios', () => {
+describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
     let firestore: Firestore;

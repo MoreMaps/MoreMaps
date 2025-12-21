@@ -16,26 +16,26 @@ export class VehicleService {
     // HU301 Crear vehículo
     /**
      * Crea un vehículo para el usuario actual.
-     * @param vehicle El VehicleModel con los datos del vehículo.
+     * @param model El VehicleModel con los datos del vehículo.
      * @returns El vehículo creado.
      * @throws SessionNotActiveError si la sesión no está activa.
      * @throws VehicleAlreadyExistsError si el vehículo ya existe.
      * @throws InvalidDataError si los datos no siguen las reglas de negocio.
      */
-    async createVehicle(vehicle: VehicleModel): Promise<VehicleModel> {
+    async createVehicle(model: VehicleModel): Promise<VehicleModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
         }
 
         // Comprueba que el vehículo NO exista
-        if (await this.vehicleDb.vehicleExists(vehicle.matricula)) {
+        if (await this.vehicleDb.vehicleExists(model.matricula)) {
             throw new VehicleAlreadyExistsError();
         }
 
         // Comprueba que los datos son válidos
         try {
-            this.validateVehicle(vehicle, true);
+            this.validateVehicle(model, true);
         }
         catch (error: any) {
             console.error(error);
@@ -43,7 +43,7 @@ export class VehicleService {
         }
 
         // Crear vehículo
-        return this.vehicleDb.createVehicle(vehicle);
+        return this.vehicleDb.createVehicle(model);
     }
 
     // HU302 Consultar lista de vehículos

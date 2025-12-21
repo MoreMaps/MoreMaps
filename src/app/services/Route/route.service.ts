@@ -7,6 +7,9 @@ import {FUEL_TYPE} from '../../data/VehicleModel';
 import {ElectricityPriceService} from '../electricity-price-service/electricity-price-service';
 import {FuelPriceService} from '../fuel-price-service/fuel-price-service';
 import {InvalidDataError} from '../../errors/InvalidDataError';
+import {USER_REPOSITORY, UserRepository} from '../User/UserRepository';
+import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
+import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 
 export interface RouteCostResult {
     cost: number;
@@ -16,7 +19,8 @@ export interface RouteCostResult {
 @Injectable({providedIn: 'root'})
 export class RouteService {
     private routeDb: RouteRepository = inject(ROUTE_REPOSITORY);
-    private electrictyPriceService: ElectricityPriceService = inject(ElectricityPriceService);
+    private userDb: UserRepository = inject(USER_REPOSITORY);
+    private electricityPriceService: ElectricityPriceService = inject(ElectricityPriceService);
     private fuelPriceService: FuelPriceService = inject(FuelPriceService);
 
     // HU402-403: Obtener coste asociado a ruta
@@ -26,7 +30,7 @@ export class RouteService {
      * @param transporte
      * @param consumoMedio
      * @param tipoCombustible
-     * @throws {ElectricityPriceNotFoundError} Si la llamada a electrictyPriceService falla.
+     * @throws {ElectricityPriceNotFoundError} Si la llamada a electricityPriceService falla.
      * @throws {FuelPriceNotFoundError} Si la llamada a fuelPriceService falla.
      * @throws {APIAccessError} Si hay un error accediendo a la API.
      * @throws {InvalidDataError} Si faltan parámetros o son incorrectos.
@@ -63,7 +67,7 @@ export class RouteService {
                 // Coches eléctricos o híbridos
                 if (tipoCombustible === FUEL_TYPE.ELECTRICO || tipoCombustible === FUEL_TYPE.HEV) {
                     // Usamos getElectricityPrice() acorde a tu definición del servicio de electricidad
-                    precio = await this.electrictyPriceService.getPrice();
+                    precio = await this.electricityPriceService.getPrice();
                 }
                 // Otros tipos de coches
                 else {
@@ -81,11 +85,41 @@ export class RouteService {
     }
 
     // HU407: Guardar ruta
+    /**
+     * Crea una ruta nueva.
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @param matricula Matrícula del vehículo (opcional).
+     * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.).
+     * @param modelo Resultado de la búsqueda (duración, distancia de la ruta).
+     * @returns El RouteModel guardado.
+     * @throws SessionNotActiveError si la sesión no está activa.
+     * @throws RouteAlreadyExistsError si ya existe la ruta.
+     */
     async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Comprueba que la ruta NO exista
+        if (await this.routeDb.routeExists(origen, destino, transporte, matricula)) {
+            throw new RouteAlreadyExistsError();
+        }
+
+        // Crea la ruta
         return this.routeDb.createRoute(origen, destino, transporte, preferencia, modelo, matricula);
     }
 
     // HU410: Eliminar ruta
+    /**
+     * Elimina una ruta concreta.
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @param matricula Matrícula del vehículo (opcional).
+     */
     async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
         return false;
     }

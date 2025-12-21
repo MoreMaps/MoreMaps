@@ -12,7 +12,7 @@ import {
     getDocs,
     query,
     setDoc,
-    updateDoc, where,
+    updateDoc,
     writeBatch
 } from '@angular/fire/firestore';
 
@@ -189,9 +189,9 @@ export class VehicleDB implements VehicleRepository {
      * @returns Promise con true si existe, false si no existe
      */
     async vehicleExists(matricula: string): Promise<boolean> {
-        const q = query(collection(this.firestore,
-            `items/${this.auth.currentUser?.uid}/vehicles`), where('matricula', '==', matricula));
-        const res = await getDocs(q);
-        return !res.empty;
+        const path = `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`;
+        const docRef = doc(this.firestore, path);
+        const snap = await getDoc(docRef);
+        return snap.exists();
     }
 }

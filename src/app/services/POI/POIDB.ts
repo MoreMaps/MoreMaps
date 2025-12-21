@@ -9,9 +9,9 @@ import {
     doc,
     Firestore,
     getDoc,
-    getDocs, query,
+    getDocs,
     setDoc,
-    updateDoc, where
+    updateDoc
 } from '@angular/fire/firestore';
 import {DBAccessError} from '../../errors/DBAccessError';
 
@@ -154,9 +154,9 @@ export class POIDB implements POIRepository {
      * @returns Promise con true si existe, false si no existe
      */
     async poiExists(geohash: Geohash): Promise<boolean> {
-        const q = query(collection(this.firestore,
-            `items/${this.auth.currentUser?.uid}/pois`), where('geohash', '==', geohash));
-        const res = await getDocs(q);
-        return !res.empty;
+        const path = `items/${this.auth.currentUser?.uid}/pois/${geohash}`;
+        const docRef = doc(this.firestore, path);
+        const snap = await getDoc(docRef);
+        return snap.exists();
     }
 }

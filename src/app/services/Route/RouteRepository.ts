@@ -12,4 +12,7 @@ export interface RouteRepository {
                 modelo?: RouteResultModel, matricula?: string): Promise<RouteModel>;
 
     deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean>;
+
+    // Métodos auxiliares
+    routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean>;
 }

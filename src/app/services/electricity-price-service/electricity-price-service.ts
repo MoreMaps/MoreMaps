@@ -7,6 +7,7 @@ export class ElectricityPriceService {
 
     /**
      * Obtiene el precio de la electricidad en €/kWh.
+     * @returns El precio de la electricidad.
      */
     async getPrice(): Promise<number> {
         return this.electricityPriceAPI.getPrice();

@@ -156,7 +156,7 @@ export class MapSearchAPI implements MapSearchRepository {
      * @private
      * @returns Array de POISearchModel (latitud, longitud, topónimo)
      */
-    private obtainDataFromGeoJsonFeatures(geoJsonObject: any, num: number): POISearchModel[] {
+    private async obtainDataFromGeoJsonFeatures(geoJsonObject: any, num: number): Promise<POISearchModel[]> {
         // Validar que existan features
         const features = geoJsonObject?.features;
         if (!features?.length || features.length === 0) {

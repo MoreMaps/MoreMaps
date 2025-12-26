@@ -38,6 +38,17 @@ import {InvalidDataError} from '../../errors/InvalidDataError';
 
 // Firestore
 import {deleteDoc, doc, Firestore} from '@angular/fire/firestore';
+import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
+import {
+    ELECTRICITY_PRICE_REPOSITORY,
+    ELECTRICITY_PRICE_SOURCE
+} from '../../services/electricity-price-service/ElectricityPriceRepository';
+import {ElectricityPriceCache} from '../../services/electricity-price-service/ElectricityPriceCache';
+import {ElectricityPriceAPI} from '../../services/electricity-price-service/ElectricityPriceAPI';
+import {FUEL_PRICE_REPOSITORY, FUEL_PRICE_SOURCE} from '../../services/fuel-price-service/FuelPriceRepository';
+import {FuelPriceCache} from '../../services/fuel-price-service/FuelPriceCache';
+import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
+import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
 
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 describe('Pruebas sobre rutas', () => {
@@ -74,11 +85,17 @@ describe('Pruebas sobre rutas', () => {
                 MapSearchService,
                 VehicleService,
                 RouteService,
+                FuelPriceService,
+                ElectricityPriceService,
                 {provide: USER_REPOSITORY, useClass: UserDB},
                 {provide: POI_REPOSITORY, useClass: POIDB},
                 {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
                 {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
                 {provide: ROUTE_REPOSITORY, useClass: RouteDB},
+                { provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceCache },
+                { provide: ELECTRICITY_PRICE_SOURCE, useClass: ElectricityPriceAPI },
+                { provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceCache },
+                { provide: FUEL_PRICE_SOURCE, useClass: FuelPriceAPI },
                 appConfig.providers],
             teardown: {destroyAfterEach: false}
         }).compileComponents();
@@ -232,7 +249,7 @@ describe('Pruebas sobre rutas', () => {
 
             // WHEN
             // El usuario pide el coste (precio) de la ruta "A-B".
-            const coste = await routeService.getRouteCost(foundRoute.distancia, datosRutaC.transporte,
+            const coste = await routeService.getRouteCost(foundRoute, datosRutaC.transporte,
                 datosFord.consumoMedio, datosFord.tipoCombustible as FUEL_TYPE);
 
             // THEN
@@ -249,7 +266,13 @@ describe('Pruebas sobre rutas', () => {
 
             // WHEN
             // El usuario pide el coste (precio) de una ruta inválida.
-            await expectAsync(routeService.getRouteCost(-1, TIPO_TRANSPORTE.VEHICULO,
+            const genericGeometry = {
+                type: "LineString",
+                coordinates: [[0, 0], [0, 0]]
+            } as any;
+            const falseResult = new RouteResultModel(-1, -1, genericGeometry);
+
+            await expectAsync(routeService.getRouteCost(falseResult, TIPO_TRANSPORTE.VEHICULO,
                 datosFord.consumoMedio, datosFord.tipoCombustible as FUEL_TYPE ))
                 .toBeRejectedWith(new InvalidDataError());
 
@@ -275,7 +298,7 @@ describe('Pruebas sobre rutas', () => {
 
             // WHEN
             // El usuario pide el coste (en kCal) de la ruta "A-B". Se asumen 75 kCal/km.
-            const coste = await routeService.getRouteCost(foundRoute.distancia, datosRutaP.transporte);
+            const coste = await routeService.getRouteCost(foundRoute, datosRutaP.transporte);
 
             // THEN
             // No se lanza ningún error. Se devuelve el coste (en kCal) de la ruta (superior a 0).
@@ -290,7 +313,13 @@ describe('Pruebas sobre rutas', () => {
 
             // WHEN
             // El usuario pide el coste (kCal) de una ruta inválida.
-            await expectAsync(routeService.getRouteCost(-1, TIPO_TRANSPORTE.A_PIE))
+            const genericGeometry = {
+                type: "LineString",
+                coordinates: [[0, 0], [0, 0]]
+            } as any;
+            const falseResult = new RouteResultModel(-1, -1, genericGeometry);
+
+            await expectAsync(routeService.getRouteCost(falseResult, TIPO_TRANSPORTE.A_PIE))
                 .toBeRejectedWith(new InvalidDataError());
 
             // THEN

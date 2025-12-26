@@ -1,20 +1,20 @@
 import {inject, Injectable} from '@angular/core';
-import { FuelPriceRepository, MapaCombustible } from './FuelPriceRepository';
+import {FUEL_PRICE_SOURCE, FuelPriceRepository, MapaCombustible} from './FuelPriceRepository';
 import {FUEL_TYPE} from '../../data/VehicleModel';
-import {FuelPriceAPI} from './FuelPriceAPI';
+
 
 @Injectable({
     providedIn: 'root'
 })
 export class FuelPriceCache implements FuelPriceRepository {
-    private api: FuelPriceRepository = inject(FuelPriceAPI);
+    private source: FuelPriceRepository = inject(FUEL_PRICE_SOURCE);
 
     // Mapa guardado en caché
     private mapaPrecios$: MapaCombustible | null = null;
     private lastFetchTime: number = 0;
 
     async getPrice(type: FUEL_TYPE, map: MapaCombustible): Promise<number> {
-        return this.api.getPrice(type, map);
+        return this.source.getPrice(type, map);
     }
 
     /**
@@ -32,7 +32,7 @@ export class FuelPriceCache implements FuelPriceRepository {
         if (!this.mapaPrecios$ || this.cacheUpdateNecessary()) {
             console.log('🌐 Descargando datos de la API pública...');
             this.lastFetchTime = now;
-            this.mapaPrecios$ = await this.api.processStations();
+            this.mapaPrecios$ = await this.source.processStations();
             console.log(this.mapaPrecios$);
         }
         else{

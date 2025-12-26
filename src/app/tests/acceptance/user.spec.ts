@@ -251,6 +251,9 @@ describe('Pruebas sobre usuarios', () => {
             // THEN
             //  se elimina la cuenta
             expect(usuarioBorrado).toBeTrue();
+
+            //  el usuario ha cerrado la sesión
+            expect(auth.currentUser).toBe(null);
         });
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {

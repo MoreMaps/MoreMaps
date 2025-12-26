@@ -8,7 +8,12 @@ import {LatitudeRangeError} from '../../errors/POI/LatitudeRangeError';
 import {LongitudeRangeError} from '../../errors/POI/LongitudeRangeError';
 import {CoordsNotFoundError} from '../../errors/POI/CoordsNotFoundError';
 import {PlaceNameNotFoundError} from '../../errors/POI/PlaceNameNotFoundError';
+import {WrongParamsError} from '../../errors/WrongParamsError';
+import {GeohashDecoder} from '../../utils/geohashDecoder';
+import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
+import {InvalidDataError} from '../../errors/InvalidDataError';
 
+export type coords = [number, number];
 
 @Injectable({ providedIn: 'root' })
 export class MapSearchService {
@@ -58,13 +63,34 @@ export class MapSearchService {
 
     // HU401, HU404-406: Buscar una ruta según preferencia entre dos POI
     /**
-     * Busca una ruta entre 2 POI. FALTA POR REFACTORIZAR
-     * @param origen
-     * @param destino
-     * @param transporte
-     * @param preferencia
+     * Busca una ruta entre 2 POI.
+     * @param origen origen de la ruta
+     * @param destino destino de la ruta
+     * @param transporte transporte escogido
+     * @param preferencia preferencia escogida
+     * @throws WrongParamsError si algún parámetro no es correcto
+     * @throws ImpossibleRouteError si la ruta es imposible
      */
     async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
-        return this.mapSearchApi.searchRoute(origen, destino, transporte, preferencia);
+        // Comprobar que los parametros están bien
+        if (!origen || !destino || !transporte || !preferencia) {
+            throw new WrongParamsError('ruta');
+        }
+
+        // Obtener [lon, lan] de origen y destino que espera ORS.
+        const coordsOrigen: coords = GeohashDecoder.decodeGeohash(origen);
+        const coordsDestino: coords = GeohashDecoder.decodeGeohash(destino);
+
+        // Realizar la petición.
+        // Si la ruta devuelta es nula, se considera imposible.
+        const ruta = await this.mapSearchApi.searchRoute(coordsOrigen, coordsDestino, transporte, preferencia);
+        if (!ruta) {
+            throw new ImpossibleRouteError();
+        }
+        // Si la distancia o el tiempo son cero o negativos, la ruta no es válida porque no tiene coste alguno.
+        if (ruta.distancia < 0 || ruta.tiempo < 0) {
+            throw new InvalidDataError();
+        }
+        return ruta;
     }
 }

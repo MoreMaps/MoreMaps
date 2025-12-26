@@ -26,7 +26,7 @@ export class RouteService {
     // HU402-403: Obtener coste asociado a ruta
     /**
      * Obtiene el coste (en € o kCal) asociado a una ruta.
-     * @param distancia
+     * @param ruta
      * @param transporte
      * @param consumoMedio
      * @param tipoCombustible
@@ -35,24 +35,24 @@ export class RouteService {
      * @throws APIAccessError Si hay un error accediendo a la API.
      * @throws InvalidDataError Si faltan parámetros o son incorrectos.
      */
-    async getRouteCost(distancia: number, transporte: TIPO_TRANSPORTE, consumoMedio?: number,
+    async getRouteCost(ruta: RouteResultModel, transporte: TIPO_TRANSPORTE, consumoMedio?: number,
                        tipoCombustible?: FUEL_TYPE): Promise<RouteCostResult> {
-        if( distancia < 0 ) {
-            console.error('La distancia de la ruta es negativa.');
+        if (ruta.distancia < 0 || ruta.tiempo < 0 ){
             throw new InvalidDataError();
         }
 
-        const distanciaKm = distancia / 1000; // en km
+        const tiempoH = ruta.tiempo / 3600;         // tiempo en horas
+        const distanciaKm = ruta.distancia / 1000;  // distancia en km
 
-        const kCalPie = 75;     // kCal/km a pie
-        const kCalBici = 23;    // kCal/km en bici
+        const kCalPie = 200;                        // kCal/h a pie
+        const kCalBici = 400;                       // kCal/h en bici
 
         switch (transporte) {
             case TIPO_TRANSPORTE.A_PIE:
-                return { cost: distanciaKm * kCalPie, unit: 'kCal' };
+                return { cost: tiempoH * kCalPie, unit: 'kCal' };
 
             case TIPO_TRANSPORTE.BICICLETA:
-                return { cost: distanciaKm * kCalBici, unit: 'kCal' };
+                return { cost: tiempoH * kCalBici, unit: 'kCal' };
 
             case TIPO_TRANSPORTE.VEHICULO:
                 // Si faltan datos, se devuelve 0

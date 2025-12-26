@@ -3,12 +3,13 @@ import {UserRepository} from './UserRepository';
 import {inject, Injectable} from '@angular/core';
 import {
     Auth,
-    createUserWithEmailAndPassword,
+    createUserWithEmailAndPassword, deleteUser,
     signInWithEmailAndPassword,
     updateProfile, validatePassword
 } from '@angular/fire/auth';
 import {collection, deleteDoc, doc, Firestore, getDoc, getDocs, query, setDoc, where} from '@angular/fire/firestore';
 import {DBAccessError} from '../../errors/DBAccessError';
+import {ReauthNecessaryError} from '../../errors/User/ReauthNecessaryError';
 
 @Injectable({
     providedIn: 'root'
@@ -47,20 +48,27 @@ export class UserDB implements UserRepository {
     /**
      * Borra el usuario autenticado.
      * @returns Promise con true si se ha borrado el usuario
+     * @throws ReauthNecessaryError si el token de sesión del usuario es demasiado antiguo (>5 minutos)
      */
     async deleteAuthUser(): Promise<boolean> {
         const user = this.auth.currentUser;
 
         try {
+            await deleteUser(user!);
+
             // Borrar de Firestore
             const userDocRef = doc(this.firestore, `users/${user?.uid}`);
             await deleteDoc(userDocRef);
 
             // Borra de Auth y cierra la sesión automáticamente
-            await user!.delete();
             return true;
         }
         catch (error: any) {
+            if (error.code === 'auth/requires-recent-login') {
+                console.warn('El usuario necesita re-autenticarse para borrar la cuenta.');
+                throw new ReauthNecessaryError();
+            }
+
             // Ha ocurrido un error inesperado en Firebase
             console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();

@@ -1,15 +1,14 @@
-import {inject, Injectable} from '@angular/core';
-import { ElectricityPriceRepository } from './ElectricityPriceRepository';
-import {ElectricityPriceAPI} from './ElectricityPriceAPI';
+import { inject, Injectable } from '@angular/core';
+import { ElectricityPriceRepository, ELECTRICITY_PRICE_SOURCE } from './ElectricityPriceRepository';
 
 @Injectable({
     providedIn: 'root'
 })
 export class ElectricityPriceCache implements ElectricityPriceRepository {
-    private api: ElectricityPriceRepository = inject(ElectricityPriceAPI);
+    private source: ElectricityPriceRepository = inject(ELECTRICITY_PRICE_SOURCE);
 
     // Precio guardado en caché
-    private precio$: number = 0;
+    private cachedPrice: number | null = null;
     private lastFetchTime: number = 0;
 
     /**
@@ -24,15 +23,15 @@ export class ElectricityPriceCache implements ElectricityPriceRepository {
 
         // Verificar si existe caché y si no ha caducado
         // todo: eliminar logs
-        if (!this.precio$ || this.cacheUpdateNecessary()) {
+        if (!this.cachedPrice || this.cacheUpdateNecessary()) {
             console.log('🌐 Descargando datos de la API (electricidad)...');
-            this.precio$ = await this.api.getPrice();
+            this.cachedPrice = await this.source.getPrice();
             this.lastFetchTime = now;
         }
         else{
             console.log('⚡ Recuperando datos de caché (electricidad)...');
         }
-        return this.precio$;
+        return this.cachedPrice;
     }
 
     /**
@@ -41,8 +40,7 @@ export class ElectricityPriceCache implements ElectricityPriceRepository {
      */
     private cacheUpdateNecessary(): boolean {
         const now = new Date();
-        const startOfCurrentHour = new Date(now);
-        startOfCurrentHour.setMinutes(0, 0, 0);
+        const startOfCurrentHour = new Date(now.setMinutes(0, 0, 0));
         return this.lastFetchTime < startOfCurrentHour.getTime();
     }
 }

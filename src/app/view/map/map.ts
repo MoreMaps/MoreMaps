@@ -54,6 +54,18 @@ import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-
 import {PointConfirmationDialog} from '../navbar/point-confirmation-dialog/point-confirmation-dialog';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 import {FUEL_TYPE, VehicleModel} from '../../data/VehicleModel';
+import {GeohashDecoder} from '../../utils/geohashDecoder';
+import {
+    ELECTRICITY_PRICE_REPOSITORY,
+    ELECTRICITY_PRICE_SOURCE
+} from '../../services/electricity-price-service/ElectricityPriceRepository';
+import {ElectricityPriceCache} from '../../services/electricity-price-service/ElectricityPriceCache';
+import {ElectricityPriceAPI} from '../../services/electricity-price-service/ElectricityPriceAPI';
+import {FUEL_PRICE_REPOSITORY, FUEL_PRICE_SOURCE} from '../../services/fuel-price-service/FuelPriceRepository';
+import {FuelPriceCache} from '../../services/fuel-price-service/FuelPriceCache';
+import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
+import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
+import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
 
 // --- MINI-COMPONENTE SPINNER ---
 @Component({
@@ -129,10 +141,16 @@ const destinationIcon = L.icon({
         POIService,
         VehicleService,
         RouteService,
+        FuelPriceService,
+        ElectricityPriceService,
         {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
         {provide: POI_REPOSITORY, useClass: POIDB},
         {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
-        {provide: ROUTE_REPOSITORY, useClass: RouteDB}
+        {provide: ROUTE_REPOSITORY, useClass: RouteDB},
+        { provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceCache },
+        { provide: ELECTRICITY_PRICE_SOURCE, useClass: ElectricityPriceAPI },
+        { provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceCache },
+        { provide: FUEL_PRICE_SOURCE, useClass: FuelPriceAPI },
     ],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {
@@ -299,6 +317,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         this.setupMapClickHandler();
         this.setupLocationEventHandlers();
+
+        this.map.setView([39.9864, -0.0513], 13); // vista por defecto
     }
 
     private handleInitialLocationLogic() {
@@ -408,12 +428,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
             try{
                 if( transport == TIPO_TRANSPORTE.A_PIE || transport == TIPO_TRANSPORTE.BICICLETA ) {
-                    coste = await this.routeService.getRouteCost(result.distancia, transport as TIPO_TRANSPORTE);
+                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE);
                 }
                 else {
                     const datosVehiculo: VehicleModel = await this.vehicleService.readVehicle(matricula!);
 
-                    coste = await this.routeService.getRouteCost(result.distancia, transport as TIPO_TRANSPORTE,
+                    coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE,
                         datosVehiculo.consumoMedio, datosVehiculo.tipoCombustible as FUEL_TYPE)
                 }
             } catch (error) {
@@ -438,8 +458,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 matricula: matricula,
                 vehicleAlias: undefined
             };
-            const startCoords = MapSearchAPI.decodeGeohash(startHash);
-            const endCoords = MapSearchAPI.decodeGeohash(endHash);
+            const startCoords = GeohashDecoder.decodeGeohash(startHash);
+            const endCoords = GeohashDecoder.decodeGeohash(endHash);
 
             this.routeStartMarker = L.marker([startCoords[1], startCoords[0]], {
                 icon: customIcon
@@ -616,10 +636,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 this.loadingSnackBarRef.dismiss();
             }
 
-            console.error('Location error:', e);
-
             const snackRef = this.snackBar.open(
-                'Error al obtener ubicación: ' + e.message,
+                'No se ha podido obtener la ubicación actual.',
                 'Reintentar',
                 {
                     duration: 10000,
@@ -673,7 +691,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             setView: false,
             maxZoom: 16,
             watch: false,
-            enableHighAccuracy: true,
+            enableHighAccuracy: false,
             timeout: 10000
         });
     }

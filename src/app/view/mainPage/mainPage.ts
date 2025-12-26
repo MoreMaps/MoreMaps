@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, DestroyRef, inject} from '@angular/core';
 import {Router} from '@angular/router';
 import {MatButton} from '@angular/material/button';
 import {NgOptimizedImage} from '@angular/common';
@@ -6,6 +6,8 @@ import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {LoginDialogComponent} from './login-dialog/login-dialog';
 import {RegisterDialogComponent} from './register-dialog/register-dialog.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
+import {Auth, authState} from '@angular/fire/auth';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'main-page',
@@ -21,12 +23,28 @@ import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 export class MainPageComponent {
     private router = inject(Router);
     private dialog = inject(MatDialog);
+    private auth = inject(Auth);
+    private destroyRef = inject(DestroyRef); // Para no dejar suscripciones
+
+    /**
+     * Impide que el usuario acceda a la página de iniciar sesión / crear cuenta cuando la sesión ya está iniciada.
+     * */
+    ngOnInit() {
+        // Suscribirse a cambios del authState
+        authState(this.auth).pipe(
+            takeUntilDestroyed(this.destroyRef) // Suscribirse hasta que el componente se destruya
+        ).subscribe((user) => {
+            if (user) {
+                // La sesión está iniciada
+                this.router.navigate(['map']);
+            }
+        });
+    }
 
     /**
      * Abre el diálogo de registro.
      */
     openRegisterDialog(): void {
-        console.log('Opening register dialog. Current URL before opening:', this.router.url);
         const dialogRef = this.dialog.open(RegisterDialogComponent, {
             width: '60vw',
             maxWidth: '90vw',
@@ -51,22 +69,10 @@ export class MainPageComponent {
 
         // Subscribe to dialog close to check if registration was successful
         dialogRef.afterClosed().subscribe(result => {
-            console.log('Register dialog closed with result:', result);
             if (result?.switchDialog) {
                 this.openLoginDialog();
             } else if (result?.success) {
-                console.log('Navigation to map triggered from register');
-                console.log('Current URL:', this.router.url);
-                this.router.navigate(['map']).then(success => {
-                    console.log('Navigation result from register:', success);
-                    if (success) {
-                        console.log('Successfully navigated to:', this.router.url);
-                    }
-                }).catch(err => {
-                    console.error('Navigation error from register:', err);
-                });
-            } else {
-                console.log('Register dialog closed without success or switch');
+                this.router.navigate(['map']).then();
             }
         });
     }
@@ -75,7 +81,6 @@ export class MainPageComponent {
      * Abre el diálogo de inicio de sesión
      */
     openLoginDialog(): void {
-        console.log('Opening login dialog. Current URL before opening:', this.router.url);
         const dialogRef = this.dialog.open(LoginDialogComponent, {
             width: '60vw',
             maxWidth: '90vw',
@@ -100,22 +105,10 @@ export class MainPageComponent {
 
         // Subscribe to dialog close to check if login was successful
         dialogRef.afterClosed().subscribe(result => {
-            console.log('Login dialog closed with result:', result);
             if (result?.switchDialog) {
                 this.openRegisterDialog();
             } else if (result?.success) {
-                console.log('Navigation to map triggered from login');
-                console.log('Current URL:', this.router.url);
-                this.router.navigate(['map']).then(success => {
-                    console.log('Navigation result from login:', success);
-                    if (success) {
-                        console.log('Successfully navigated to:', this.router.url);
-                    }
-                }).catch(err => {
-                    console.error('Navigation error from login:', err);
-                });
-            } else {
-                console.log('Login dialog closed without success or switch');
+                this.router.navigate(['map']).then();
             }
         });
     }

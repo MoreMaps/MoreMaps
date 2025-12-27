@@ -189,20 +189,21 @@ describe('Pruebas sobre POI', () => {
             // GIVEN
             // El usuario maria se ha registrado y ha iniciado sesión
             await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            try {
+                // WHEN
+                // El usuario maria consulta su lista de POI registrados
+                let list = await poiService.getPOIList();
 
-            // WHEN
-            // El usuario maria consulta su lista de POI registrados
-            let list = await poiService.getPOIList();
-
-            // THEN
-            // Se devuelve una lista vacía y se indica que no hay POI registrados.
-            expect(list.length).toBe(0);
-
-            // CLEANUP
-            // borrar a maria
-            await userService.deleteUser();
-            // volver a ramon
-            await userService.login(ramon.email, ramon.pwd);
+                // THEN
+                // Se devuelve una lista vacía y se indica que no hay POI registrados.
+                expect(list.length).toBe(0);
+            } finally {
+                // CLEANUP
+                // borrar a maria
+                await userService.deleteUser();
+                // volver a ramon
+                await userService.login(ramon.email, ramon.pwd);
+            }
         });
 
         it('HU203-EV02: Consultar el listado no vacío de POI', async () => {

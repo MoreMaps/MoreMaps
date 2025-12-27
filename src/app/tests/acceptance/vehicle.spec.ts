@@ -136,17 +136,21 @@ describe('Pruebas sobre vehículos', () => {
             // GIVEN
             // El usuario maria se ha registrado y ha iniciado sesión
             await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-            // WHEN
-            // El usuario maria consulta su lista de vehículos registrados (vacía)
-            let list: VehicleModel[] = await vehicleService.getVehicleList();
-            // THEN
-            // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
-            expect(list.length).toBe(0);
-            // CLEANUP
-            // Borrar a maria.
-            await userService.deleteUser();
-            // Volver a iniciar sesión con ramon.
-            await userService.login(ramon.email, ramon.pwd);
+
+            try {
+                // WHEN
+                // El usuario maria consulta su lista de vehículos registrados (vacía)
+                let list: VehicleModel[] = await vehicleService.getVehicleList();
+                // THEN
+                // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
+                expect(list.length).toBe(0);
+            } finally {
+                // CLEANUP
+                // Borrar a maria.
+                await userService.deleteUser();
+                // Volver a iniciar sesión con ramon.
+                await userService.login(ramon.email, ramon.pwd);
+            }
         });
 
         it('HU302-EV02: Consultar lista no vacía de vehículos', async () => {

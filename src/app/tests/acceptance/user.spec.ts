@@ -130,23 +130,24 @@ describe('Pruebas sobre usuarios', () => {
             if (auth.currentUser) {
                 await auth.signOut();
             }
+            try {
+                // WHEN
+                //  el usuario "maria" intenta darse de alta
+                const usuarioCreado: UserModel = await userService
+                    .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
-            // WHEN
-            //  el usuario "maria" intenta darse de alta
-            const usuarioCreado: UserModel = await userService
-                .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-
-            // THEN
-            //  el usuario "maria" se registra correctamente
-            expect(usuarioCreado).toEqual(jasmine.objectContaining({
-                uid: jasmine.any(String),    // UID válido cualquiera
-                email: maria.email,
-                nombre: maria.nombre,
-                apellidos: maria.apellidos,
-            }));
-
-            // LIMPIEZA: la base de datos vuelve al estado inicial
-            await userService.deleteUser();
+                // THEN
+                //  el usuario "maria" se registra correctamente
+                expect(usuarioCreado).toEqual(jasmine.objectContaining({
+                    uid: jasmine.any(String),    // UID válido cualquiera
+                    email: maria.email,
+                    nombre: maria.nombre,
+                    apellidos: maria.apellidos,
+                }));
+            } finally {
+                // LIMPIEZA: la base de datos vuelve al estado inicial
+                await userService.deleteUser();
+            }
         });
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {

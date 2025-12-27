@@ -45,6 +45,44 @@ export class RouteDB implements RouteRepository {
     }
 
     /**
+     * Lee los datos de la base de datos correspondientes a la ruta especificada.
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
+     * @param matricula Matrícula del vehículo (opcional)
+     */
+    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<RouteModel> {
+        throw new Error("Method not implemented.");
+    }
+
+    /**
+     * Actualiza los datos de la base de datos correspondientes a la ruta especificada.
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
+     * @param matricula Matrícula del vehículo (opcional)
+     * @param update Partial con los datos a actualizar.
+     */
+    async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>, matricula?: string): Promise<RouteModel> {
+        throw new Error("Method not implemented.");
+    }
+
+    /**
+     * Devuelve una lista con todas las rutas del usuario actual.
+     */
+    async getRouteList(): Promise<RouteModel[]> {
+        throw new Error("Method not implemented.");
+    }
+
+    /**
+     * Fija la ruta si no está fijada y viceversa.
+     * @param ruta datos completos de la ruta
+     */
+    async pinRoute(ruta: RouteModel): Promise<boolean> {
+        throw new Error("Method not implemented.");
+    }
+
+    /**
      * Borra una ruta concreta.
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.

@@ -1,4 +1,4 @@
-<nav class="navbar">
+<nav class="navbar" [class.route-hidden]="isRouteMode" >
     <div class="nav-items">
         <!-- Map Icon -->
         <button
@@ -40,7 +40,18 @@
         <button class="nav-spacer"></button>
     </div>
     <!-- Add Button (separado del navbar) -->
-    <button class="add-button" (click)="openAddDialog()">
+    <button class="add-button" [matMenuTriggerFor]="menu">
         <img src="assets/images/logo.png" alt="Add location" class="add-icon">
     </button>
+
+    <mat-menu #menu="matMenu" yPosition="above" xPosition="before" class="custom-navbar-menu">
+        <button mat-menu-item (click)="openAddDialog()">
+            <mat-icon>add_location_alt</mat-icon>
+            <span>Buscar un lugar</span>
+        </button>
+        <button mat-menu-item (click)="openRouteSearch()">
+            <mat-icon>directions</mat-icon>
+            <span>Calcular ruta</span>
+        </button>
+    </mat-menu>
 </nav>

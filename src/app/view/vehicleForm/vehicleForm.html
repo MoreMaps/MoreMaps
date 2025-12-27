@@ -87,7 +87,7 @@
                 <mat-form-field appearance="fill">
                     <mat-label>Tipo de combustible</mat-label>
                     <mat-select formControlName="tipoCombustible">
-                        @for (fuel of fuelTypes(); track fuel) {
+                        @for (fuel of Object.values(FUEL_TYPE); track fuel) {
                             <mat-option [value]="fuel">{{ fuel }}</mat-option>
                         }
                     </mat-select>

@@ -1,0 +1,91 @@
+<div class="route-card">
+
+    <div class="od-group">
+
+        <div class="connector-line">
+            <div class="dot start-dot"></div>
+            <div class="line"></div>
+            <div class="dot end-dot"></div>
+        </div>
+
+        <div class="od-inputs">
+            <span class="label">Origen</span>
+            <div class="value-box input-style clickable" (click)="onEditOrigin()" matTooltip="Cambiar Origen">
+                <mat-icon style="margin-right: 0.2em;">place</mat-icon>
+                <span class="text-truncate">{{ data.origenName }}</span>
+            </div>
+            <div class="value-box input-style clickable" (click)="onEditDestination()" matTooltip="Cambiar Destino">
+                <mat-icon style="margin-right: 0.2em;">place</mat-icon>
+                <span class="text-truncate">{{ data.destinoName }}</span>
+            </div>
+            <span style="margin-bottom: 0;" class="label">Destino</span>
+        </div>
+
+        <button class="swap-btn" (click)="onSwap()" matTooltip="Intercambiar sentido">
+            <mat-icon>swap_vert</mat-icon>
+        </button>
+
+    </div>
+
+    <div class="info-field clickable-box" (click)="onEditTransport()" matTooltip="Cambiar transporte">
+        <div class="value-box vehicle-box">
+            <mat-icon class="transport-icon">
+                @if(data.transporte === TIPO_TRANSPORTE.VEHICULO) { directions_car }
+                @else if(data.transporte === TIPO_TRANSPORTE.BICICLETA) { pedal_bike }
+                @else { directions_walk }
+            </mat-icon>
+
+            <div class="vehicle-info">
+                <span class="vehicle-label">Transporte</span>
+                <span class="vehicle-name">
+                    @if(data.transporte === TIPO_TRANSPORTE.VEHICULO) {
+                        {{ data.vehicleAlias || data.matricula || 'Coche' }}
+                    } @else if (data.transporte === TIPO_TRANSPORTE.BICICLETA) {
+                        Bicicleta
+                    } @else {
+                        A pie
+                    }
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-field preference-field">
+        <div class="value-box select-box">
+            <mat-icon class="pref-icon">tune</mat-icon>
+            <mat-select [(ngModel)]="data.preference" (selectionChange)="onPreferenceChange($event.value)" class="custom-select" panelClass="custom-select-panel">
+                <mat-option [value]="PREFERENCIA.RAPIDA">Más Rápida</mat-option>
+                <mat-option [value]="PREFERENCIA.CORTA">Más Corta</mat-option>
+                <mat-option [value]="PREFERENCIA.RECOMENDADA">Recomendada</mat-option>
+            </mat-select>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="footer-stats">
+        <div class="stats-left">
+            <div class="main-stat duration">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ durationString }}</span>
+            </div>
+
+            <div class="sub-stats">
+                <span class="dist">{{ distanceKm }}</span>
+                @if (data.coste?.cost && data.coste!.cost > 0) {
+                    <span class="cost">{{ costString }} {{ data.coste!.unit }}</span>
+                }
+            </div>
+        </div>
+
+        <div class="actions-right">
+            <button class="action-btn save-btn" (click)="onSave()" matTooltip="Guardar Ruta">
+                <mat-icon>bookmark</mat-icon>
+            </button>
+
+            <button class="action-btn close-btn" (click)="onClose()" matTooltip="Cerrar Ruta">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+    </div>
+</div>

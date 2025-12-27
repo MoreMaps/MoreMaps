@@ -1,0 +1,85 @@
+<div class="selector-container">
+    <div class="dialog-header">
+        <div style="display: flex; align-items: center; width: 100%;">
+            @if (data.showBack) {
+                <button mat-icon-button (click)="goBack()" style="margin-right: 8px;">
+                    <mat-icon>arrow_back</mat-icon>
+                </button>
+            }
+
+            <h2 class="dialog-title" style="flex: 1; text-align: left; margin: 0;">
+                {{ data.title || (data.type === 'lugares' ? 'Selecciona un lugar' : 'Selecciona un vehículo') }}
+            </h2>
+
+            <button mat-icon-button (click)="close()">
+                <mat-icon>close</mat-icon>
+            </button>
+        </div>
+    </div>
+
+    <div class="list-container">
+        @if (isLoading()) {
+            <div class="loading-state">
+                <mat-spinner diameter="40"></mat-spinner>
+            </div>
+        } @else if (items().length > 0) {
+            <div class="items-list">
+                @if (data.type === 'lugares') {
+                    @for (item of items(); track item.geohash) {
+                        <div class="item-card" (click)="selectItem(item)">
+                            <div class="item-icon">
+                                <img ngSrc="assets/images/poi_active.png" height="44" width="33" priority class="poi-icon-img" alt="POI">
+                            </div>
+                            <div class="item-info">
+                                <h3 class="item-name">{{ getDisplayName(item) }}</h3>
+                                @if (getDisplayName(item) !== item.placeName) {
+                                    <p class="item-subtext">{{ item.placeName }}</p>
+                                }
+                            </div>
+                            <mat-icon class="chevron">chevron_right</mat-icon>
+                        </div>
+                    }
+                }
+                @if (data.type === 'vehiculos') {
+                    @for (item of items(); track item.matricula) {
+                        <div class="item-card" (click)="selectItem(item)">
+                            <div class="item-icon">
+                                <img ngSrc="assets/images/vehicle/vehicle_on.png" height="50" width="50" priority class="poi-icon-img" alt="Vehicle">
+                            </div>
+                            <div class="item-info">
+                                <h3 class="item-name">{{ getDisplayName(item) }}</h3>
+                                <p class="item-subtext">{{ item.matricula }}</p>
+                            </div>
+                            <mat-icon class="chevron">chevron_right</mat-icon>
+                        </div>
+                    }
+                }
+                @if (data.type === 'search-results') {
+                    @for (item of items(); track item) {
+                        <div class="item-card" (click)="selectItem(item)">
+                            <div class="item-icon">
+                                <mat-icon style="color: var(--color-orange);">location_on</mat-icon>
+                            </div>
+                            <div class="item-info">
+                                <h3 class="item-name" style="font-size: 0.95rem;">{{ item.placeName }}</h3>
+                                <p class="item-subtext">
+                                    {{ item.lat | number:'1.3-3' }}, {{ item.lon | number:'1.3-3' }}
+                                </p>
+                            </div>
+                            <mat-icon class="chevron">chevron_right</mat-icon>
+                        </div>
+                    }
+                }
+            </div>
+        } @else {
+            <div class="empty-state">
+                <mat-icon>bookmark_border</mat-icon>
+                @if (data.type === 'search-results') {
+                    <p>Tu búsqueda no dió resultados.</p>
+                } @else {
+                    <p>No tienes {{ data.type }} guardados.</p>
+                }
+            </div>
+        }
+    </div>
+</div>

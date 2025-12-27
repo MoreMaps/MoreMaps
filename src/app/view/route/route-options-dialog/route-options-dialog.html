@@ -1,0 +1,55 @@
+<div class="options-dialog-container">
+    @if (data.totalSteps) {
+        <mat-progress-bar mode="determinate" [value]="(data.currentStep / data.totalSteps) * 100"></mat-progress-bar>
+        <p class="step-indicator" style="font-size: 0.8rem; opacity: 0.7; margin-top: 4px; margin-bottom: 0;">
+            Paso {{data.currentStep}} de {{data.totalSteps}}
+        </p>
+    }
+
+    <div style="display: flex; align-items: center; width: 100%; margin: 1rem 0 1.5rem 0;">
+        @if (data.showBack) {
+            <button mat-icon-button (click)="goBack()" style="margin-right: 8px; flex-shrink: 0;">
+                <mat-icon>arrow_back</mat-icon>
+            </button>
+        }
+
+        <div style="flex: 1; text-align: left;">
+            <h2 class="dialog-title" style="margin: 0;">
+                {{ data.type === 'transport' ? 'Medio de Transporte' : 'Preferencia de Ruta' }}
+            </h2>
+            <p class="dialog-subtitle" style="margin: 4px 0 0 0;">
+                {{ data.type === 'transport' ? '¿Cómo te vas a mover?' : '¿Qué priorizamos?' }}
+            </p>
+        </div>
+    </div>
+
+    <div class="actions-container">
+        @if (data.type === 'transport') {
+            <button class="method-btn" (click)="selectOption(eTransporte.VEHICULO)">
+                <mat-icon>directions_car</mat-icon> <span>Coche</span>
+            </button>
+            <button class="method-btn" (click)="selectOption(eTransporte.BICICLETA)">
+                <mat-icon>pedal_bike</mat-icon> <span>Bicicleta</span>
+            </button>
+            <button class="method-btn" (click)="selectOption(eTransporte.A_PIE)">
+                <mat-icon>directions_walk</mat-icon> <span>A pie</span>
+            </button>
+        }
+
+        @if (data.type === 'preference') {
+            <button class="method-btn" (click)="selectOption(ePreferencia.RAPIDA)">
+                <mat-icon>timer</mat-icon> <span>Más rápida</span>
+            </button>
+            <button class="method-btn" (click)="selectOption(ePreferencia.CORTA)">
+                <mat-icon>straighten</mat-icon> <span>Más corta</span>
+            </button>
+            <button class="method-btn" (click)="selectOption(ePreferencia.RECOMENDADA)">
+                <mat-icon>star</mat-icon> <span>Recomendada</span>
+            </button>
+        }
+    </div>
+
+    <button class="cancel-btn" (click)="selectOption(null)">
+        Cancelar
+    </button>
+</div>

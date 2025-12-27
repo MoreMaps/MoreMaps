@@ -1,0 +1,10 @@
+{
+    "/apiree/": {
+        "target": "https://apidatos.ree.es",
+        "secure": false,
+        "changeOrigin": true,
+        "pathRewrite": {
+            "^/apiree": ""
+        }
+    }
+}

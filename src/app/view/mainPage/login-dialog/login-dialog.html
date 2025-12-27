@@ -3,13 +3,22 @@
         <mat-icon>close</mat-icon>
     </button>
 
-    <h2 class="dialog-title">Iniciar sesión</h2>
+    <h2 class="dialog-title">
+        @if (data?.isReauth) { Confirmar identidad } @else { Iniciar sesión }
+    </h2>
 
     <!-- Mensaje de error general -->
     @if (errorMessage) {
         <div class="error-banner">
             <mat-icon>error</mat-icon>
             <span>{{ errorMessage }}</span>
+        </div>
+    }
+
+    @if (data?.isReauth && !errorMessage) {
+        <div class="error-banner">
+            <mat-icon>warning</mat-icon>
+            <span>Por seguridad, confirma tu contraseña para eliminar la cuenta.</span>
         </div>
     }
 
@@ -24,11 +33,13 @@
                     formControlName="email"
                     placeholder="email@ejemplo.com"
                     autocomplete="email">
-                @if (loginForm.get('email')?.hasError('required')) {
-                    <mat-error>Requerido</mat-error>
-                }
-                @if (loginForm.get('email')?.hasError('email')) {
-                    <mat-error>Email inválido</mat-error>
+                @if (!loginForm.get('email')?.disabled) {
+                    @if (loginForm.get('email')?.hasError('required')) {
+                        <mat-error>Requerido</mat-error>
+                    }
+                    @if (loginForm.get('email')?.hasError('email')) {
+                        <mat-error>Email inválido</mat-error>
+                    }
                 }
             </mat-form-field>
         </div>
@@ -69,17 +80,19 @@
                 <mat-spinner diameter="20"></mat-spinner>
             }
             @if (!loading) {
-                <span>Continuar</span>
+                <span>@if(data?.isReauth){ Confirmar } @else { Continuar }</span>
             }
         </button>
 
         <!-- Switch to Register -->
-        <div class="link-container">
-            <a
-                class="text-link text-orange"
-                (click)="onSwitchToRegister()">
-                CREAR CUENTA
-            </a>
-        </div>
+        @if (!data?.isReauth) {
+            <div class="link-container">
+                <a
+                    class="text-link text-orange"
+                    (click)="onSwitchToRegister()">
+                    CREAR CUENTA
+                </a>
+            </div>
+        }
     </form>
 </div>

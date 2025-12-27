@@ -51,4 +51,5 @@ export class CoordsSearchDialogComponent {
         event.stopPropagation();
         this.coordsForm.get(fieldName)?.setValue('');
     }
+
 }

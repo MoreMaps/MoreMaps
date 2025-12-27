@@ -1,0 +1,75 @@
+.confirmation-container {
+    padding: 1.5rem;
+    text-align: center;
+    background: var(--color-white);
+    border-radius: 16px;
+}
+
+.dialog-title {
+    margin-top: 0;
+    color: var(--color-teal-dark);
+}
+
+.info-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.icon-wrapper mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: var(--color-orange);
+}
+
+.place-name {
+    margin: 0 0 4px 0;
+    font-size: 1.1rem;
+    color: var(--color-black);
+}
+
+.coords {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.confirm-btn {
+    background-color: var(--color-mint-green);
+    color: var(--color-teal-dark);
+}
+
+:host-context(.dark-theme) {
+    .confirmation-container {
+        background: var(--color-purple-dark);
+    }
+
+    .dialog-title {
+        color: var(--color-teal-dark);
+    }
+
+    .icon-wrapper mat-icon {
+        color: var(--color-orange);
+    }
+
+    .place-name {
+        color: var(--color-lavender);
+    }
+
+    .coords {
+        color: var(--color-lavender);
+        opacity: 0.8;
+    }
+}

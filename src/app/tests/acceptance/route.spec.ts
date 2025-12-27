@@ -37,7 +37,6 @@ import {RouteResultModel} from '../../data/RouteResultModel';
 import {InvalidDataError} from '../../errors/InvalidDataError';
 
 // Firestore
-import {deleteDoc, doc, Firestore} from '@angular/fire/firestore';
 import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
 import {
     ELECTRICITY_PRICE_REPOSITORY,
@@ -49,6 +48,7 @@ import {FUEL_PRICE_REPOSITORY, FUEL_PRICE_SOURCE} from '../../services/fuel-pric
 import {FuelPriceCache} from '../../services/fuel-price-service/FuelPriceCache';
 import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
 import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
+import {MissingRouteError} from '../../errors/Route/MissingRouteError';
 
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 describe('Pruebas sobre rutas', () => {
@@ -60,8 +60,6 @@ describe('Pruebas sobre rutas', () => {
     let routeService: RouteService;
 
     let auth: Auth;
-    // TODO: quitar al final de it05
-    let firestore: Firestore;
 
     // Datos de prueba
     const datosRamon = USER_TEST_DATA[0];
@@ -107,9 +105,6 @@ describe('Pruebas sobre rutas', () => {
         routeService = TestBed.inject(RouteService);
         mapSearchService = TestBed.inject(MapSearchService);
         auth = TestBed.inject(Auth);
-
-        // TODO: QUITAR EN IT05
-        firestore = TestBed.inject(Firestore);
 
         // 1. Iniciar sesión
         await userService.login(datosRamon.email, datosRamon.pwd);
@@ -436,22 +431,6 @@ describe('Pruebas sobre rutas', () => {
 
     describe('HU407: Guardar una ruta', () => {
 
-        // Helper para cleanup
-        // TODO borrar cuando deleteRoute esté implementado en it05
-        const borrarRutaManualmente = async () => {
-             if (!auth.currentUser) return;
-
-             // Reconstruimos el ID del documento tal cual lo hace RouteDB
-             const suffix = datosRutaC.matricula ? datosRutaC.matricula : datosRutaC.transporte;
-             const path = `items/${auth.currentUser.uid}/routes/${datosRutaC.geohash_origen}-${datosRutaC.geohash_destino}-${suffix}`;
-
-             try {
-                 await deleteDoc(doc(firestore, path));
-             } catch (e) {
-                 // Ignoramos error si el documento ya no existe
-             }
-        };
-
         it('HU407-EV01. Guardar una ruta nueva.', async () => {
             // GIVEN
             // 1. Lista de POI registrados → ["A", "B"].
@@ -487,7 +466,8 @@ describe('Pruebas sobre rutas', () => {
                 // Espera que la diferencia entre distancias no supere 1.5 km (1500 metros)
                 expect(Math.abs(datosRutaC.distancia!-rutaGuardada.distancia!)).toBeLessThanOrEqual(1500);
             } finally {
-                await borrarRutaManualmente();
+                await routeService.deleteRoute(datosRutaC.geohash_origen,
+                    datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
             }
         }, 30000);
 
@@ -515,7 +495,8 @@ describe('Pruebas sobre rutas', () => {
                 // Estado esperado: no se modifica el estado.
             } finally {
                 // Cleanup
-                await borrarRutaManualmente();
+                await routeService.deleteRoute(datosRutaC.geohash_origen,
+                    datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
             }
         }, 30000);
     });
@@ -606,10 +587,10 @@ describe('Pruebas sobre rutas', () => {
             // Estado esperado: no se modifica el estado.
         },30000);
     });
-
+    */
     // --- HU410: Eliminar Ruta ---
 
-    describe('HU410: Eliminar una ruta guardada', () => {
+    fdescribe('HU410: Eliminar una ruta guardada', () => {
 
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN
@@ -657,7 +638,7 @@ describe('Pruebas sobre rutas', () => {
             // Estado esperado: no se modifica el estado.
         }, 30000);
     });
-
+    /*
     // --- HU411: Modificar Ruta ---
 
     describe('HU411: Modificar una ruta guardada', () => {

@@ -204,7 +204,7 @@ describe('Pruebas sobre POI', () => {
                 // volver a ramon
                 await userService.login(ramon.email, ramon.pwd);
             }
-        }, 10000);
+        });
 
         it('HU203-EV02: Consultar el listado no vacío de POI', async () => {
             // GIVEN
@@ -289,7 +289,7 @@ describe('Pruebas sobre POI', () => {
                 // Modificar el alias del POI "A" de nuevo a "Alicante"
                 await poiService.updatePOI(poiRegistrado.geohash, {alias: "Alicante"});
             }
-        }, 10000);
+        });
 
         it('HU205-EI02: Modificar información de un POI no registrado', async () => {
             // GIVEN

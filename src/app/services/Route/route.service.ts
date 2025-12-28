@@ -10,6 +10,7 @@ import {InvalidDataError} from '../../errors/InvalidDataError';
 import {USER_REPOSITORY, UserRepository} from '../User/UserRepository';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
+import {MissingRouteError} from '../../errors/Route/MissingRouteError';
 
 export interface RouteCostResult {
     cost: number;
@@ -133,13 +134,27 @@ export class RouteService {
 
     // HU410: Eliminar ruta
     /**
-     * Elimina una ruta concreta.
+     * Elimina una ruta existente.
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @returns Promise con true si se borra, false si no.
+     * @throws SessionNotActiveError Si la sesión no está activa.
+     * @throws MissingRouteError Si no existe la ruta.
      */
     async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean> {
-        return false;
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Comprueba que la ruta exista
+        if (!await this.routeDb.routeExists(origen, destino, transporte)) {
+            throw new MissingRouteError();
+        }
+
+        // Borra la ruta
+        return this.routeDb.deleteRoute(origen, destino, transporte);
     }
 
     // HU411: Modificar ruta

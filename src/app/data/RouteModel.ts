@@ -6,6 +6,12 @@ export enum TIPO_TRANSPORTE {
     BICICLETA = 'cycling-regular',
 }
 
+export const mapaTransporte: Record<TIPO_TRANSPORTE, string> = {
+    [TIPO_TRANSPORTE.VEHICULO]: 'en coche',
+    [TIPO_TRANSPORTE.BICICLETA]: 'en bici',
+    [TIPO_TRANSPORTE.A_PIE]: 'a pie',
+};
+
 export enum PREFERENCIA {
     RAPIDA = 'fastest',
     CORTA = 'shortest',
@@ -15,31 +21,23 @@ export enum PREFERENCIA {
 export class RouteModel {
     geohash_origen: Geohash;
     geohash_destino: Geohash;
+    alias: string;
     transporte: TIPO_TRANSPORTE;
     preferencia: PREFERENCIA;
-    distancia?: number;
-    tiempo?: number;
-    alias?: string;
+    distancia: number;
+    tiempo: number;
     pinned?: boolean;
     matricula?: string;
 
-    constructor(geohash_origen: Geohash, geohash_destino: Geohash,
-                transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA,
-                distancia?: number, tiempo?: number,
-                alias?: string, pinned?: boolean, matricula?: string) {
+    constructor(geohash_origen: Geohash, geohash_destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
+                preferencia: PREFERENCIA, distancia: number, tiempo: number, pinned?: boolean, matricula?: string) {
         this.geohash_origen = geohash_origen;
         this.geohash_destino = geohash_destino;
+        this.alias = alias;
         this.transporte = transporte;
         this.preferencia = preferencia;
-        if (distancia !== undefined) {
-            this.distancia = distancia;
-        }
-        if (tiempo !== undefined) {
-            this.tiempo = tiempo;
-        }
-        if (alias !== undefined) {
-            this.alias = alias;
-        }
+        this.distancia = distancia;
+        this.tiempo = tiempo;
         if (pinned !== undefined) {
             this.pinned = pinned;
         } else this.pinned = false;
@@ -52,19 +50,19 @@ export class RouteModel {
         return {
             geohash_origen: this.geohash_origen,
             geohash_destino: this.geohash_destino,
+            alias: this.alias,
             transporte: this.transporte,
             preferencia: this.preferencia,
             distancia: this.distancia,
             tiempo: this.tiempo,
-            ...(this.alias !== undefined ? {alias: this.alias} : {}),
             ...(this.pinned !== undefined ? {pinned: this.pinned} : {pinned: false}),
             ...(this.matricula !== undefined ? {matricula: this.matricula} : {}),
         }
     }
 
     static fromJSON(json: any): RouteModel {
-        return new RouteModel(json.geohash_origen, json.geohash_destino, json.transporte, json.preferencia,
-            json.distancia, json.tiempo, json.alias, json.pinned, json.matricula);
+        return new RouteModel(json.geohash_origen, json.geohash_destino, json.alias, json.transporte,
+            json.preferencia, json.distancia, json.tiempo, json.pinned, json.matricula);
     }
 }
 

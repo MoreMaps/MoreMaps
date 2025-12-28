@@ -90,6 +90,7 @@ export class RouteService {
      * Crea una ruta nueva.
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
+     * @param alias Alias por defecto de la ruta.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
      * @param matricula Matrícula del vehículo (opcional).
      * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.).
@@ -98,7 +99,8 @@ export class RouteService {
      * @throws SessionNotActiveError Si la sesión no está activa.
      * @throws RouteAlreadyExistsError Si ya existe la ruta.
      */
-    async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
+    async createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
+                      preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
@@ -110,7 +112,7 @@ export class RouteService {
         }
 
         // Crea la ruta
-        return this.routeDb.createRoute(origen, destino, transporte, preferencia, modelo, matricula);
+        return this.routeDb.createRoute(origen, destino, alias, transporte, preferencia, modelo, matricula);
     }
 
     // HU408: Listar rutas
@@ -129,7 +131,7 @@ export class RouteService {
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
      */
     async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<RouteModel> {
-        return new RouteModel('', '', transporte, PREFERENCIA.RECOMENDADA);
+        return new RouteModel('', '', '', transporte, PREFERENCIA.RECOMENDADA, 0 , 0);
     }
 
     // HU410: Eliminar ruta
@@ -169,7 +171,7 @@ export class RouteService {
      * @throws MissingRouteError si la ruta no existe.
      */
     async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>): Promise<RouteModel> {
-        return new RouteModel('', '', transporte, PREFERENCIA.RECOMENDADA);
+        return new RouteModel('', '', '', transporte, PREFERENCIA.RECOMENDADA, 0, 0);
     }
 
     // HU503 Fijar ruta

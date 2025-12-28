@@ -410,7 +410,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // WHEN
             // El usuario decide guardar la ruta que ha buscado.
             const rutaGuardada = await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
             try {
                 // THEN
                 // No se lanza ningún error.
@@ -419,11 +419,11 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 expect(rutaGuardada).toEqual(jasmine.objectContaining({
                     geohash_origen: rutaC.geohash_origen,
                     geohash_destino: rutaC.geohash_destino,
+                    alias: rutaC.alias,
                     transporte: rutaC.transporte,
                     preferencia: rutaC.preferencia,
                     distancia: jasmine.any(Number),
                     tiempo: jasmine.any(Number),
-                    alias: '',
                     pinned: false,
                     matricula: rutaC.matricula,
                 }));
@@ -438,13 +438,13 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // El usuario ha guardado la ruta más corta entre "A" y "B" utilizando el vehículo "Ford Fiesta".
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
 
             try {
                 // WHEN
                 // El usuario intenta guardar una ruta idéntica.
                 await expectAsync(routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                    rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula))
+                    rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula))
                     .toBeRejectedWith(new RouteAlreadyExistsError());
                 // THEN
                 // Se lanza el error RouteAlreadyExistsError.
@@ -477,7 +477,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
 
             // WHEN
             // El usuario consulta su lista de rutas registradas.
@@ -503,7 +503,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B".
@@ -520,11 +520,11 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 expect(ruta).toEqual(jasmine.objectContaining({
                     geohash_origen: rutaC.geohash_origen,
                     geohash_destino: rutaC.geohash_destino,
+                    alias: rutaC.alias,
                     transporte: rutaC.transporte,
                     preferencia: rutaC.preferencia,
                     distancia: jasmine.any(Number),
                     tiempo: jasmine.any(Number),
-                    alias: '',
                     pinned: false,
                     matricula: rutaC.matricula,
                 }));
@@ -559,7 +559,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
 
             // WHEN
             // El usuario trata de eliminar la ruta "A-B".
@@ -602,7 +602,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B" y modifica el modo de
@@ -652,13 +652,13 @@ describe('Pruebas de aceptación sobre rutas', () => {
 
             // Se registra la ruta "A-B" en coche.
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
 
             // Se registra la ruta "B-A" a pie.
             const rutaBuscada = await mapSearchService.searchRoute(rutaP.geohash_destino,
                 rutaP.geohash_origen, rutaP.transporte, rutaP.preferencia);
             const rutaCreada = await routeService.createRoute(rutaP.geohash_destino,
-                rutaP.geohash_origen, rutaP.transporte, rutaP.preferencia, rutaBuscada);
+                rutaP.geohash_origen, rutaP.alias, rutaP.transporte, rutaP.preferencia, rutaBuscada);
 
             // Ambas rutas no son fijadas, una consulta de rutas devuelve ["A-B (en coche)", "B-A (a pie)"]
             try {
@@ -695,8 +695,12 @@ describe('Pruebas de aceptación sobre rutas', () => {
             await expectAsync(routeService.pinRoute(new RouteModel(
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
+                rutaC.alias,
                 rutaC.transporte,
-                rutaC.preferencia))).toBeRejectedWith(new MissingRouteError());
+                rutaC.preferencia,
+                rutaC.distancia,
+                rutaC.tiempo,
+                ))).toBeRejectedWith(new MissingRouteError());
 
             // THEN
             // Se lanza el error MissingPOIError
@@ -710,7 +714,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // El usuario "ramon" está registrado y ha iniciado sesión
             // Lista de rutas registradas → ["A-B"].
             const rutaCreada = await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
             const listaRutasAntes: RouteModel[] = [rutaCreada];
 
             // Se cierra la sesión involuntariamente

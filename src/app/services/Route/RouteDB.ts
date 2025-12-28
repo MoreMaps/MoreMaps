@@ -24,7 +24,7 @@ export class RouteDB implements RouteRepository {
      * @param modelo Resultado de la búsqueda (duración, distancia de la ruta)
      */
     async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
-        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${transporte}`;
 
         try{
             // Referencia al documento
@@ -49,9 +49,8 @@ export class RouteDB implements RouteRepository {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param matricula Matrícula del vehículo (opcional)
      */
-    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<RouteModel> {
+    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<RouteModel> {
         throw new Error("Method not implemented.");
     }
 
@@ -60,10 +59,9 @@ export class RouteDB implements RouteRepository {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param matricula Matrícula del vehículo (opcional)
      * @param update Partial con los datos a actualizar.
      */
-    async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>, matricula?: string): Promise<RouteModel> {
+    async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>): Promise<RouteModel> {
         throw new Error("Method not implemented.");
     }
 
@@ -83,13 +81,12 @@ export class RouteDB implements RouteRepository {
     }
 
     /**
-     * Borra una ruta concreta.
+     * Elimina una ruta concreta.
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param matricula Matrícula del vehículo (opcional)
      */
-    async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
+    async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean> {
         return false;
     }
 
@@ -98,11 +95,10 @@ export class RouteDB implements RouteRepository {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param matricula Matrícula del vehículo (opcional)
      * @returns Promise con true si existe, false si no existe
      */
-    async routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
-        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
+    async routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean> {
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${transporte}`;
         const docRef = doc(this.firestore, path);
         const snap = await getDoc(docRef);
         return snap.exists();

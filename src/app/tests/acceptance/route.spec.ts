@@ -542,8 +542,7 @@ describe('Pruebas sobre rutas', () => {
             const ruta = await routeService.readRoute(
                 datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino,
-                datosRutaC.transporte,
-                datosRutaC.preferencia
+                datosRutaC.transporte
             );
 
             // THEN
@@ -565,8 +564,7 @@ describe('Pruebas sobre rutas', () => {
             await expectAsync(routeService.readRoute(
                 datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino,
-                datosRutaC.transporte,
-                datosRutaC.preferencia
+                datosRutaC.transporte
             )).toBeRejectedWith(new MissingRouteError());
 
             // THEN
@@ -590,8 +588,7 @@ describe('Pruebas sobre rutas', () => {
             const resultado = await routeService.deleteRoute(
                 datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino,
-                datosRutaC.transporte,
-                datosRutaC.matricula
+                datosRutaC.transporte
             );
 
             // THEN
@@ -613,8 +610,7 @@ describe('Pruebas sobre rutas', () => {
             await expectAsync(routeService.deleteRoute(
                 datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino,
-                datosRutaC.transporte,
-                datosRutaC.matricula
+                datosRutaC.transporte
             )).toBeRejectedWith(new MissingRouteError());
 
             // THEN
@@ -641,8 +637,7 @@ describe('Pruebas sobre rutas', () => {
                 datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino,
                 datosRutaC.transporte,
-                {transporte: TIPO_TRANSPORTE.A_PIE},
-                datosRutaC.preferencia
+                {transporte: TIPO_TRANSPORTE.A_PIE}
             );
 
             // THEN
@@ -654,7 +649,7 @@ describe('Pruebas sobre rutas', () => {
             expect(rutaModificada.tiempo).toBeGreaterThan(7055.4);
 
             // Cleanup
-            await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+            await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte);
         },30000);
 
         it('HU411-EI03. Modificar una ruta no registrada', async () => {
@@ -666,8 +661,8 @@ describe('Pruebas sobre rutas', () => {
             await expectAsync(routeService.updateRoute(datosRutaC.geohash_origen,
                 datosRutaC.geohash_destino,
                 datosRutaC.transporte,
-                {transporte: TIPO_TRANSPORTE.A_PIE},
-                datosRutaC.preferencia)).toBeRejectedWith(new MissingRouteError());
+                {transporte: TIPO_TRANSPORTE.A_PIE}
+            )).toBeRejectedWith(new MissingRouteError());
 
             // THEN
             // Salida esperada: se lanza el error MissingRouteError.
@@ -709,7 +704,7 @@ describe('Pruebas sobre rutas', () => {
             finally {
                 // CLEANUP
                 // Borrar ambas rutas
-                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte);
                 await routeService.deleteRoute(datosRutaP.geohash_origen, datosRutaP.geohash_destino, datosRutaP.transporte);
             }
 

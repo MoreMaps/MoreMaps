@@ -127,9 +127,8 @@ export class RouteService {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
-     * @param matricula Matrícula del vehículo (opcional).
      */
-    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<RouteModel> {
+    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<RouteModel> {
         return new RouteModel('', '', transporte, PREFERENCIA.RECOMENDADA);
     }
 
@@ -160,17 +159,16 @@ export class RouteService {
 
     // HU411: Modificar ruta
     /**
-     * Modifica los datos de una ruta concreta. Téngase en cuenta que los cambios afectan al coste de la ruta.
+     * Modifica los datos de una ruta concreta. Téngase en cuenta que los cambios NO afectan al coste de la ruta.
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
-     * @param matricula Matrícula del vehículo (opcional).
      * @param update Partial con los atributos que se van a actualizar.
      * @returns Promise con la ruta actualizada.
      * @throws SessionNotActiveError si la sesión no está activa.
      * @throws MissingRouteError si la ruta no existe.
      */
-    async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>, matricula?: string): Promise<RouteModel> {
+    async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>): Promise<RouteModel> {
         return new RouteModel('', '', transporte, PREFERENCIA.RECOMENDADA);
     }
 

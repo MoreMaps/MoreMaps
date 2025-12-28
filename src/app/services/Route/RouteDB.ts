@@ -6,6 +6,7 @@ import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {DBAccessError} from '../../errors/DBAccessError';
+import {POIModel} from '../../data/POIModel';
 
 @Injectable({
     providedIn: 'root'
@@ -24,7 +25,7 @@ export class RouteDB implements RouteRepository {
      * @param modelo Resultado de la búsqueda (duración, distancia de la ruta)
      */
     async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
-        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${transporte}`;
 
         try{
             // Referencia al documento
@@ -50,8 +51,21 @@ export class RouteDB implements RouteRepository {
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
      */
-    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<RouteModel> {
-        throw new Error("Method not implemented.");
+    async getRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<RouteModel> {
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${transporte}`;
+
+        try {
+            // Documento del POI
+            const routeSnap = await getDoc(doc(this.firestore, path));
+
+            // Devolver POI
+            return RouteModel.fromJSON(routeSnap.data());
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
+        }
     }
 
     /**

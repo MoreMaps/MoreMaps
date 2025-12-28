@@ -118,7 +118,7 @@ export class RouteService {
      * Lista las rutas del usuario
      */
     async getRouteList(): Promise<RouteModel[]> {
-        return [];
+        return undefined as any;
     }
 
     // HU409: Consultar ruta

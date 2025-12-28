@@ -23,7 +23,7 @@ import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
 import {MapSearchService} from '../../services/map-search-service/map-search.service';
 
 // Rutas
-import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
+import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {RouteService} from '../../services/Route/route.service';
 import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
 import {RouteDB} from '../../services/Route/RouteDB';
@@ -52,14 +52,15 @@ import {MissingRouteError} from '../../errors/Route/MissingRouteError';
 
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 describe('Pruebas sobre rutas', () => {
-
     let userService: UserService;
     let poiService: POIService;
     let mapSearchService: MapSearchService;
     let vehicleService: VehicleService;
     let routeService: RouteService;
-
     let auth: Auth;
+
+    // Resultado de la API para la ruta "A-B-Ford Fiesta" (evita llamadas innecesarias)
+    let rutaABCBuscada: RouteResultModel;
 
     // Datos de prueba
     const datosRamon = USER_TEST_DATA[0];
@@ -106,17 +107,17 @@ describe('Pruebas sobre rutas', () => {
         mapSearchService = TestBed.inject(MapSearchService);
         auth = TestBed.inject(Auth);
 
-        // 1. Iniciar sesión
+        // Iniciar sesión
         await userService.login(datosRamon.email, datosRamon.pwd);
 
-        // 2. Registrar Vehículo "Ford Fiesta"
+        // Registrar Vehículo "Ford Fiesta"
         try {
             await vehicleService.createVehicle(datosFord);
         } catch (e) {
             console.info("Error al crear vehículo: " + e)
         }
 
-        // 3. Registrar POI A y POI B usando POIService
+        // Registrar POI A y POI B usando POIService
         try {
             await poiService.createPOI(datosPoiA);
         } catch (e) {
@@ -128,6 +129,9 @@ describe('Pruebas sobre rutas', () => {
         } catch (e) {
             console.error("Error al crear POI B: " + e)
         }
+
+        // Resultado de la API para la ruta "A-B-Ford Fiesta" (evita llamadas innecesarias)
+        rutaABCBuscada = await mapSearchService.searchRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
     });
 
     afterAll(async () => {
@@ -149,7 +153,6 @@ describe('Pruebas sobre rutas', () => {
         } catch (error) {
             console.error(error);
         }
-
     });
 
     // --- HU401: Obtener y mostrar una ruta (Cálculo) ---
@@ -237,7 +240,6 @@ describe('Pruebas sobre rutas', () => {
             // 2. Lista de vehículos registrados→ ["Ford Fiesta"].
             // 3. Lista de rutas registradas vacía.
             // 4. El usuario ha seleccionado la ruta "A-B" en vehículo.
-
             const foundRoute = await mapSearchService.searchRoute(
                 datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia
             );
@@ -430,24 +432,14 @@ describe('Pruebas sobre rutas', () => {
     // --- HU407: Guardar Ruta ---
 
     describe('HU407: Guardar una ruta', () => {
-
         it('HU407-EV01. Guardar una ruta nueva.', async () => {
             // GIVEN
-            // 1. Lista de POI registrados → ["A", "B"].
-            // 2. Lista de vehículos registrados→ ["Ford Fiesta"].
-            // 3. Lista de rutas registradas vacía.
-            // 4. El usuario ha buscado la ruta más corta entre "A" y "B" utilizando el
-            // vehículo "Ford Fiesta".
-            const rutaBuscada = await mapSearchService.searchRoute(
-                datosRutaC.geohash_origen,
-                datosRutaC.geohash_destino,
-                datosRutaC.transporte,
-                datosRutaC.preferencia
-            );
+            // El usuario ha buscado la ruta más corta entre "A" y "B" utilizando el vehículo "Ford Fiesta".
+
             // WHEN
             // El usuario decide guardar la ruta que ha buscado.
             const rutaGuardada = await routeService.createRoute(datosRutaC.geohash_origen,
-                datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula);
+                datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada);
             try {
                 // THEN
                 // Salida esperada: no se lanza ningún error. Se notifica al usuario del alta y se
@@ -465,54 +457,47 @@ describe('Pruebas sobre rutas', () => {
                 expect(Math.abs(datosRutaC.tiempo!-rutaGuardada.tiempo!)).toBeLessThanOrEqual(300);
                 // Espera que la diferencia entre distancias no supere 1.5 km (1500 metros)
                 expect(Math.abs(datosRutaC.distancia!-rutaGuardada.distancia!)).toBeLessThanOrEqual(1500);
-            } finally {
-                await routeService.deleteRoute(datosRutaC.geohash_origen,
-                    datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+            }
+            finally {
+                // Cleanup
+                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte);
             }
         }, 30000);
 
         it('HU407-EI08. Guardar una ruta idéntica a una ya guardada.', async () => {
             // GIVEN
-            // 1. Lista de POI registrados → ["A", "B"].
-            // 2. Lista de vehículos registrados→ ["Ford Fiesta"].
-            // 3. Lista de rutas guardadas -> ["A-B"]
-            // 4. El usuario ha buscado una ruta idéntica a "A-B".
-
-            // Registramos la ruta previa
-            const rutaBuscada = await mapSearchService.searchRoute(datosRutaC.geohash_origen,
-                datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
+            // El usuario ha guardado la ruta más corta entre "A" y "B" utilizando el vehículo "Ford Fiesta".
             await routeService.createRoute(datosRutaC.geohash_origen,
-                datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula);
+                datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula);
+
             try {
                 // WHEN
-                // El usuario decide guardar la ruta que ha buscado.
+                // El usuario decide guardar la ruta que ha buscado de nuevo.
                 await expectAsync(routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
-                    datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula))
+                    datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula))
                     .toBeRejectedWith(new RouteAlreadyExistsError());
-
                 // THEN
                 // Salida esperada: se lanza el error RouteAlreadyExistsError.
                 // Estado esperado: no se modifica el estado.
-            } finally {
+            }
+            finally {
                 // Cleanup
-                await routeService.deleteRoute(datosRutaC.geohash_origen,
-                    datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte);
             }
         }, 30000);
     });
 
-    /*  COMENTADO HASTA LA SIGUIENTE IT.
     // --- HU408: Listar Rutas ---
 
     describe('HU408: Consultar listado de rutas', () => {
 
         it('HU408-EV01. Consultar el listado vacío de rutas.', async () => {
             // GIVEN
-            // 1. Lista de rutas registradas vacía.
+            // Lista de rutas registradas vacía.
 
             // WHEN
             // El usuario consulta su lista de rutas registradas.
-            const list = await mapSearchService.getRouteList();
+            const list = await routeService.getRouteList();
 
             // THEN
             // Salida esperada: no se lanza ningún error. Se indica al usuario que no ha
@@ -523,12 +508,13 @@ describe('Pruebas sobre rutas', () => {
 
         it('HU408-EV02. Consultar el listado no vacío de rutas.', async () => {
             // GIVEN
-            // 1. Lista de rutas registradas → ["A-B"].
-            await mapSearchService.searchRoute(poiA.geohash, poiB.geohash, 'VEHICULO', datosFord.matricula);
+            // Lista de rutas registradas → ["A-B"].
+            await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
 
             // WHEN
             // El usuario consulta su lista de rutas registradas.
-            const list = await mapSearchService.getRouteList();
+            const list = await routeService.getRouteList();
 
             // THEN
             // Salida esperada: no se lanza ningún error. Se muestra por pantalla el listado
@@ -537,7 +523,7 @@ describe('Pruebas sobre rutas', () => {
             expect(list.length).toBeGreaterThanOrEqual(1);
 
             // Cleanup
-            await mapSearchService.deleteRoute(poiA.geohash, poiB.geohash, 'VEHICULO', datosFord.matricula);
+            await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte);
         },30000);
     });
 
@@ -547,16 +533,17 @@ describe('Pruebas sobre rutas', () => {
 
         it('HU409-EV01. Consultar información de una ruta registrada.', async () => {
             // GIVEN
-            // 1. Lista de rutas registradas → ["A-B"].
-            await mapSearchService.searchRoute(poiA.geohash, poiB.geohash, 'VEHICULO', datosFord.matricula);
+            // Lista de rutas registradas → ["A-B"].
+            await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B".
-            const ruta = await mapSearchService.readRoute(
-                poiA.geohash,
-                poiB.geohash,
-                'VEHICULO',
-                datosFord.matricula
+            const ruta = await routeService.readRoute(
+                datosRutaC.geohash_origen,
+                datosRutaC.geohash_destino,
+                datosRutaC.transporte,
+                datosRutaC.preferencia
             );
 
             // THEN
@@ -566,20 +553,20 @@ describe('Pruebas sobre rutas', () => {
             expect(ruta.distancia).toBeDefined();
 
             // Cleanup
-            await mapSearchService.deleteRoute(poiA.geohash, poiB.geohash, 'VEHICULO', datosFord.matricula);
+            await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte);
         },30000);
 
         it('HU409-EI03. Consultar información de una ruta no registrada.', async () => {
             // GIVEN
-            // 1. Lista de rutas registradas vacía.
+            // Lista de rutas registradas vacía.
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B".
-            await expectAsync(mapSearchService.readRoute(
-                poiA.geohash,
-                poiB.geohash,
-                'VEHICULO',
-                datosFord.matricula
+            await expectAsync(routeService.readRoute(
+                datosRutaC.geohash_origen,
+                datosRutaC.geohash_destino,
+                datosRutaC.transporte,
+                datosRutaC.preferencia
             )).toBeRejectedWith(new MissingRouteError());
 
             // THEN
@@ -594,12 +581,9 @@ describe('Pruebas sobre rutas', () => {
 
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN
-            // 1. Lista de rutas registradas ["A-B"].
-            const rutaBuscada = await mapSearchService.searchRoute(
-                datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
-            await routeService.createRoute(
-                datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia,
-                rutaBuscada, datosRutaC.matricula);
+            // Lista de rutas registradas ["A-B"].
+            await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
 
             // WHEN
             // El usuario trata de eliminar la ruta "A-B".
@@ -611,7 +595,7 @@ describe('Pruebas sobre rutas', () => {
             );
 
             // THEN
-            // Salida esperada: no se lanza ningún error. Se elimina el ruta y se notifica de
+            // Salida esperada: no se lanza ningún error. Se elimina la ruta y se notifica de
             // ello, mostrando la lista de rutas registradas.
             // Estado esperado: la lista de ruta se actualiza a la lista vacía.
             expect(resultado).toBeTrue();
@@ -622,7 +606,7 @@ describe('Pruebas sobre rutas', () => {
 
         it('HU410-EI03. Eliminar una ruta no registrada.', async () => {
             // GIVEN
-            // 1. Lista de rutas registradas vacía.
+            // Lista de rutas registradas vacía.
 
             // WHEN
             // El usuario trata de eliminar la ruta "A-B".
@@ -645,49 +629,45 @@ describe('Pruebas sobre rutas', () => {
 
         it('HU411-EV01. Modificar el modo de transporte de una ruta', async () => {
             // GIVEN
-            // 1. Lista de rutas registradas → ["A-B"].
-            // 2. Lista de vehículos registrados → ["Ford Fiesta"].
-            await mapSearchService.searchRoute(poiA.geohash, poiB.geohash, 'VEHICULO', datosFord.matricula);
+            // Lista de rutas registradas → ["A-B"].
+            const rutaBuscada = await mapSearchService.searchRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
+            await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
+                datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula)
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B" y modifica el modo de
-            // transporte a "A pie". Se asume que una persona a pie camina a 4km/h.
-
-                poiA.geohash,
-                poiB.geohash,
-                'VEHICULO',
-                datosFord.matricula,
-                'A PIE',
-                ''
+            // transporte a "A pie". Se asume que una persona a pie camina a 4 km/h.
+            const rutaModificada = await routeService.updateRoute(
+                datosRutaC.geohash_origen,
+                datosRutaC.geohash_destino,
+                datosRutaC.transporte,
+                {transporte: TIPO_TRANSPORTE.A_PIE},
+                datosRutaC.preferencia
             );
 
             // THEN
             // Salida esperada: no se lanza ningún error. Se recalcula la ruta y se muestra
-            // por pantalla, cuya duración será de "21h, 15min".
+            // por pantalla, cuya duración será de "21 h, 15 min".
             // Estado esperado: el transporte de "A-B" se modifica a "A pie".
             expect(rutaModificada.transporte).toBe("A PIE");
-            // 21h 15min = 76500 segundos. Verificamos que sea mayor que en coche (7055s)
-            expect(rutaModificada.duracion).toBeGreaterThan(7055.4);
+            // 21 h 15 min = 76500 s. Verificamos que sea mayor que en coche (7055 s)
+            expect(rutaModificada.tiempo).toBeGreaterThan(7055.4);
 
             // Cleanup
-            await mapSearchService.deleteRoute(poiA.geohash, poiB.geohash, 'A PIE', '');
+            await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
         },30000);
 
         it('HU411-EI03. Modificar una ruta no registrada', async () => {
             // GIVEN
-            // 1. Lista de rutas registradas vacía.
-            // 2. Lista de vehículos registrados → ["Ford Fiesta"]
+            // Lista de rutas registradas vacía.
 
             // WHEN
             // El usuario intenta modificar el modo de transporte de la ruta "A-B" a "A pie".
-            await expectAsync(mapSearchService.updateRouteTransport(
-                poiA.geohash,
-                poiB.geohash,
-                'VEHICULO',
-                datosFord.matricula,
-                'A PIE',
-                ''
-            )).toBeRejectedWith(new MissingRouteError());
+            await expectAsync(routeService.updateRoute(datosRutaC.geohash_origen,
+                datosRutaC.geohash_destino,
+                datosRutaC.transporte,
+                {transporte: TIPO_TRANSPORTE.A_PIE},
+                datosRutaC.preferencia)).toBeRejectedWith(new MissingRouteError());
 
             // THEN
             // Salida esperada: se lanza el error MissingRouteError.
@@ -695,12 +675,72 @@ describe('Pruebas sobre rutas', () => {
         },30000);
     });
 
+    describe('HU503: Fijar una ruta', () => {
+
+        it('HU503-EV01: Fijar un POI registrado', async () => {
+            // GIVEN
+            // El usuario ramon ha iniciado sesión
+            // Lista de rutas registradas → ["A-B"].
+            await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
+
+            // Registramos la ruta "A-B" a pie.
+            const rutaBuscada = await mapSearchService.searchRoute(datosRutaP.geohash_origen, datosRutaP.geohash_destino, datosRutaP.transporte, datosRutaP.preferencia);
+            const rutaCreada = await routeService.createRoute(datosRutaP.geohash_origen, datosRutaP.geohash_destino,
+                datosRutaP.transporte, datosRutaP.preferencia, rutaBuscada)
+
+            // Ambas rutas no son fijadas, una consulta de rutas devuelve ["Ford Fiesta", "A pie"]
+            try {
+                let list = await routeService.getRouteList();
+                expect(list.at(0)?.transporte).toEqual(TIPO_TRANSPORTE.VEHICULO);
+
+                // WHEN
+                // El usuario trata de fijar la ruta "A pie".
+                const poiFijado = await routeService.pinRoute(rutaCreada);
+
+                // THEN
+                // La ruta "A pie" pasa a estar fijada (pinned = true)
+                expect(poiFijado).toBeTrue();
+
+                // el orden ahora es ["A pie", "Ford Fiesta"]
+                list = await routeService.getRouteList();
+                expect(list.at(0)?.transporte).toEqual(TIPO_TRANSPORTE.A_PIE);
+            }
+            finally {
+                // CLEANUP
+                // Borrar ambas rutas
+                await routeService.deleteRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.matricula);
+                await routeService.deleteRoute(datosRutaP.geohash_origen, datosRutaP.geohash_destino, datosRutaP.transporte);
+            }
+
+        });
+
+        it('HU503-EI02: Fijar un POI no registrado', async () => {
+            // GIVEN
+            // Lista de rutas registradas vacía.
+
+            // WHEN
+            // El usuario trata de fijar la ruta "A-B" (con los atributos indicados abajo es suficiente para instanciarla).
+            await expectAsync(routeService.pinRoute(new RouteModel(
+                datosRutaC.geohash_origen,
+                datosRutaC.geohash_destino,
+                datosRutaC.transporte,
+                datosRutaC.preferencia))).toBeRejectedWith(new MissingRouteError());
+            // THEN
+            // Se lanza el error MissingPOIError
+            // No se modifica el estado
+        });
+    });
+
+
     describe('HU606: Guardar datos de rutas', () => {
 
         it('HU606-EV01: Comprobación de datos guardados de rutas ante cierre involuntario', async () => {
             // GIVEN
             //  el usuario "ramon" está registrado y ha iniciado sesión
-            //  la lista de POI registrados es [A]
+            // Lista de rutas registradas → ["A-B"].
+            await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
             const listaRutasAntes = await routeService.getRouteList();
 
             //  se cierra la sesión involuntariamente
@@ -716,5 +756,4 @@ describe('Pruebas sobre rutas', () => {
             expect(listaRutas).toEqual(listaRutasAntes);
         });
     });
-     */
 });

@@ -113,6 +113,26 @@ export class RouteService {
         return this.routeDb.createRoute(origen, destino, transporte, preferencia, modelo, matricula);
     }
 
+    // HU408: Listar rutas
+    /**
+     * Lista las rutas del usuario
+     */
+    async getRouteList(): Promise<RouteModel[]> {
+        return [];
+    }
+
+    // HU409: Consultar ruta
+    /**
+     * Consulta los datos de una ruta concreta.
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @param matricula Matrícula del vehículo (opcional).
+     */
+    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<RouteModel> {
+        return new RouteModel('', '', transporte, PREFERENCIA.RECOMENDADA);
+    }
+
     // HU410: Eliminar ruta
     /**
      * Elimina una ruta existente.
@@ -136,5 +156,33 @@ export class RouteService {
 
         // Borra la ruta
         return this.routeDb.deleteRoute(origen, destino, transporte);
+    }
+
+    // HU411: Modificar ruta
+    /**
+     * Modifica los datos de una ruta concreta. Téngase en cuenta que los cambios afectan al coste de la ruta.
+     * @param origen Geohash del POI de origen.
+     * @param destino Geohash del POI de destino.
+     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @param matricula Matrícula del vehículo (opcional).
+     * @param update Partial con los atributos que se van a actualizar.
+     * @returns Promise con la ruta actualizada.
+     * @throws SessionNotActiveError si la sesión no está activa.
+     * @throws MissingRouteError si la ruta no existe.
+     */
+    async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>, matricula?: string): Promise<RouteModel> {
+        return new RouteModel('', '', transporte, PREFERENCIA.RECOMENDADA);
+    }
+
+    // HU503 Fijar ruta
+    /**
+     * Fija una ruta específica.
+     * @param ruta La ruta a fijar.
+     * @returns Promise con true si se ha fijado, false si no.
+     * @throws SessionNotActiveError si la sesión no está activa.
+     * @throws MissingRouteError si la ruta no existe.
+     */
+    async pinRoute(ruta: RouteModel): Promise<boolean> {
+        return false;
     }
 }

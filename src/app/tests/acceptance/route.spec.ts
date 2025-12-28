@@ -572,10 +572,10 @@ describe('Pruebas sobre rutas', () => {
             // Estado esperado: no se modifica el estado.
         },30000);
     });
-    */
+
     // --- HU410: Eliminar Ruta ---
 
-    fdescribe('HU410: Eliminar una ruta guardada', () => {
+    describe('HU410: Eliminar una ruta guardada', () => {
 
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN
@@ -751,4 +751,5 @@ describe('Pruebas sobre rutas', () => {
             expect(listaRutas).toEqual(listaRutasAntes);
         });
     });
+     */
 });

@@ -19,12 +19,13 @@ export class RouteDB implements RouteRepository {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param matricula Matrícula del vehículo (opcional)
      * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.)
      * @param modelo Resultado de la búsqueda (duración, distancia de la ruta)
+     * @param matricula Matrícula del vehículo (opcional)
      */
-    async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
-        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
+    async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA,
+                      modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${transporte}`;
 
         try{
             // Referencia al documento

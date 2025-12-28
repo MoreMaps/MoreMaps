@@ -49,10 +49,9 @@ export class RouteDB implements RouteRepository {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param matricula Matrícula del vehículo (opcional)
      */
-    async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
-        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
+    async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean> {
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${transporte}`;
         try {
             // Obtener los datos de la ruta que se va a borrar
             const routeRef = doc(this.firestore, path);
@@ -73,11 +72,10 @@ export class RouteDB implements RouteRepository {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param matricula Matrícula del vehículo (opcional)
      * @returns Promise con true si existe, false si no existe
      */
-    async routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
-        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${matricula ? matricula : transporte}`;
+    async routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean> {
+        const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${transporte}`;
         const docRef = doc(this.firestore, path);
         const snap = await getDoc(docRef);
         return snap.exists();

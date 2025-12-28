@@ -105,7 +105,7 @@ export class RouteService {
         }
 
         // Comprueba que la ruta NO exista
-        if (await this.routeDb.routeExists(origen, destino, transporte, matricula)) {
+        if (await this.routeDb.routeExists(origen, destino, transporte)) {
             throw new RouteAlreadyExistsError();
         }
 
@@ -119,23 +119,22 @@ export class RouteService {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
-     * @param matricula Matrícula del vehículo (opcional).
      * @returns Promise con true si se borra, false si no.
      * @throws SessionNotActiveError Si la sesión no está activa.
      * @throws MissingRouteError Si no existe la ruta.
      */
-    async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
+    async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
         }
 
         // Comprueba que la ruta exista
-        if (!await this.routeDb.routeExists(origen, destino, transporte, matricula)) {
+        if (!await this.routeDb.routeExists(origen, destino, transporte)) {
             throw new MissingRouteError();
         }
 
         // Borra la ruta
-        return this.routeDb.deleteRoute(origen, destino, transporte, matricula);
+        return this.routeDb.deleteRoute(origen, destino, transporte);
     }
 }

@@ -114,20 +114,20 @@ describe('Pruebas sobre rutas', () => {
         try {
             await vehicleService.createVehicle(datosFord);
         } catch (e) {
-            console.info("Error al crear vehículo: " + e)
+            console.info("Error al crear vehículo: " + e);
         }
 
         // Registrar POI A y POI B usando POIService
         try {
             await poiService.createPOI(datosPoiA);
         } catch (e) {
-            console.info("Error al crear POI A: " + e)
+            console.info("Error al crear POI A: " + e);
         }
 
         try {
             await poiService.createPOI(datosPoiB);
         } catch (e) {
-            console.error("Error al crear POI B: " + e)
+            console.error("Error al crear POI B: " + e);
         }
 
         // Resultado de la API para la ruta "A-B-Ford Fiesta" (evita llamadas innecesarias)
@@ -140,7 +140,7 @@ describe('Pruebas sobre rutas', () => {
         try {
             await poiService.deletePOI(datosPoiB.geohash);
         } catch (e) {
-            console.error("Error al borrar POI B: " + e)
+            console.error("Error al borrar POI B: " + e);
         }
 
         // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
@@ -510,7 +510,7 @@ describe('Pruebas sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
-                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula);
 
             // WHEN
             // El usuario consulta su lista de rutas registradas.
@@ -535,7 +535,7 @@ describe('Pruebas sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
-                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula);
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B".
@@ -581,7 +581,7 @@ describe('Pruebas sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas ["A-B"].
             await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
-                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula);
 
             // WHEN
             // El usuario trata de eliminar la ruta "A-B".
@@ -626,9 +626,8 @@ describe('Pruebas sobre rutas', () => {
         it('HU411-EV01. Modificar el modo de transporte de una ruta', async () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
-            const rutaBuscada = await mapSearchService.searchRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino, datosRutaC.transporte, datosRutaC.preferencia);
             await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
-                datosRutaC.transporte, datosRutaC.preferencia, rutaBuscada, datosRutaC.matricula)
+                datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula);
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B" y modifica el modo de
@@ -679,10 +678,9 @@ describe('Pruebas sobre rutas', () => {
             await routeService.createRoute(datosRutaC.geohash_origen, datosRutaC.geohash_destino,
                 datosRutaC.transporte, datosRutaC.preferencia, rutaABCBuscada, datosRutaC.matricula)
 
-            // Registramos la ruta "A-B" a pie.
-            const rutaBuscada = await mapSearchService.searchRoute(datosRutaP.geohash_origen, datosRutaP.geohash_destino, datosRutaP.transporte, datosRutaP.preferencia);
+            // Guardamos la ruta "A-B" a pie. Ignoramos el coste, así no llamamos a la API.
             const rutaCreada = await routeService.createRoute(datosRutaP.geohash_origen, datosRutaP.geohash_destino,
-                datosRutaP.transporte, datosRutaP.preferencia, rutaBuscada)
+                datosRutaP.transporte, datosRutaP.preferencia);
 
             // Ambas rutas no son fijadas, una consulta de rutas devuelve ["Ford Fiesta", "A pie"]
             try {

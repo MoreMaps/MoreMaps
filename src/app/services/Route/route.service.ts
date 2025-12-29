@@ -147,9 +147,22 @@ export class RouteService {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @throws SessionNotActiveError Si la sesión no está activa.
+     * @throws MissingRouteError Si no existe la ruta.
      */
     async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<RouteModel> {
-        return new RouteModel('', '', '', transporte, PREFERENCIA.RECOMENDADA, 0 , 0);
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Comprueba que la ruta exista
+        if (!await this.routeDb.routeExists(origen, destino, transporte)) {
+            throw new MissingRouteError();
+        }
+
+        // Obtiene la ruta
+        return this.routeDb.getRoute(origen, destino, transporte);
     }
 
     // HU410: Eliminar ruta

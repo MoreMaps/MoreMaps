@@ -120,7 +120,25 @@ export class RouteService {
      * Lista las rutas del usuario
      */
     async getRouteList(): Promise<RouteModel[]> {
-        return undefined as any;
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Obtener lista de rutas
+        let routeList: RouteModel[] = await this.routeDb.getRouteList();
+        if (routeList.length > 0) {
+            routeList.sort((a, b) => {
+                // Ordenar por pinned (true > false)
+                if (a.pinned !== b.pinned) {
+                    return a.pinned ? -1 : 1;
+                }
+                // Ordenar alfabéticamente por alias
+                return a.alias.localeCompare(b.alias, 'es', {sensitivity: 'base'});
+            });
+            return routeList;
+        }
+        return [];
     }
 
     // HU409: Consultar ruta
@@ -184,5 +202,11 @@ export class RouteService {
      */
     async pinRoute(ruta: RouteModel): Promise<boolean> {
         return false;
+    }
+
+    getRouteId(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): string {
+        if (!origen || !destino || !transporte)
+            return '';
+        return `${origen}-${destino}-${transporte}`;
     }
 }

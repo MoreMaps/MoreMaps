@@ -1,12 +1,21 @@
 import {inject, Injectable} from '@angular/core';
 import {RouteRepository} from './RouteRepository';
 import {Auth} from '@angular/fire/auth';
-import {collection, deleteDoc, doc, Firestore, getDoc, getDocs, query, setDoc} from '@angular/fire/firestore';
+import {
+    collection,
+    deleteDoc,
+    doc,
+    Firestore,
+    getDoc,
+    getDocs,
+    query,
+    setDoc,
+    updateDoc
+} from '@angular/fire/firestore';
 import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {DBAccessError} from '../../errors/DBAccessError';
-import {POIModel} from '../../data/POIModel';
 
 @Injectable({
     providedIn: 'root'
@@ -112,7 +121,23 @@ export class RouteDB implements RouteRepository {
      * @param ruta datos completos de la ruta
      */
     async pinRoute(ruta: RouteModel): Promise<boolean> {
-        throw new Error("Method not implemented.");
+        // Lectura de la ruta registrada.
+        const route: RouteModel = await this.getRoute(ruta.geohash_origen, ruta.geohash_destino, ruta.transporte);
+
+        // Ruta para actualizar la ruta.
+        const routeId = `${ruta.geohash_origen}-${ruta.geohash_destino}-${ruta.transporte}`;
+        const path: string = `/items/${this.auth.currentUser!.uid}/routes/${routeId}`;
+
+        // Actualización del documento, invirtiendo "pinned".
+        try {
+            await updateDoc( doc(this.firestore, path), {pinned: !route.pinned} );
+            return true;
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
+        }
     }
 
     /**

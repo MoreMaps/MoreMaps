@@ -214,7 +214,18 @@ export class RouteService {
      * @throws MissingRouteError si la ruta no existe.
      */
     async pinRoute(ruta: RouteModel): Promise<boolean> {
-        return false;
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Comprueba que el vehículo exista
+        if (!await this.routeDb.routeExists(ruta.geohash_origen, ruta.geohash_destino, ruta.transporte)) {
+            throw new MissingRouteError();
+        }
+
+        // Fijar vehículo
+        return this.routeDb.pinRoute(ruta);
     }
 
     getRouteId(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): string {

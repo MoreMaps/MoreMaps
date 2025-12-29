@@ -90,6 +90,7 @@ export class RouteService {
      * Crea una ruta nueva.
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
+     * @param alias Alias por defecto de la ruta.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
      * @param matricula Matrícula del vehículo (opcional).
      * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.).
@@ -98,7 +99,8 @@ export class RouteService {
      * @throws SessionNotActiveError Si la sesión no está activa.
      * @throws RouteAlreadyExistsError Si ya existe la ruta.
      */
-    async createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
+    async createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
+                      preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
@@ -110,7 +112,7 @@ export class RouteService {
         }
 
         // Crea la ruta
-        return this.routeDb.createRoute(origen, destino, transporte, preferencia, modelo, matricula);
+        return this.routeDb.createRoute(origen, destino, alias, transporte, preferencia, modelo, matricula);
     }
 
     // HU408: Listar rutas
@@ -118,7 +120,7 @@ export class RouteService {
      * Lista las rutas del usuario
      */
     async getRouteList(): Promise<RouteModel[]> {
-        return [];
+        return undefined as any;
     }
 
     // HU409: Consultar ruta
@@ -147,13 +149,27 @@ export class RouteService {
 
     // HU410: Eliminar ruta
     /**
-     * Elimina una ruta concreta.
+     * Elimina una ruta existente.
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @returns Promise con true si se borra, false si no.
+     * @throws SessionNotActiveError Si la sesión no está activa.
+     * @throws MissingRouteError Si no existe la ruta.
      */
     async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean> {
-        return false;
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Comprueba que la ruta exista
+        if (!await this.routeDb.routeExists(origen, destino, transporte)) {
+            throw new MissingRouteError();
+        }
+
+        // Borra la ruta
+        return this.routeDb.deleteRoute(origen, destino, transporte);
     }
 
     // HU411: Modificar ruta
@@ -168,7 +184,7 @@ export class RouteService {
      * @throws MissingRouteError si la ruta no existe.
      */
     async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>): Promise<RouteModel> {
-        return new RouteModel('', '', transporte, PREFERENCIA.RECOMENDADA);
+        return new RouteModel('', '', '', transporte, PREFERENCIA.RECOMENDADA, 0, 0);
     }
 
     // HU503 Fijar ruta

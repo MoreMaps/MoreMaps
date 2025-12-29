@@ -37,7 +37,7 @@ import {CoordsNotFoundError} from '../../errors/POI/CoordsNotFoundError';
 import {RouteDetailsDialog} from '../route/route-details-dialog/routeDetailsDialog';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {RouteCostResult, RouteService} from '../../services/Route/route.service';
-import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
+import {mapaTransporte, PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
@@ -579,10 +579,19 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         // 5. GUARDAR
         instance.save.subscribe(async () => {
+            // Transporte para el alias por defecto
+            const transporte = mapaTransporte[this.currentRouteState.transport] || 'desconocido';
+
+            // Alias por defecto
+            const alias = `Ruta de ${startName.split(',')[0]} a ${endName.split(',')[0]} ${transporte}`;
+
+            // Llamada al servicio para crear la ruta
             try {
                 await this.routeService.createRoute(
-                    this.currentRouteState.startHash, this.currentRouteState.endHash, this.currentRouteState.transport,
-                    this.currentRouteState.preference, routeResult, this.currentRouteState.matricula);
+                    this.currentRouteState.startHash, this.currentRouteState.endHash, alias,
+                    this.currentRouteState.transport, this.currentRouteState.preference, routeResult,
+                    this.currentRouteState.matricula
+                );
                 this.showSnackbar('Ruta guardada', 'OK');
             } catch (error) {
                 this.showSnackbar('Fallo al guardar ruta: ' + error, 'OK');

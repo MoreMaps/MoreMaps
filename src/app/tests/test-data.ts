@@ -73,26 +73,27 @@ export const VEHICLE_TEST_DATA: VehicleModel[] = [
  */
 export const ROUTE_TEST_DATA: RouteModel[] = [
 
-    // Ruta de Alicante a Valencia
+    // Ruta de Alicante a Valencia en coche
     new RouteModel(
         POI_TEST_DATA[0].geohash,
         POI_TEST_DATA[1].geohash,
+        'De Alicante a Valencia en coche',
         TIPO_TRANSPORTE.VEHICULO,
         PREFERENCIA.RECOMENDADA,
         177628.3,
         7064.3,
-        'De Alicante a Valencia en coche',
         false,
         VEHICLE_TEST_DATA[0].matricula,
     ),
+    // Ruta de Alicante a Valencia a pie
     new RouteModel(
         POI_TEST_DATA[0].geohash,
         POI_TEST_DATA[1].geohash,
+        'De Alicante a Valencia a pie',
         TIPO_TRANSPORTE.A_PIE,
         PREFERENCIA.RECOMENDADA,
         161481.6,
         116265.8,
-        'De Alicante a Valencia a pie',
         false,
     ),
 ]

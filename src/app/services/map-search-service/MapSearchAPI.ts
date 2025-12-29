@@ -173,9 +173,8 @@ export class MapSearchAPI implements MapSearchRepository {
             const country = feature.properties?.country;
             const coords = feature.geometry?.coordinates; // (coords[1] = lat, coords[0] = lon)
 
-            // Construir nombre completo (nombre + localidad + país)
-            const placeName = [name, locality, country]
-                /* .filter((str) => str != null) // quita nulls y undefined, pero no cadena vacía */
+            // Construir nombre completo (nombre + localidad + país), evitando duplicados
+            const placeName = [...new Set([name, locality, country])]
                 .filter((str): str is string => !!str) // quita nulls, undefined y cadena vacía
                 .join(', ');
 

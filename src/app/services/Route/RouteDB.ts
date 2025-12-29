@@ -1,7 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {RouteRepository} from './RouteRepository';
 import {Auth} from '@angular/fire/auth';
-import {deleteDoc, doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';
+import {collection, deleteDoc, doc, Firestore, getDoc, getDocs, query, setDoc} from '@angular/fire/firestore';
 import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
@@ -71,7 +71,26 @@ export class RouteDB implements RouteRepository {
      * Devuelve una lista con todas las rutas del usuario actual.
      */
     async getRouteList(): Promise<RouteModel[]> {
-        throw new Error("Method not implemented.");
+        const path: string = `/items/${this.auth.currentUser!.uid}/routes`;
+        try {
+            // Obtener items de la colección
+            const itemsRef = collection(this.firestore, path);
+            const snapshot = await getDocs(query(itemsRef));
+
+            // Mapear a lista de RouteModel
+            let list: RouteModel[] = [];
+            if (!snapshot.empty) {
+                list = snapshot.docs.map(doc => {
+                    return RouteModel.fromJSON(doc.data());
+                });
+            }
+            return list;
+        }
+        catch (error: any) {
+            // Ha ocurrido un error inesperado en Firebase
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            throw new DBAccessError();
+        }
     }
 
     /**

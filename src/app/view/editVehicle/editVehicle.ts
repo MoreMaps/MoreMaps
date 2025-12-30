@@ -129,7 +129,7 @@ export class EditVehicleComponent implements OnInit, OnChanges {
             // Se construye el objeto parcial con los cambios
             const updatedVehicleParts: Partial<VehicleModel> = {
                 alias: f.alias,
-                matricula: f.matricula.replace(/\s/g, '').toUpperCase(),
+                matricula: f.matricula,
                 marca: f.marca,
                 modelo: f.modelo,
                 anyo: Number(f.anyo),

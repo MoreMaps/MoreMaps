@@ -81,8 +81,8 @@ export class VehicleService {
             throw new MissingVehicleError();
         }
 
-        // Comprueba que el nuevo vehículo NO exista
-        if (update.matricula && await this.vehicleDb.vehicleExists(update.matricula)) {
+        // Comprueba que el nuevo vehículo NO exista (siempre que se cambie la matrícula)
+        if (update.matricula && update.matricula != matricula && await this.vehicleDb.vehicleExists(update.matricula)) {
             throw new VehicleAlreadyExistsError();
         }
 

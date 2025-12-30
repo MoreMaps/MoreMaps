@@ -10,7 +10,7 @@ import {
     getDocs,
     query,
     setDoc,
-    updateDoc
+    updateDoc, writeBatch
 } from '@angular/fire/firestore';
 import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
@@ -130,7 +130,7 @@ export class RouteDB implements RouteRepository {
 
         // Actualización del documento, invirtiendo "pinned".
         try {
-            await updateDoc( doc(this.firestore, path), {pinned: !route.pinned} );
+            await updateDoc(doc(this.firestore, path), {pinned: !route.pinned});
             return true;
         }
         catch (error: any) {
@@ -160,6 +160,31 @@ export class RouteDB implements RouteRepository {
         catch (error: any) {
             console.error("ERROR de Firebase: " + error);
             throw new DBAccessError();
+        }
+    }
+
+    /**
+     * Borra todas las rutas del usuario actual de forma atómica.
+     */
+    async clear(): Promise<boolean> {
+        const path = `items/${this.auth.currentUser!.uid}/routes`;
+        const routes = await getDocs(query(collection(this.firestore, path)));
+
+        try {
+            // Transacción
+            const batch = writeBatch(this.firestore);
+            routes.forEach(route => {
+                batch.delete(route.ref);
+            });
+
+            // Fin de la transacción
+            await batch.commit();
+            return true;
+        }
+            // Ha ocurrido un error inesperado en Firebase.
+        catch (error: any) {
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            return false;
         }
     }
 

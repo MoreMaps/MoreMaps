@@ -37,7 +37,7 @@ import {FuelPriceCache} from '../../services/fuel-price-service/FuelPriceCache';
 import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
 
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
-fdescribe('Pruebas de aceptación sobre rutas', () => {
+describe('Pruebas de aceptación sobre rutas', () => {
     let userService: UserService;
     let poiService: POIService;
     let mapSearchService: MapSearchService;
@@ -93,6 +93,9 @@ fdescribe('Pruebas de aceptación sobre rutas', () => {
 
         // Iniciar sesión
         await userService.login(datosRamon.email, datosRamon.pwd);
+
+        // Borrar todas las rutas del usuario (si hubiere)
+        await routeService.clear();
 
         // Registrar Vehículo "Ford Fiesta"
         try {

@@ -1,6 +1,5 @@
 import {TestBed} from '@angular/core/testing';
 import {appConfig} from '../../app.config';
-import {doc, Firestore, setDoc} from '@angular/fire/firestore';
 import {Auth} from '@angular/fire/auth';
 // Usuarios
 import {USER_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
@@ -20,7 +19,6 @@ describe('Pruebas sobre vehículos', () => {
     let userService: UserService;
     let vehicleService: VehicleService;
 
-    let firestore: Firestore;
     let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
@@ -46,8 +44,7 @@ describe('Pruebas sobre vehículos', () => {
         userService = TestBed.inject(UserService);
         vehicleService = TestBed.inject(VehicleService);
 
-        // Inyección de Firestore y Auth
-        firestore = TestBed.inject(Firestore);
+        // Inyección de Auth
         auth = TestBed.inject(Auth);
 
         // Iniciar sesión con ramón para todos los test
@@ -55,21 +52,13 @@ describe('Pruebas sobre vehículos', () => {
     });
 
     beforeEach(async () => {
-        // Registrar Vehículo inicial "Ford Fiesta" para tener estado base en algunos tests
+        // Registrar vehículo inicial "Ford Fiesta" para tener estado base en algunos tests
         try {
-            // 1. Referencia al documento
-            const vehicleRef = doc(firestore, `/items/${auth.currentUser?.uid}/vehicles/${datosFord.matricula}`);
-
-            // 2. Definir los datos a escribir en formato JSON
-            vehiculoRegistrado = new VehicleModel(datosFord.alias, datosFord.matricula, datosFord.marca, datosFord.modelo, datosFord.anyo, datosFord.tipoCombustible, datosFord.consumoMedio);
-
-            // 3. Con merge = true, "escribir" el documento.
-            // Si este existe, se actualiza
-            // Si no existe, se crea
-            await setDoc(vehicleRef, vehiculoRegistrado.toJSON(), {merge: true});
-        } catch (error) {
-            console.error(error);
-            throw error;
+            vehiculoRegistrado = await vehicleService.readVehicle(datosFord.matricula);
+        }
+        // Lanza un error si no existe, entonces se crea
+        catch (error) {
+            vehiculoRegistrado = await vehicleService.createVehicle(datosFord);
         }
     })
 
@@ -77,7 +66,7 @@ describe('Pruebas sobre vehículos', () => {
     afterAll(async () => {
         try {
             if (auth.currentUser) await userService.logout();
-            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de vehicle.spec.ts.');
+            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterAll de vehicle.spec.ts.');
             else { console.info('Logout en afterAll de vehicle.spec.ts funcionó correctamente.'); }
         } catch (error) {
             console.error(error);

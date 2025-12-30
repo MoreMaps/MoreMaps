@@ -19,6 +19,9 @@ export interface RouteRepository {
 
     deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean>;
 
+    // Borrar todos los elementos
+    clear(): Promise<boolean>;
+
     // Fijar ruta
     pinRoute(ruta: RouteModel): Promise<boolean>;
 

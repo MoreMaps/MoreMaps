@@ -5,7 +5,6 @@ import {USER_REPOSITORY} from '../../services/User/UserRepository';
 import {UserService} from '../../services/User/user.service';
 import {UserDB} from '../../services/User/UserDB';
 import {appConfig} from '../../app.config';
-import {doc, Firestore, setDoc} from '@angular/fire/firestore';
 import {Auth} from '@angular/fire/auth';
 import {POIService} from '../../services/POI/poi.service';
 import {POIModel} from '../../data/POIModel';
@@ -28,7 +27,6 @@ describe('Pruebas sobre POI', () => {
 
     let poiRegistrado: POIModel;
 
-    let firestore: Firestore;
     let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
@@ -57,8 +55,7 @@ describe('Pruebas sobre POI', () => {
         poiService = TestBed.inject(POIService);
         mapSearchService = TestBed.inject(MapSearchService);
 
-        // Inyección de Firestore y Auth
-        firestore = TestBed.inject(Firestore);
+        // Inyección de Auth
         auth = TestBed.inject(Auth);
 
         // Iniciar sesión con ramón para todos los test
@@ -67,13 +64,13 @@ describe('Pruebas sobre POI', () => {
 
     // Se comprueba si el POI A existe en la base de datos y se crea en caso contrario.
     beforeEach(async () => {
+        // Registrar POI inicial "A" para tener estado base en algunos tests
         try {
-            const poiRef = doc(firestore, `/items/${auth.currentUser?.uid}/pois/${poiA.geohash}`);
-            poiRegistrado = new POIModel(poiA.lat, poiA.lon, poiA.placeName, poiA.geohash, false, poiA.alias, poiA.description);
-            await setDoc(poiRef, poiRegistrado.toJSON(), {merge: true});
-        } catch (error) {
-            console.error(error);
-            throw error;
+            poiRegistrado = await poiService.readPOI(poiA.geohash);
+        }
+            // Lanza un error si no existe, entonces se crea
+        catch (error) {
+            poiRegistrado = await poiService.createPOI(poiA);
         }
     });
 

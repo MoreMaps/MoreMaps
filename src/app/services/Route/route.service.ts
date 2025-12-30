@@ -190,6 +190,14 @@ export class RouteService {
         return this.routeDb.deleteRoute(origen, destino, transporte);
     }
 
+    /**
+     * Elimina todas las rutas del usuario de forma atómica.
+     * @returns Promise con true si se han borrado, o false si no se han borrado.
+     */
+    async clear(): Promise<boolean> {
+        return await this.routeDb.clear();
+    }
+
     // HU411: Modificar ruta
     /**
      * Modifica los datos de una ruta concreta. Téngase en cuenta que los cambios NO afectan al coste de la ruta.

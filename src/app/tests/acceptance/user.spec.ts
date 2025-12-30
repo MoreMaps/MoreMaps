@@ -8,7 +8,6 @@ import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {appConfig} from '../../app.config';
-import {doc, Firestore, getDoc} from '@angular/fire/firestore';
 import {Auth} from '@angular/fire/auth';
 
 
@@ -16,7 +15,6 @@ import {Auth} from '@angular/fire/auth';
 describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
-    let firestore: Firestore;
     let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
@@ -30,8 +28,10 @@ describe('Pruebas sobre usuarios', () => {
                 appConfig.providers]
         }).compileComponents();
 
+        // Inyección del servicio
         userService = TestBed.inject(UserService);
-        firestore = TestBed.inject(Firestore);
+
+        // Inyección de Auth
         auth = TestBed.inject(Auth);
 
         // PASO 0: Borrado preventivo de María
@@ -49,40 +49,21 @@ describe('Pruebas sobre usuarios', () => {
             await userService.logout();
         }
 
-        // Indica si el usuario ya existe de forma consistente (o no)
-        let needsCreate: boolean = false;
-
-        // PASO 1: Intentamos Loguearnos
         try {
+            // Login
             if (!auth.currentUser) {
                 await userService.login(ramon.email, ramon.pwd);
             }
 
-            // Obtener UID
-            const uid = auth.currentUser ? auth.currentUser.uid :  "";
+            // Obtener datos del usuario actual
+            usuarioRegistradoRamon = await userService.getCurrentUser();
+
+            // Logout
             await userService.logout();
-
-            const docRef = doc(firestore, `users/${uid}`);
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-                // CASO ideal: Existe en Auth y en Firestore
-                const data = snap.data();
-                usuarioRegistradoRamon = new UserModel(uid, data['email'], data['nombre'], data['apellidos']);
-                console.log("Usuario Ramón cargado correctamente en la BD.");
-            } else {
-                // CASO ZOMBIE: Existe en Auth, pero NO en Firestore
-                console.warn("Detectado usuario Ramón corrupto (Auth sí, DB no). Eliminando para regenerar...");
-                await userService.deleteUser(); // Lo borramos para empezar de cero
-                needsCreate = true;
-            }
-
-        } catch (e) {
-            // Si falla el login (porque no existe o password incorrecto), procedemos a crear
-            needsCreate = true;
+            console.log("Datos del usuario 'ramon' obtenidos correctamente.");
         }
-
-        // PASO 2: Creación desde cero (si fue necesario)
-        if (needsCreate) {
+        catch (e) {
+            // Si falla el login, o el usuario es inconsistente, procedemos a crear desde cero
             console.log("Creando usuario Ramón desde cero...");
             try {
                 // signUp crea Auth + Firestore y devuelve el modelo lleno.

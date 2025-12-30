@@ -91,8 +91,8 @@ export class UserService {
     // HU106 Eliminar cuenta
     /**
      * Borra al usuario con la sesión activa.
-     * @throws UserNotFoundError si el usuario no se encuentra
      * @throws SessionNotActiveError si la sesión no está activa
+     * @throws UserNotFoundError si el usuario no se encuentra
      */
     async deleteUser(): Promise<boolean> {
         // Comprueba que la sesión está activa
@@ -109,5 +109,27 @@ export class UserService {
         // Borramos el perfil de Auth y el documento de 'users'
         // TODO:  en it06 - borrar /items
         return this.userDb.deleteAuthUser();
+    }
+
+    /**
+     * Devuelve el usuario actual.
+     * @returns UserModel del usuario actual.
+     * @throws SessionNotActiveError si la sesión no está activa
+     * @throws UserNotFoundError si el usuario no se encuentra
+     */
+    async getCurrentUser(): Promise<UserModel> {
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Comprueba que el usuario existe
+        const curr = await this.userDb.getCurrentUser();
+        if (!await this.userDb.userExists(curr.email)) {
+            throw new UserNotFoundError();
+        }
+
+        // Devuelve el usuario
+        return curr;
     }
 }

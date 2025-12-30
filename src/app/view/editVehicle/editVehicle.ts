@@ -44,12 +44,10 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     readonly maxYear = this.currentYear + 1;
     readonly minYear = MIN_YEAR;
     readonly minConsumoMedio = MIN_CONSUMO;
-    readonly tiposCombustible = FUEL_TYPES;
+    protected readonly FUEL_TYPES = FUEL_TYPES;
 
     private fb = inject(FormBuilder);
     private service = inject(VehicleService);
-
-    fuelTypes = signal<string[]>(FUEL_TYPES);
 
     selectedFuel = signal<string>('');
 
@@ -84,8 +82,8 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     // 1. Inicializa la estructura vacía (solo una vez)
     initFormStructure() {
         this.editForm = this.fb.group({
-            alias: ['', [Validators.required]],
-            matricula: ['', [Validators.required]],
+            alias: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(150)]],
+            matricula: ['', [Validators.required, Validators.pattern("^[0-9]{4}[A-Z]{3}$")]],
             marca: ['', [Validators.required]],
             modelo: ['', [Validators.required]],
             anyo: [this.currentYear, [
@@ -164,7 +162,4 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     ngOnDestroy() {
         if (this.sub) this.sub.unsubscribe();
     }
-
-
-    protected readonly FUEL_TYPES = FUEL_TYPES;
 }

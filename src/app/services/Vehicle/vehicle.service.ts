@@ -167,7 +167,7 @@ export class VehicleService {
             throw new Error(`El campo 'matrícula' es obligatorio.`);
         }
         // No debe contener vocales
-        if (/[aeiou]/i.test(vehiculo.matricula)) {
+        if (/[AEIOU]/i.test(vehiculo.matricula)) {
             throw new Error(`Una matrícula no debe contener vocales.`);
         }
 

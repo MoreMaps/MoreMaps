@@ -4,7 +4,6 @@ import {CommonModule} from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { POIModel } from '../../data/POIModel';
 import {POIService} from '../../services/POI/poi.service';
-import {Auth} from '@angular/fire/auth';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
 
@@ -18,8 +17,6 @@ import {POIDB} from '../../services/POI/POIDB';
 })
 export class PoiDetailEdit implements OnInit {
     @Input() poi: POIModel | null = null;
-    // Sería mejor obtener esto de un contexto global...
-    @Input() auth: Auth | null = null;
     @Output() close = new EventEmitter<void>();
     @Output() update = new EventEmitter<boolean>();
     editForm!: FormGroup;
@@ -32,7 +29,7 @@ export class PoiDetailEdit implements OnInit {
 
     initForm(): void {
         this.editForm = this.fb.group({
-            alias: ['', ],
+            alias: ['', [Validators.minLength(1), Validators.maxLength(150)]],
             description: ['', [Validators.maxLength(150)]]
         });
 
@@ -47,7 +44,7 @@ export class PoiDetailEdit implements OnInit {
 
     // Guarda los nuevos datos del POI, y emite el evento de cierre
     async onSave(): Promise<void> {
-        if (this.editForm.valid && this.poi && this.auth) {
+        if (this.editForm.valid && this.poi) {
             const updatedPOI: Partial<POIModel> = {
                 alias: this.editForm.value?.alias,
                 description: this.editForm.value?.description

@@ -12,7 +12,6 @@ import {
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {Auth} from '@angular/fire/auth';
 import {VehicleModel} from '../../data/VehicleModel';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
@@ -34,7 +33,6 @@ const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
 })
 export class EditVehicleComponent implements OnInit, OnChanges {
     @Input() vehicle: VehicleModel | null = null;
-    @Input() auth: Auth | null = null;
     @Output() close = new EventEmitter<void>();
     @Output() update = new EventEmitter<VehicleModel | null>();
 
@@ -83,7 +81,7 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     initFormStructure() {
         this.editForm = this.fb.group({
             alias: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(150)]],
-            matricula: ['', [Validators.required, Validators.pattern("^[0-9]{4}[A-Z]{3}$")]],
+            matricula: ['', [Validators.required, Validators.pattern("^[0-9]{4}[A-Za-z]{3}$")]],
             marca: ['', [Validators.required]],
             modelo: ['', [Validators.required]],
             anyo: [this.currentYear, [
@@ -106,7 +104,7 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     updateFormValues(v: VehicleModel) {
         this.editForm.patchValue({
             alias: v.alias,
-            matricula: v.matricula, // Ahora entra limpio
+            matricula: v.matricula.replace('\s', '').toUpperCase(), // Ahora entra limpio
             marca: v.marca,
             modelo: v.modelo,
             anyo: v.anyo,
@@ -123,18 +121,22 @@ export class EditVehicleComponent implements OnInit, OnChanges {
             return;
         }
 
-        if (this.vehicle && this.auth) {
+        if (this.vehicle) {
             const f = this.editForm.getRawValue();
 
-            // Se construye el objeto parcial con los cambios
+            // Obtiene los elementos modificados
+            const dirtyControls = Object.keys(this.editForm.controls)
+                .filter(key => this.editForm.controls[key].dirty);
+
+            // Se construye el objeto parcial con únicamente los cambios
             const updatedVehicleParts: Partial<VehicleModel> = {
-                alias: f.alias,
-                matricula: f.matricula,
-                marca: f.marca,
-                modelo: f.modelo,
-                anyo: Number(f.anyo),
-                tipoCombustible: f.tipoCombustible,
-                consumoMedio: Number(f.consumoMedio)
+                alias: dirtyControls.includes('alias') ? f.alias : undefined,
+                matricula: dirtyControls.includes('matricula') ? f.matricula : undefined,
+                marca: dirtyControls.includes('marca') ? f.marca : undefined,
+                modelo: dirtyControls.includes('modelo') ? f.modelo : undefined,
+                anyo: dirtyControls.includes('anyo') ? Number(f.anyo) : undefined,
+                tipoCombustible: dirtyControls.includes('tipoCombustible') ? f.tipoCombustible : undefined,
+                consumoMedio: dirtyControls.includes('consumoMedio') ? Number(f.consumoMedio) : undefined
             };
 
             const success = await this.service.updateVehicle(this.vehicle.matricula, updatedVehicleParts);

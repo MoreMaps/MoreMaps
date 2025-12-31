@@ -244,7 +244,6 @@ describe('Pruebas sobre POI', () => {
                     geohash: poiA.geohash,
                     placeName: poiA.placeName,
                     alias: poiA.alias,
-                    description: poiA.description,
                     pinned: false
                 })
             );
@@ -274,17 +273,19 @@ describe('Pruebas sobre POI', () => {
             // El usuario ramon ha iniciado sesión
             // Lista de POI registrados es ["A"]
 
-            // WHEN
-            // El usuario modifica el alias del POI “A” a "Al y Canto"
-            const poiModificado = await poiService.updatePOI(poiRegistrado.geohash, {alias: "Al y Canto"})
             try {
+                // WHEN
+                // El usuario modifica el alias del POI “A” a "Al y Canto"
+                const poiModificado = await poiService.updatePOI(poiRegistrado.geohash, {alias: "Al y Canto"})
+
                 // THEN
                 // Se actualiza el POI
                 expect(poiModificado).toBeTrue();
-            } finally {
+            }
+            finally {
                 // CLEANUP
-                // Modificar el alias del POI "A" de nuevo a "Alicante"
-                await poiService.updatePOI(poiRegistrado.geohash, {alias: "Alicante"});
+                // Modificar el alias del POI "A" de nuevo al alias vacío.
+                await poiService.updatePOI(poiRegistrado.geohash, {alias: ''});
             }
         });
 

@@ -718,10 +718,10 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // El usuario "ramon" está registrado y ha iniciado sesión
             // Lista de rutas registradas → ["A-B"].
-            const rutaCreada = await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
+            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
                 rutaC.alias, rutaC.transporte,  rutaC.nombre_origen, rutaC.nombre_destino,
                 rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
-            const listaRutasAntes: RouteModel[] = [rutaCreada];
+            const listaRutasAntes: RouteModel[] = await routeService.getRouteList();
 
             // Se cierra la sesión involuntariamente
             await userService.logout();

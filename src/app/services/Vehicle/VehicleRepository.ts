@@ -11,6 +11,9 @@ export interface VehicleRepository {
     deleteVehicle(matricula : string) : Promise<boolean>;
     readVehicle(matricula: string): Promise<VehicleModel>;
 
+    // Borra todos los vehículos
+    clear(): Promise<boolean>;
+
     // Fijar vehículo
     pinVehicle(matricula: string) : Promise<boolean>;
 

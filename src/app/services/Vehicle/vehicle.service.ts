@@ -115,6 +115,14 @@ export class VehicleService {
         return this.vehicleDb.deleteVehicle(matricula);
     }
 
+    /**
+     * Elimina todos los vehículos del usuario de forma atómica.
+     * @returns Promise con true si se han borrado, o false si no se han borrado.
+     */
+    async clear(): Promise<boolean> {
+        return await this.vehicleDb.clear();
+    }
+
     // HU305 Consultar vehículo
     async readVehicle(matricula: string): Promise<VehicleModel> {
         // Comprueba que la sesión está activa

@@ -142,6 +142,30 @@ export class VehicleDB implements VehicleRepository {
     }
 
     /**
+     * Borra todos los vehículos del usuario actual de forma atómica.
+     */
+    async clear(): Promise<boolean> {
+        const pois = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles`)));
+
+        try {
+            // Transacción
+            const batch = writeBatch(this.firestore);
+            pois.forEach(route => {
+                batch.delete(route.ref);
+            });
+
+            // Fin de la transacción
+            await batch.commit();
+            return true;
+        }
+            // Ha ocurrido un error inesperado en Firebase.
+        catch (error: any) {
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            return false;
+        }
+    }
+
+    /**
      * Lee los datos de la base de datos correspondientes al vehículo con la matrícula especificada.
      * @param matricula matricula del vehículo
      */

@@ -49,6 +49,9 @@ describe('Pruebas sobre vehículos', () => {
 
         // Iniciar sesión con ramón para todos los test
         await userService.login(ramon.email, ramon.pwd);
+
+        // Borrar todos los vehículos del usuario (si hubiere)
+        await vehicleService.clear();
     });
 
     beforeEach(async () => {

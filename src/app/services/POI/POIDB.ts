@@ -9,9 +9,9 @@ import {
     doc,
     Firestore,
     getDoc,
-    getDocs,
+    getDocs, query,
     setDoc,
-    updateDoc
+    updateDoc, writeBatch
 } from '@angular/fire/firestore';
 import {DBAccessError} from '../../errors/DBAccessError';
 
@@ -102,6 +102,30 @@ export class POIDB implements POIRepository {
             // Ha ocurrido un error inesperado en Firebase
             console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
+        }
+    }
+
+    /**
+     * Borra todos los POI del usuario actual de forma atómica.
+     */
+    async clear(): Promise<boolean> {
+        const routes = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser!.uid}/pois`)));
+
+        try {
+            // Transacción
+            const batch = writeBatch(this.firestore);
+            routes.forEach(route => {
+                batch.delete(route.ref);
+            });
+
+            // Fin de la transacción
+            await batch.commit();
+            return true;
+        }
+            // Ha ocurrido un error inesperado en Firebase.
+        catch (error: any) {
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            return false;
         }
     }
 

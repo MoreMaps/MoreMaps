@@ -26,14 +26,14 @@ export class UserService {
             throw new MissingParamsError();
         }
 
-        // Comprobar si las credenciales son válidas
-        if (!await this.userDb.passwordValid(pwd)) {
-            throw new WrongPasswordFormatError();
-        }
-
         // Comprobar si el usuario existe
         if (await this.userDb.userExists(email)) {
             throw new UserAlreadyExistsError();
+        }
+
+        // Comprobar si las credenciales son válidas
+        if (!await this.userDb.passwordValid(pwd)) {
+            throw new WrongPasswordFormatError();
         }
 
         // Crea un nuevo usuario
@@ -77,11 +77,18 @@ export class UserService {
     /**
      * Cierra la sesión actual.
      * @throws SessionNotActiveError si la sesión no está activa
+     * @throws UserNotFoundError si el usuario no existe
      */
     async logout(): Promise<boolean> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
+        }
+
+        // Comprueba que el usuario actual todavía existe
+        const curr = await this.userDb.getCurrentUser();
+        if (!await this.userDb.userExists(curr.email)) {
+            throw new UserNotFoundError();
         }
 
         // Cierra sesión
@@ -100,7 +107,7 @@ export class UserService {
             throw new SessionNotActiveError();
         }
 
-        // Comprueba que el usuario existe
+        // Comprueba que el usuario actual todavía existe
         const curr = await this.userDb.getCurrentUser();
         if (!await this.userDb.userExists(curr.email)) {
             throw new UserNotFoundError();

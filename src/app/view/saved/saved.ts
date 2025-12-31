@@ -1,5 +1,5 @@
 import {Component, computed, effect, inject, OnDestroy, signal} from '@angular/core';
-import {CommonModule, NgOptimizedImage} from '@angular/common';
+import {CommonModule, Location, NgOptimizedImage} from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
@@ -106,6 +106,7 @@ export class SavedItemsComponent implements OnDestroy {
     private dialog = inject(MatDialog);
     private breakpointObserver = inject(BreakpointObserver);
     private mapSearchService = inject(MapSearchService);
+    private location = inject(Location)
 
     isDesktop = signal(false);
 
@@ -202,6 +203,7 @@ export class SavedItemsComponent implements OnDestroy {
 
     private async checkAndSelectFromParams(): Promise<void> {
         const params = this.route.snapshot.queryParams;
+
         const type: ItemType = params['type'];
         const targetId: string = params['id'];
 
@@ -229,10 +231,20 @@ export class SavedItemsComponent implements OnDestroy {
             });
 
             if (foundItem) {
+                // Seleccionamos el item
                 this.selectItem(foundItem);
+
+                // Calculamos la página
                 const index = items.indexOf(foundItem);
                 const page = Math.floor(index / this.itemsPerPage()) + 1;
                 this.currentPage.set(page);
+
+                // Limpieza silenciosa de la URL
+                const urlTree = this.router.createUrlTree([], {
+                    relativeTo: this.route,
+                    queryParams: {}
+                });
+                this.location.replaceState(urlTree.toString());
             }
         }
     }

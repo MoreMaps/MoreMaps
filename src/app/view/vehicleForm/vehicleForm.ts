@@ -18,7 +18,6 @@ import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
-import {object} from '@angular/fire/database';
 
 
 @Component({
@@ -130,7 +129,7 @@ export class VehicleForm {
         snackBarRef.onAction().subscribe(() => {
             this.router.navigate(['/saved'], {
                 queryParams: {
-                    type: 'vehicle',
+                    type: 'vehiculos',
                     id: matricula,
                 }
             });

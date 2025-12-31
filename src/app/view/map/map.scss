@@ -229,6 +229,28 @@
     }
 }
 
+.route-dialog-panel {
+    position: fixed !important;
+    bottom: 30px !important;
+    right: 30px !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    z-index: 1000;
+
+    max-width: 400px !important;
+    width: 90vw !important;
+
+
+    @media (max-width: 600px) {
+        bottom: 20px !important;
+        right: auto !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+    }
+}
+
 /* ESTILO TEMA OSCURO */
 /* Al estar en ViewEncapsulation.None, esto detectará la clase en el body */
 .dark-theme .map-fab.mat-mdc-fab {

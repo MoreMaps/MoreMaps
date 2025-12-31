@@ -8,7 +8,7 @@ import {
     ViewChild,
     ViewEncapsulation
 } from '@angular/core';
-import {CommonModule} from '@angular/common';
+import {CommonModule, Location} from '@angular/common';
 import * as L from 'leaflet';
 import {MapUpdateService} from '../../services/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
@@ -182,6 +182,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private routeSubscription: Subscription | null = null;
     isRouteMode: boolean = false;
     private isRouteLoading: boolean = false;
+    private location = inject(Location);
 
 
     // Estado de la ruta
@@ -265,6 +266,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     ngOnDestroy(): void {
+
         if (this.authSubscription) {
             this.authSubscription.unsubscribe();
         }
@@ -494,8 +496,15 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             if (loadingDialogRef) loadingDialogRef.close();
             this.isRouteLoading = false;
 
-            // Abrimos el diálogo pasando el alias correcto y la preferencia
+            // Abrimos el diálogo de detalles
             this.openRouteDetailsDialog(result, startName, endName, transport, preference, coste, vehicleAlias);
+
+            // Limpieza silenciosa de la URL
+            const urlTree = this.router.createUrlTree([], {
+                relativeTo: this.route,
+                queryParams: {}
+            });
+            this.location.replaceState(urlTree.toString());
 
         } catch (e) {
             // Cerramos el diálogo de carga bloqueante
@@ -546,9 +555,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.closePOIDetailsDialog();
 
         this.routeDialogRef = this.dialog.open(RouteDetailsDialog, {
-            position: {bottom: '30px', right: '30px'},
-            width: '90vw',
-            maxWidth: '400px',
             hasBackdrop: false,
             panelClass: 'route-dialog-panel',
             data: {
@@ -592,12 +598,12 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
             // Llamada al servicio para crear la ruta
             try {
-                await this.routeService.createRoute(
+                let route = await this.routeService.createRoute(
                     this.currentRouteState.startHash, this.currentRouteState.endHash, alias,
                     this.currentRouteState.transport, this.currentRouteState.startName, this.currentRouteState.endName,
                     this.currentRouteState.preference, routeResult, this.currentRouteState.matricula
                 );
-                this.showSnackbar('Ruta guardada', 'OK');
+                this.routeSnackbar('Ruta guardada', 'Ver', route.id());
             } catch (error) {
                 this.showSnackbar('Fallo al guardar ruta: ' + error, 'OK');
             }
@@ -811,6 +817,19 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                     snackBarRef.dismiss();
             }
         });
+    }
+
+    private routeSnackbar(msg: string, action: string, route?: string): void {
+        const snackBarRef = this.snackBar.open(msg, action, {
+            duration: 5000,
+            horizontalPosition: 'left',
+            verticalPosition: 'bottom',
+        });
+
+        snackBarRef.onAction().subscribe(() => {
+            snackBarRef.dismiss();
+            this.router.navigate(['/saved'], {queryParams: {type: 'rutas', id: route}});
+        })
     }
 
     async searchByCoords(lat: number, lon: number): Promise<void> {

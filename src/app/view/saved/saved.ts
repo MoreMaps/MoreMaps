@@ -2,7 +2,7 @@ import {Component, computed, effect, inject, OnDestroy, signal} from '@angular/c
 import {CommonModule, Location, NgOptimizedImage} from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatSnackBar, MatSnackBarRef} from '@angular/material/snack-bar';
 import {BreakpointObserver} from '@angular/cdk/layout';
@@ -32,7 +32,7 @@ import {SavedPoiDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {MapSearchService} from '../../services/map-search-service/map-search.service';
-import {firstValueFrom} from 'rxjs';
+import {firstValueFrom, Subscription} from 'rxjs';
 import {RouteOptionsDialogComponent} from '../route/route-options-dialog/route-options-dialog';
 import {PointConfirmationDialog} from '../navbar/point-confirmation-dialog/point-confirmation-dialog';
 import {PlaceNameSearchDialogComponent} from '../navbar/placename-search-dialog/placename-search-dialog';
@@ -101,6 +101,8 @@ export class SavedItemsComponent implements OnDestroy {
     private breakpointObserver = inject(BreakpointObserver);
     private mapSearchService = inject(MapSearchService);
     private location = inject(Location)
+    private activeDialogRef: MatDialogRef<any> | null = null;
+    private breakpointSubscription: Subscription | null = null;
 
     isDesktop = signal(false);
 
@@ -134,14 +136,22 @@ export class SavedItemsComponent implements OnDestroy {
         if (savedType) {
             this.selectedType.set(savedType as ItemType);
         }
-        this.fetchDataWithLoading();
+
+        const savedPage = localStorage.getItem('user_preference_saved_page');
+        if (savedPage) {
+            this.currentPage.set(parseInt(savedPage, 10));
+        }
+
+        this.fetchDataWithLoading().then();
 
         effect(() => {
             const currentType = this.selectedType();
             localStorage.setItem('user_preference_saved_tab', currentType);
         });
 
-        this.breakpointObserver.observe('(min-width: 1025px)').subscribe(result => {
+        this.breakpointSubscription = this.breakpointObserver
+            .observe('(min-width: 1025px)')
+            .subscribe(result => {
             const isDesktopNow = result.matches
             this.isDesktop.set(isDesktopNow);
 
@@ -157,6 +167,26 @@ export class SavedItemsComponent implements OnDestroy {
 
     ngOnDestroy(): void {
         this.clearLoadingState()
+
+        if (this.breakpointSubscription) {
+            this.breakpointSubscription.unsubscribe();
+            this.breakpointSubscription = null;
+        }
+
+        if (this.activeDialogRef) {
+            this.activeDialogRef.close();
+            this.activeDialogRef = null;
+        }
+
+        localStorage.setItem('user_preference_saved_page', this.currentPage().toString());
+
+        if (this.selectedItem) {
+            const id = this.getItemId(this.selectedItem);
+            if (id) localStorage.setItem('user_preference_saved_item_id', id);
+        } else {
+            localStorage.removeItem('user_preference_saved_item_id');
+        }
+        this.selectedItem = null;
     }
 
     private clearLoadingState(): void {
@@ -188,33 +218,30 @@ export class SavedItemsComponent implements OnDestroy {
     private async checkAndSelectFromParams(): Promise<void> {
         const params = this.route.snapshot.queryParams;
 
-        const type: ItemType = params['type'];
-        const targetId: string = params['id'];
+        const typeParam = params['type'];
+        let targetId = params['id'];
 
-        if (type && this.strategies[type]) {
-            this.selectedType.set(type);
+        if (!targetId && !typeParam) {
+            targetId = localStorage.getItem('user_preference_saved_item_id');
         }
 
-        // Carga agnóstica del tipo
+        if (typeParam && this.strategies[typeParam]) {
+            this.selectedType.set(typeParam);
+        }
+
+        // Carga de items
         const items = await this.currentStrategy().loadItems();
         this.items.set(items);
 
+        // Validación de página
         const realTotalPages = Math.ceil(items.length / this.itemsPerPage()) || 1;
-
-        // Si tras eliminar, estamos en una página que ya no existe (como pág. 2 de 1), volvemos.
         if (this.currentPage() > realTotalPages) {
             this.currentPage.set(realTotalPages);
         }
 
         if (targetId && items) {
-            // Buscamos el item. La estrategia sabe cómo comparar IDs?
-            // Si no, lo hacemos manual según el tipo, pero mantenemos la lógica agrupada.
-            const foundItem = items.find(item => {
-                if (this.selectedType() === 'lugares') return (item as POIModel).geohash === targetId;
-                if (this.selectedType() === 'vehiculos') return (item as VehicleModel).matricula === targetId;
-                if (this.selectedType() === 'rutas') return (item as RouteModel).id() === targetId;
-                return false;
-            });
+            // Buscamos el item usando el helper o la lógica inline
+            const foundItem = items.find(item => this.getItemId(item) === targetId);
 
             if (foundItem) {
                 // Seleccionamos el item
@@ -226,12 +253,24 @@ export class SavedItemsComponent implements OnDestroy {
                 this.currentPage.set(page);
 
                 // Limpieza silenciosa de la URL
-                const urlTree = this.router.createUrlTree([], {
-                    relativeTo: this.route,
-                    queryParams: {}
-                });
-                this.location.replaceState(urlTree.toString());
+                if (params['id']) {
+                    const urlTree = this.router.createUrlTree([], {
+                        relativeTo: this.route,
+                        queryParams: {}
+                    });
+                    this.location.replaceState(urlTree.toString());
+                }
             }
+        }
+    }
+
+    private getItemId(item: any): string | null {
+        if (!item) return null;
+        switch (this.selectedType()) {
+            case 'lugares': return (item as POIModel).geohash;
+            case 'vehiculos': return (item as VehicleModel).matricula;
+            case 'rutas': return (item as any).id();
+            default: return null;
         }
     }
 
@@ -290,24 +329,25 @@ export class SavedItemsComponent implements OnDestroy {
             }
         };
 
-        let dialogRef;
-
         // Aquí usamos el switch type, es más limpio que instanceof para decidir el componente
         switch (this.selectedType()) {
             case 'lugares':
-                dialogRef = this.dialog.open(SavedPoiDialog, dialogConfig);
+                this.activeDialogRef = this.dialog.open(SavedPoiDialog, dialogConfig);
                 break;
             case 'vehiculos':
-                dialogRef = this.dialog.open(SavedVehicleDialog, dialogConfig);
+                this.activeDialogRef = this.dialog.open(SavedVehicleDialog, dialogConfig);
                 break;
             case 'rutas':
-                dialogRef = this.dialog.open(SavedRouteDialog, dialogConfig);
+                this.activeDialogRef = this.dialog.open(SavedRouteDialog, dialogConfig);
                 break;
         }
 
         // Suscribirse siempre al resultado, sea cual sea el tipo
-        if (dialogRef) {
-            dialogRef.afterClosed().subscribe((result) => this.processDialogResult(result));
+        if (this.activeDialogRef) {
+            this.activeDialogRef.afterClosed().subscribe((result) => {
+                this.processDialogResult(result)
+                this.activeDialogRef = null;
+            });
         }
     }
 
@@ -334,6 +374,21 @@ export class SavedItemsComponent implements OnDestroy {
                     const poi = this.selectedItem as POIModel;
                     this.router.navigate(['/map'], {
                         queryParams: { lat: poi.lat, lon: poi.lon, name: poi.alias }
+                    });
+                } else if (this.selectedType() === 'rutas') {
+                    const route = this.selectedItem as RouteModel;
+                    // Navegamos al mapa reconstruyendo los parámetros de la ruta
+                    this.router.navigate(['/map'], {
+                        queryParams: {
+                            mode: 'route',
+                            start: route.geohash_origen,
+                            end: route.geohash_destino,
+                            startName: route.nombre_origen,
+                            endName: route.nombre_destino,
+                            transport: route.transporte,
+                            preference: route.preferencia,
+                            matricula: route.matricula
+                        }
                     });
                 }
                 break;

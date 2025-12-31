@@ -64,7 +64,7 @@ export class ProfileMenuComponent {
                     return;
                 }
                 this.dialogRef.close();
-                void this.router.navigate(['/login']);
+                void this.router.navigate(['']);
             })
             .catch((err) => {
                 console.log('ERROR al cerrar sesión: ' + err);

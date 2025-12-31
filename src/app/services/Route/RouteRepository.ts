@@ -8,6 +8,7 @@ export const ROUTE_REPOSITORY = new InjectionToken<RouteRepository>('RouteReposi
 export interface RouteRepository {
     // Operaciones CRUDE
     createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
+                nombreOrigen: string, nombreDestino: string,
                 preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel>;
 
     getRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<RouteModel>;

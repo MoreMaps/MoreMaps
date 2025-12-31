@@ -413,7 +413,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // WHEN
             // El usuario decide guardar la ruta que ha buscado.
             const rutaGuardada = await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
             try {
                 // THEN
                 // No se lanza ningún error.
@@ -441,13 +441,13 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // El usuario ha guardado la ruta más corta entre "A" y "B" utilizando el vehículo "Ford Fiesta".
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
 
             try {
                 // WHEN
                 // El usuario intenta guardar una ruta idéntica.
                 await expectAsync(routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                    rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula))
+                    rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula))
                     .toBeRejectedWith(new RouteAlreadyExistsError());
                 // THEN
                 // Se lanza el error RouteAlreadyExistsError.
@@ -480,7 +480,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
 
             // WHEN
             // El usuario consulta su lista de rutas registradas.
@@ -506,7 +506,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B".
@@ -562,7 +562,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
 
             // WHEN
             // El usuario trata de eliminar la ruta "A-B".
@@ -605,7 +605,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B" y modifica el modo de
@@ -655,14 +655,15 @@ describe('Pruebas de aceptación sobre rutas', () => {
 
             // Se registra la ruta "A-B" en coche.
             const rutaCreadaCoche = await routeService.createRoute(rutaC.geohash_origen,
-                rutaC.geohash_destino, rutaC.alias, rutaC.transporte, rutaC.preferencia,
-                rutaABCBuscada, rutaC.matricula);
+                rutaC.geohash_destino, rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino,
+                rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
 
             // Se registra la ruta "A-B" a pie.
             const rutaBuscada = await mapSearchService.searchRoute(rutaP.geohash_origen,
                 rutaP.geohash_destino, rutaP.transporte, rutaP.preferencia);
             await routeService.createRoute(rutaP.geohash_origen,
-                rutaP.geohash_destino, rutaP.alias, rutaP.transporte, rutaP.preferencia, rutaBuscada);
+                rutaP.geohash_destino, rutaP.alias, rutaP.transporte,
+                rutaC.nombre_origen, rutaC.nombre_destino, rutaP.preferencia, rutaBuscada);
 
             // No hay ninguna ruta fijada.
 
@@ -699,6 +700,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.geohash_destino,
                 rutaC.alias,
                 rutaC.transporte,
+                rutaC.nombre_origen,
+                rutaC.nombre_destino,
                 rutaC.preferencia,
                 rutaC.distancia,
                 rutaC.tiempo,
@@ -716,7 +719,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // El usuario "ramon" está registrado y ha iniciado sesión
             // Lista de rutas registradas → ["A-B"].
             const rutaCreada = await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte,  rutaC.nombre_origen, rutaC.nombre_destino,
+                rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
             const listaRutasAntes: RouteModel[] = [rutaCreada];
 
             // Se cierra la sesión involuntariamente

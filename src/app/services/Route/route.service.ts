@@ -92,6 +92,8 @@ export class RouteService {
      * @param destino Geohash del POI de destino.
      * @param alias Alias por defecto de la ruta.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @param nombreOrigen Nombre del POI de origen.
+     * @param nombreDestino Nombre del POI de destino.
      * @param matricula Matrícula del vehículo (opcional).
      * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.).
      * @param modelo Resultado de la búsqueda (duración, distancia de la ruta).
@@ -100,6 +102,7 @@ export class RouteService {
      * @throws RouteAlreadyExistsError Si ya existe la ruta.
      */
     async createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
+                      nombreOrigen: string, nombreDestino: string,
                       preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
@@ -112,7 +115,7 @@ export class RouteService {
         }
 
         // Crea la ruta
-        return this.routeDb.createRoute(origen, destino, alias, transporte, preferencia, modelo, matricula);
+        return this.routeDb.createRoute(origen, destino, alias, transporte, nombreOrigen, nombreDestino, preferencia, modelo, matricula);
     }
 
     // HU408: Listar rutas
@@ -210,7 +213,7 @@ export class RouteService {
      * @throws MissingRouteError si la ruta no existe.
      */
     async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>): Promise<RouteModel> {
-        return new RouteModel('', '', '', transporte, PREFERENCIA.RECOMENDADA, 0, 0);
+        return new RouteModel('', '', '', transporte, '', '', PREFERENCIA.RECOMENDADA, 0, 0);
     }
 
     // HU503 Fijar ruta

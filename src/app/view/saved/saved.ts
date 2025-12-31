@@ -215,6 +215,13 @@ export class SavedItemsComponent implements OnDestroy {
         const items = await this.currentStrategy().loadItems();
         this.items.set(items);
 
+        const realTotalPages = Math.ceil(items.length / this.itemsPerPage()) || 1;
+
+        // Si tras eliminar, estamos en una página que ya no existe (como pág. 2 de 1), volvemos.
+        if (this.currentPage() > realTotalPages) {
+            this.currentPage.set(realTotalPages);
+        }
+
         if (targetId && items) {
             // Buscamos el item
             const foundItem = items.find(item => {

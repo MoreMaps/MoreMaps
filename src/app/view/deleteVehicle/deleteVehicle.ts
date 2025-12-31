@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, inject, Input, Output} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {Auth} from '@angular/fire/auth'; // Importar Auth
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
@@ -14,9 +14,10 @@ import {VehicleDB} from '../../services/Vehicle/VehicleDB';
     providers: [VehicleService, {provide: VEHICLE_REPOSITORY, useClass: VehicleDB}]
 })
 export class DeleteConfirmationVehiclePopupComponent {
-    @Input() matricula: string = ""; // Cambiado a string simple o Geohash
+    @Input() matricula: string = "";
     @Input() alias: string = '';
-    @Input() auth: Auth | null = null; // AÑADIDO: Input para Auth
+
+    private auth: Auth = inject(Auth);
 
     @Output() success = new EventEmitter<boolean>();
     @Output() close = new EventEmitter<void>();

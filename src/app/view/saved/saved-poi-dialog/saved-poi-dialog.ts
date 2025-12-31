@@ -142,7 +142,7 @@ export class SavedPoiDialog implements OnInit {
     initForm(): void {
         this.editForm = this.fb.group({
             alias: [this.displayData.item.alias || '', [Validators.maxLength(50), notOnlyWhitespaceValidator()]],
-            description: [this.displayData.item.description || '', [Validators.maxLength(150)]]
+            description: [this.displayData.item.description || '', [Validators.maxLength(150), notOnlyWhitespaceValidator()]]
         });
     }
 

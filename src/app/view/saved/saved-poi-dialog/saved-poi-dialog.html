@@ -125,11 +125,6 @@
                             <small class="char-count">{{ descriptionLength }}/150</small>
                         </div>
                         @if (editForm.get('description')?.touched) {
-                            @if (editForm.get('description')?.hasError('maxlength')) {
-                                <span class="error-msg">
-                            La descripción no puede superar los 150 caracteres
-                        </span>
-                            }
                             @if (editForm.get('description')?.hasError('onlyWhitespace')) {
                                 <span class="error-msg">La descripción no puede ser solo espacios</span>
                             }

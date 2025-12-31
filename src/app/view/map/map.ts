@@ -271,6 +271,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         if (this.poiDialogRef) {
             this.poiDialogRef.close({ignore: true});
         }
+
+        if (this.routeDialogRef) {
+            this.routeDialogRef.close();
+        }
+
         if (this.loadingSnackBarRef) {
             this.loadingSnackBarRef.dismiss()
         }

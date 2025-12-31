@@ -594,8 +594,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             try {
                 await this.routeService.createRoute(
                     this.currentRouteState.startHash, this.currentRouteState.endHash, alias,
-                    this.currentRouteState.transport, this.currentRouteState.preference, routeResult,
-                    this.currentRouteState.matricula
+                    this.currentRouteState.transport, this.currentRouteState.startName, this.currentRouteState.endName,
+                    this.currentRouteState.preference, routeResult, this.currentRouteState.matricula
                 );
                 this.showSnackbar('Ruta guardada', 'OK');
             } catch (error) {

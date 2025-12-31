@@ -30,11 +30,14 @@ export class RouteDB implements RouteRepository {
      * @param destino Geohash del POI de destino.
      * @param alias Alias de la Ruta.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
+     * @param nombreOrigen Nombre del POI de origen.
+     * @param nombreDestino Nombre del POI de destino.
      * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.)
      * @param modelo Resultado de la búsqueda (duración, distancia de la ruta)
      * @param matricula Matrícula del vehículo (opcional)
      */
     async createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
+                      nombreOrigen: string, nombreDestino: string,
                       preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
         const path = `items/${this.auth.currentUser!.uid}/routes/${origen}-${destino}-${transporte}`;
 
@@ -43,8 +46,8 @@ export class RouteDB implements RouteRepository {
             const routeDocRef = doc(this.firestore, path);
 
             // Crear nuevo RouteModel
-            const route = new RouteModel(origen, destino, alias, transporte, preferencia, modelo.distancia,
-                modelo.tiempo, false, matricula);
+            const route = new RouteModel(origen, destino, alias, transporte,  nombreOrigen, nombreDestino,
+                preferencia, modelo.distancia, modelo.tiempo, false, matricula);
 
             await setDoc(routeDocRef, route.toJSON());
             return route;

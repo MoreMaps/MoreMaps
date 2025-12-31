@@ -1,0 +1,178 @@
+:host {
+    display: block;
+}
+
+.dialog-container {
+    padding: 1.5rem;
+    position: relative;
+    box-shadow: none !important;
+    color: transparent !important;
+}
+
+/* Header Section */
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.header-content {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.icon-wrapper {
+    flex-shrink: 0;
+}
+
+.header-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: var(--color-orange, #FF8C42);
+}
+
+.header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    color: var(--color-teal-dark);
+    text-align: left;
+}
+
+.dialog-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: left;
+}
+
+.dialog-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.dialog-coords {
+    margin: 0.25rem 0 0;
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+/* Close Button */
+.close-btn {
+    flex-shrink: 0;
+}
+
+/* Body Section */
+.dialog-body {
+    padding-bottom: 0.5rem;
+}
+
+/* Action Buttons */
+.actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.2s ease;
+
+    &:hover {
+        transform: translateX(4px);
+
+        .icon-circle {
+            filter: brightness(1.1);
+        }
+    }
+}
+
+.icon-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+
+    /* Targeting the new SVG element */
+    .action-svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Green variant (New Route, Edit) */
+    &.green {
+        border: 2px solid var(--color-gray-blue);
+        color: var(--color-gray-blue);
+    }
+}
+
+/* Styling for the standalone Trash SVG (ELIMINAR) */
+.trash-svg {
+    width: 40px;
+    height: 40px;
+    color: var(--color-orange);
+    flex-shrink: 0;
+}
+
+/* Text Labels */
+.action-label {
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.green-text {
+    color: var(--color-gray-blue);
+    font-weight: 1000;
+}
+
+.orange-text {
+    color: var(--color-orange);
+    font-weight: 1000;
+}
+
+:host-context(.dark-theme) {
+    .green-text {
+        color: var(--color-mint-green-light);
+    }
+
+    .header-text {
+        color: var(--color-lavender);
+    }
+
+    .icon-circle {
+        &.green {
+            border: 2px solid var(--color-mint-green);
+            color: var(--color-mint-green);
+        }
+    }
+
+    .dialog-container {
+        background-color: var(--color-purple-dark) !important;
+    }
+
+    .close-btn mat-icon {
+        color: white;
+    }
+}
+
+/* Animation helper */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

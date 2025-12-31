@@ -235,10 +235,4 @@ export class RouteService {
         // Fijar vehículo
         return this.routeDb.pinRoute(ruta);
     }
-
-    getRouteId(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): string {
-        if (!origen || !destino || !transporte)
-            return '';
-        return `${origen}-${destino}-${transporte}`;
-    }
 }

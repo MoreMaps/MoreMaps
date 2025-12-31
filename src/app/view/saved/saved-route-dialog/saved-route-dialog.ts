@@ -16,46 +16,45 @@ import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {DeleteConfirmationVehiclePopupComponent} from '../../deleteVehicle/deleteVehicle';
-import {VehicleModel} from '../../../data/VehicleModel';
-import {EditVehicleComponent} from '../../editVehicle/editVehicle';
+import {RouteModel} from '../../../data/RouteModel';
+import {DeleteConfirmationRoutePopupComponent} from '../../deleteRoute/deleteRoute';
 
-export interface SavedVehicleDialogData {
-    item: VehicleModel;
+export interface SavedRouteDialogData {
+    item: RouteModel;
     displayName: string;
 }
 
 @Component({
-    selector: 'app-saved-vehicle-dialog',
+    selector: 'app-saved-route-dialog',
     standalone: true,
     imports: [
         CommonModule,
         MatDialogModule,
         MatButtonModule,
         MatIconModule,
-        DeleteConfirmationVehiclePopupComponent,
-        EditVehicleComponent,
+        DeleteConfirmationRoutePopupComponent,
+        // EditRouteComponent,                      IMPORTAR EN MERGE
         NgOptimizedImage
     ],
-    templateUrl: './saved-vehicle-dialog.html',
-    styleUrls: ['./saved-vehicle-dialog.scss']
+    templateUrl: './saved-route-dialog.html',
+    styleUrls: ['./saved-route-dialog.scss']
 })
-export class SavedVehicleDialog implements OnInit {
-    @Input() item?: VehicleModel;
+export class SavedRouteDialog implements OnInit {
+    @Input() item?: RouteModel;
     @Input() displayName?: string;
 
     @Output() closeEvent = new EventEmitter<void>();
     @Output() actionEvent = new EventEmitter<string>();
 
-    public displayData!: SavedVehicleDialogData;
+    public displayData!: SavedRouteDialogData;
     public snackBar = inject(MatSnackBar);
 
     isEditing: WritableSignal<Boolean> = signal(false);
     isDeleting: WritableSignal<Boolean> = signal(false);
 
     constructor(
-        @Optional() public dialogRef: MatDialogRef<SavedVehicleDialog>,
-        @Optional() @Inject(MAT_DIALOG_DATA) public dialogData: SavedVehicleDialogData
+        @Optional() public dialogRef: MatDialogRef<SavedRouteDialog>,
+        @Optional() @Inject(MAT_DIALOG_DATA) public dialogData: SavedRouteDialogData
     ) {}
 
     ngOnInit(): void {
@@ -76,7 +75,7 @@ export class SavedVehicleDialog implements OnInit {
         } else if (this.item) {
             this.displayData = {
                 item: this.item,
-                displayName: this.item.alias || `${this.item.marca} ${this.item.modelo}`
+                displayName: this.item.alias
             };
         }
     }
@@ -93,8 +92,8 @@ export class SavedVehicleDialog implements OnInit {
 
     // --- ACCIONES VISTA ---
 
-    onNewRoute(): void {
-        this.handleAction('route-vehicle');
+    onShowOnMap(): void {
+        this.handleAction('showOnMap');
     }
 
     onEdit(): void {
@@ -111,16 +110,16 @@ export class SavedVehicleDialog implements OnInit {
         this.isEditing.set(false);
     }
 
-    onUpdateSuccess(updatedVehicle: VehicleModel | null): void {
-        if (updatedVehicle) {
+    onUpdateSuccess(updatedRoute: RouteModel | null): void {
+        if (updatedRoute) {
             // 1. Actualizamos inmediatamente los datos que se están mostrando en el diálogo
-            this.displayData.item = updatedVehicle;
+            this.displayData.item = updatedRoute;
 
-            // 2. Recalculamos el displayName por si cambió el alias o modelo
-            this.displayData.displayName = updatedVehicle.alias || `${updatedVehicle.marca} ${updatedVehicle.modelo}`;
+            // 2. Recalculamos el displayName por si cambió el alias
+            this.displayData.displayName = updatedRoute.alias;
 
             // 3. Feedback visual
-            this.snackBar.open('Vehículo actualizado correctamente', 'Ok', {
+            this.snackBar.open('Ruta actualizada correctamente', 'Ok', {
                 duration: 3000,
                 horizontalPosition: 'start',
                 verticalPosition: 'bottom'
@@ -149,7 +148,7 @@ export class SavedVehicleDialog implements OnInit {
     onDeleteSuccess(success: boolean): void {
         this.isDeleting.set(false);
         if (success) {
-            this.snackBar.open(`Vehículo eliminado`, 'Ok', {
+            this.snackBar.open(`Ruta eliminada`, 'Ok', {
                 duration: 3000,
                 horizontalPosition: 'left',
                 verticalPosition: 'bottom'

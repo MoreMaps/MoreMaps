@@ -89,16 +89,16 @@
                     }
 
                     @case ('rutas') {
-                        @for (item of paginatedItems(); track getRouteId(item)) {
+                        @for (item of paginatedItems(); track item.id()) {
                             <div class="item-card"
                                  (click)="selectItem(item)"
-                                 [class.selected]="getRouteId(selectedItem) === getRouteId(item)">
+                                 [class.selected]="selectedItem?.id() === item.id()">
 
                                 <div class="item-icon">
                                     <img ngSrc="assets/images/route/route_on.svg" height="58" width="52" priority class="poi-icon-img"
-                                         [class.visible]="getRouteId(selectedItem) === getRouteId(item)" alt="active route">
+                                         [class.visible]="selectedItem?.id() === item.id()" alt="active route">
                                     <img ngSrc="assets/images/route/route_off.svg" priority height="58" width="52" class="poi-icon-img"
-                                         [class.visible]="getRouteId(selectedItem) !== getRouteId(item)" alt="inactive route">
+                                         [class.visible]="selectedItem?.id() !== item.id()" alt="inactive route">
                                 </div>
 
                                 <div class="item-info">
@@ -109,7 +109,7 @@
                                     </p>
 
                                     <p class="item-description" style="font-weight: 500;">
-                                        {{ getTransportLabel(item.transporte) | titlecase }}
+                                        {{ (item.transportLabel()) | titlecase }}, ruta {{ item.preferenceLabel() }}
                                     </p>
                                 </div>
 
@@ -153,6 +153,14 @@
                             (actionEvent)="handleDialogActions($event)"
                             (closeEvent)="deselectItem()">
                         </app-saved-vehicle-dialog>
+                    }
+                    @case ('rutas') {
+                        <app-saved-route-dialog
+                            [item]="selectedItem"
+                            [displayName]="getDisplayName(selectedItem)"
+                            (actionEvent)="handleDialogActions($event)"
+                            (closeEvent)="deselectItem()">
+                        </app-saved-route-dialog>
                     }
                 }
             }

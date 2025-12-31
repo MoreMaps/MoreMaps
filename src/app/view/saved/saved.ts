@@ -9,9 +9,7 @@ import {BreakpointObserver} from '@angular/cdk/layout';
 
 // Modelos
 import {POIModel} from '../../data/POIModel';
-import {POISearchModel} from '../../data/POISearchModel';
 import {VehicleModel} from '../../data/VehicleModel';
-import {mapaTransporte, PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 
 // Servicios y Estrategias
 import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
@@ -24,20 +22,6 @@ import {POIDB} from '../../services/POI/POIDB';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
-import {RouteService} from '../../services/Route/route.service';
-import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
-import {RouteDB} from '../../services/Route/RouteDB';
-import {
-    ELECTRICITY_PRICE_REPOSITORY,
-    ELECTRICITY_PRICE_SOURCE
-} from '../../services/electricity-price-service/ElectricityPriceRepository';
-import {FUEL_PRICE_REPOSITORY, FUEL_PRICE_SOURCE} from '../../services/fuel-price-service/FuelPriceRepository';
-import {ElectricityPriceCache} from '../../services/electricity-price-service/ElectricityPriceCache';
-import {FuelPriceCache} from '../../services/fuel-price-service/FuelPriceCache';
-import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
-import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
-import {ElectricityPriceAPI} from '../../services/electricity-price-service/ElectricityPriceAPI';
-import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
 
 // Componentes
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
@@ -54,10 +38,21 @@ import {PointConfirmationDialog} from '../navbar/point-confirmation-dialog/point
 import {PlaceNameSearchDialogComponent} from '../navbar/placename-search-dialog/placename-search-dialog';
 import {CoordsSearchDialogComponent} from '../navbar/coords-search-dialog/coords-search-dialog';
 import {AddPoiDialogComponent, AddPoiMethod} from '../navbar/add-poi-dialog/add-poi-dialog';
-import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-dialog/savedSelectorData';
+import {POISearchModel} from '../../data/POISearchModel';
 import {RouteOriginDialog, RouteOriginMethod} from '../route/route-origin-dialog/route-origin-dialog';
+import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {geohashForLocation} from 'geofire-common';
-
+import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-dialog/savedSelectorData';
+import {RouteService} from '../../services/Route/route.service';
+import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
+import {RouteDB} from '../../services/Route/RouteDB';
+import {SavedRouteDialog} from './saved-route-dialog/saved-route-dialog';
+import {ELECTRICITY_PRICE_REPOSITORY} from '../../services/electricity-price-service/ElectricityPriceRepository';
+import {ElectricityPriceAPI} from '../../services/electricity-price-service/ElectricityPriceAPI';
+import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
+import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
+import {FUEL_PRICE_REPOSITORY} from '../../services/fuel-price-service/FuelPriceRepository';
+import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -74,7 +69,8 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
         ProfileButtonComponent,
         NgOptimizedImage,
         SavedPoiDialog,
-        SavedVehicleDialog
+        SavedVehicleDialog,
+        SavedRouteDialog
     ],
     templateUrl: './saved.html',
     styleUrls: ['./saved.scss'],
@@ -83,15 +79,13 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
         VehicleService,
         RouteService,
         MapSearchService,
-        ElectricityPriceService,
         FuelPriceService,
+        ElectricityPriceService,
         {provide: POI_REPOSITORY, useClass: POIDB},
         {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
         {provide: ROUTE_REPOSITORY, useClass: RouteDB},
-        {provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceCache},
-        {provide: ELECTRICITY_PRICE_SOURCE, useClass: ElectricityPriceAPI},
-        {provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceCache},
-        {provide: FUEL_PRICE_SOURCE, useClass: FuelPriceAPI},
+        {provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceAPI},
+        {provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceAPI},
         SavedPOIStrategy,
         SavedVehiclesStrategy,
         SavedRouteStrategy
@@ -120,6 +114,7 @@ export class SavedItemsComponent implements OnDestroy {
     selectedType = signal<ItemType>('lugares');
     items = signal<any[]>([]); // Lista genérica
 
+    // REFACTORIZADO: Ya no usamos selectedPOI ni selectedVehicle por separado
     selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
 
     // Paginación
@@ -182,23 +177,12 @@ export class SavedItemsComponent implements OnDestroy {
             await this.checkAndSelectFromParams();
         } catch (error) {
             if (error instanceof SessionNotActiveError) {
-                this.router.navigate(['']);
+                await this.router.navigate(['']);
                 return;
             }
             console.error('Error loading items:', error);
             this.items.set([]);
         }
-    }
-
-    // Función auxiliar para obtener el ID de una ruta
-    getRouteId(route: RouteModel | undefined | null): string {
-        if (!route) return '';
-        return `${route.geohash_origen}-${route.geohash_destino}-${route.transporte}`;
-    }
-
-    // Función auxiliar para obtener el nombre del transporte de una ruta.
-    getTransportLabel(tipo: TIPO_TRANSPORTE): string {
-        return mapaTransporte[tipo] || '';
     }
 
     private async checkAndSelectFromParams(): Promise<void> {
@@ -223,18 +207,13 @@ export class SavedItemsComponent implements OnDestroy {
         }
 
         if (targetId && items) {
-            // Buscamos el item
+            // Buscamos el item. La estrategia sabe cómo comparar IDs?
+            // Si no, lo hacemos manual según el tipo, pero mantenemos la lógica agrupada.
             const foundItem = items.find(item => {
-                switch(this.selectedType()){
-                    case 'lugares':
-                        return (item as POIModel).geohash === targetId;
-                    case 'vehiculos':
-                        return (item as VehicleModel).matricula === targetId;
-                    case 'rutas':
-                        return this.getRouteId(item as RouteModel) === targetId;
-                    default:
-                        return false;
-                }
+                if (this.selectedType() === 'lugares') return (item as POIModel).geohash === targetId;
+                if (this.selectedType() === 'vehiculos') return (item as VehicleModel).matricula === targetId;
+                if (this.selectedType() === 'rutas') return (item as RouteModel).id() === targetId;
+                return false;
             });
 
             if (foundItem) {
@@ -321,7 +300,9 @@ export class SavedItemsComponent implements OnDestroy {
             case 'vehiculos':
                 dialogRef = this.dialog.open(SavedVehicleDialog, dialogConfig);
                 break;
-            // case 'rutas': ...
+            case 'rutas':
+                dialogRef = this.dialog.open(SavedRouteDialog, dialogConfig);
+                break;
         }
 
         // Suscribirse siempre al resultado, sea cual sea el tipo
@@ -404,7 +385,7 @@ export class SavedItemsComponent implements OnDestroy {
                 ? `Se ha fijado ${this.getDisplayName(item)}.`
                 : `${this.getDisplayName(item)} ya no está fijado.`;
             this.showSnackbar(message);
-            this.loadItems();
+            await this.loadItems();
         }
     }
 
@@ -539,7 +520,7 @@ export class SavedItemsComponent implements OnDestroy {
                 matricula: selectedVehicleMatricula
             };
             const cleanParams = JSON.parse(JSON.stringify(routeParams));
-            this.router.navigate(['/map'], { queryParams: cleanParams });
+            await this.router.navigate(['/map'], {queryParams: cleanParams});
         }
     }
 

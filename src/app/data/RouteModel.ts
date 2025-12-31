@@ -18,6 +18,12 @@ export enum PREFERENCIA {
     RECOMENDADA = 'recommended',
 }
 
+export const mapaPreferencia: Record<PREFERENCIA, string> = {
+    [PREFERENCIA.RAPIDA]: 'más rápida',
+    [PREFERENCIA.CORTA]: 'más corta',
+    [PREFERENCIA.RECOMENDADA]: 'recomendada',
+};
+
 export class RouteModel {
     geohash_origen: Geohash;
     geohash_destino: Geohash;
@@ -63,6 +69,21 @@ export class RouteModel {
     static fromJSON(json: any): RouteModel {
         return new RouteModel(json.geohash_origen, json.geohash_destino, json.alias, json.transporte,
             json.preferencia, json.distancia, json.tiempo, json.pinned, json.matricula);
+    }
+
+    // Devuelve el ID de la ruta
+    id(): string {
+        return `${this.geohash_origen}-${this.geohash_destino}-${this.transporte}`;
+    }
+
+    // Devuelve la etiqueta equivalente del transporte de la ruta
+    transportLabel() {
+        return mapaTransporte[this.transporte];
+    }
+
+    // Devuelve la etiqueta equivalente a la preferencia de la ruta
+    preferenceLabel() {
+        return mapaPreferencia[this.preferencia];
     }
 }
 

@@ -6,6 +6,7 @@ import { POIModel } from '../../data/POIModel';
 import {POIService} from '../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
+import {notOnlyWhitespaceValidator} from '../../utils/validators';
 
 @Component({
     selector: 'app-poi-modify-menu',
@@ -29,15 +30,15 @@ export class PoiDetailEdit implements OnInit {
 
     initForm(): void {
         this.editForm = this.fb.group({
-            alias: ['', [Validators.minLength(1), Validators.maxLength(150)]],
+            alias: ['', [Validators.maxLength(50), notOnlyWhitespaceValidator()]],
             description: ['', [Validators.maxLength(150)]]
         });
 
         // Obtiene los datos del POI y los pone por defecto
         if (this.poi) {
             this.editForm.patchValue({
-                alias: this.poi?.alias,
-                description: this.poi?.description
+                alias: this.poi.alias,
+                description: this.poi.description
             });
         }
     }

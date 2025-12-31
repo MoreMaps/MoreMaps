@@ -23,6 +23,7 @@ import {POIDB} from '../../../services/POI/POIDB';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {DeleteConfirmationPOIPopupComponent} from '../../deletePOI/deletePOI';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {notOnlyWhitespaceValidator} from '../../../utils/validators';
 
 export interface SavedItemDialogData {
     item: POIModel;
@@ -140,7 +141,7 @@ export class SavedPoiDialog implements OnInit {
 
     initForm(): void {
         this.editForm = this.fb.group({
-            alias: [this.displayData.item.alias || '',],
+            alias: [this.displayData.item.alias || '', [Validators.maxLength(50), notOnlyWhitespaceValidator()]],
             description: [this.displayData.item.description || '', [Validators.maxLength(150)]]
         });
     }

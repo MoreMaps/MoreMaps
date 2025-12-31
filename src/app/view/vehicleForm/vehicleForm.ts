@@ -1,13 +1,5 @@
 import {Component, computed, effect, inject, Signal, signal} from '@angular/core';
-import {
-    AbstractControl,
-    FormBuilder,
-    FormGroup,
-    ReactiveFormsModule,
-    ValidationErrors,
-    ValidatorFn,
-    Validators
-} from '@angular/forms';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {Router} from "@angular/router";
@@ -15,31 +7,14 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {FUEL_TYPE, VehicleModel} from '../../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
-import {MatError, MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
-import {MatIcon} from '@angular/material/icon';
-import {MatOption, MatSelect} from '@angular/material/select';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {MatButton, MatIconButton} from '@angular/material/button';
-import {MatInput} from '@angular/material/input';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
+import {notOnlyWhitespaceValidator, noVowelsValidator} from '../../utils/validators';
 
-
-export function noVowelsValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-        const value = control.value;
-        if (!value) return null;
-
-        // Test regex: busca a,e,i,o,u (case insensitive)
-        const hasVowels = /[aeiou]/i.test(value);
-
-        // Si tiene vocales, devuelve el error { hasVowels: true }
-        return hasVowels ? { hasVowels: true } : null;
-    };
-}
 
 @Component({
     selector: 'vehicle-form',
@@ -80,9 +55,11 @@ export class VehicleForm {
             noVowelsValidator()]],
         alias: ['', [Validators.required,
             // Longitud mínima y máxima
-            Validators.minLength(1), Validators.maxLength(50)]],
-        marca: ['', [Validators.required]],
-        modelo: ['', [Validators.required]],
+            Validators.minLength(1), Validators.maxLength(50),
+            // solo espacios
+            notOnlyWhitespaceValidator()]],
+        marca: ['', [Validators.required, notOnlyWhitespaceValidator()]],
+        modelo: ['', [Validators.required, notOnlyWhitespaceValidator()]],
         anyo: [this.currentYear, [
             Validators.required,
             Validators.min(1900),

@@ -17,7 +17,7 @@ import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {Subscription} from 'rxjs';
-
+import {notOnlyWhitespaceValidator, noVowelsValidator} from '../../utils/validators';
 const MIN_YEAR = 1900;
 const MIN_CONSUMO = 0.1;
 const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
@@ -80,10 +80,10 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     // 1. Inicializa la estructura vacía (solo una vez)
     initFormStructure() {
         this.editForm = this.fb.group({
-            alias: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(50)]],
-            matricula: ['', [Validators.required, Validators.pattern("^[0-9]{4}[A-Za-z]{3}$")]],
-            marca: ['', [Validators.required]],
-            modelo: ['', [Validators.required]],
+            alias: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(50), notOnlyWhitespaceValidator(), ]],
+            matricula: ['', [Validators.required, Validators.pattern("^[0-9]{4}[A-Za-z]{3}$"), noVowelsValidator()]],
+            marca: ['', [Validators.required, notOnlyWhitespaceValidator()]],
+            modelo: ['', [Validators.required, notOnlyWhitespaceValidator()]],
             anyo: [this.currentYear, [
                 Validators.required,
                 Validators.min(this.minYear),

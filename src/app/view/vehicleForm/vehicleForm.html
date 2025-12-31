@@ -68,6 +68,9 @@
                     @if (vehicleForm.get('marca')?.hasError('required') && vehicleForm.get('marca')?.touched) {
                         <span class="error-msg">Requerido</span>
                     }
+                    @if (vehicleForm.get('marca')?.hasError('hasVowels') && vehicleForm.get('marca')?.touched) {
+                        <span>El campo no puede estar vacío</span>
+                    }
                 </div>
 
                 <div class="form-group">
@@ -80,6 +83,9 @@
                     </div>
                     @if (vehicleForm.get('modelo')?.hasError('required') && vehicleForm.get('modelo')?.touched) {
                         <span class="error-msg">Requerido</span>
+                    }
+                    @if (vehicleForm.get('modelo')?.hasError('onlyWhitespace') && vehicleForm.get('modelo')?.touched) {
+                        <span>El campo no puede estar vacío</span>
                     }
                 </div>
 

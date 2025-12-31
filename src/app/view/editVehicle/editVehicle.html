@@ -3,31 +3,41 @@
         <div class="form-group">
             <label>Alias</label>
             <div class="input-wrapper">
-                <input type="text" formControlName="alias" placeholder="Mi coche" />
+                <input formControlName="alias" placeholder="Mi coche" type="text"/>
                 @if (editForm.get('alias')?.value) {
-                    <button type="button" class="clear-btn" (click)="clearField('alias')">⊗</button>
+                    <button (click)="clearField('alias')" class="clear-btn" type="button">⊗</button>
                 }
             </div>
-            @if (editForm.get('alias')?.hasError('required')) {
-                <span class="error-msg">Requerido</span>
-            }
-            @else if (editForm.get('alias')?.hasError('maxlength')) {
-                <span class="error-msg">
-                Máximo 50 caracteres (actual: {{ editForm.get('alias')?.errors?.['maxlength']?.actualLength }})
-                </span>
+            @if (editForm.get('alias')?.touched) {
+                @if (editForm.get('alias')?.hasError('required')) {
+                    <span class="error-msg">Requerido</span>
+                } @else if (editForm.get('alias')?.hasError('maxlength')) {
+                    <span class="error-msg">
+                    Máximo 50 caracteres (actual: {{ editForm.get('alias')?.errors?.['maxlength']?.actualLength }})
+                    </span>
+                } @else if (editForm.get('alias')?.hasError('onlyWhitespace')) {
+                    <span class="error-msg">El campo no puede estar vacío</span>
+                } @else {
+                }
             }
         </div>
 
         <div class="form-group">
             <label>Matrícula</label>
             <div class="input-wrapper">
-                <input type="text" formControlName="matricula" placeholder="1234ABC" />
+                <input formControlName="matricula" placeholder="1234ABC" type="text"/>
                 @if (editForm.get('matricula')?.value) {
-                    <button type="button" class="clear-btn" (click)="clearField('matricula')">⊗</button>
+                    <button (click)="clearField('matricula')" class="clear-btn" type="button">⊗</button>
                 }
             </div>
-            @if (editForm.get('matricula')?.hasError('required') && editForm.get('matricula')?.touched) {
-                <span class="error-msg">Requerido</span>
+            @if (editForm.get('matricula')?.touched) {
+                @if (editForm.get('matricula')?.hasError('required')) {
+                    <span class="error-msg">Requerido</span>
+                } @else if (editForm.get('matricula')?.hasError('pattern')) {
+                    <span class="error-msg">Formato inválido (Ej: 1234BCD)</span>
+                } @else if (editForm.get('matricula')?.hasError('hasVowels')) {
+                    <span class="error-msg">No se permiten vocales</span>
+                }
             }
         </div>
 
@@ -35,26 +45,32 @@
             <div class="form-group">
                 <label>Marca</label>
                 <div class="input-wrapper">
-                    <input type="text" formControlName="marca" placeholder="Toyota" />
+                    <input formControlName="marca" placeholder="Toyota" type="text"/>
                     @if (editForm.get('marca')?.value) {
-                        <button type="button" class="clear-btn" (click)="clearField('marca')">⊗</button>
+                        <button (click)="clearField('marca')" class="clear-btn" type="button">⊗</button>
                     }
                 </div>
                 @if (editForm.get('marca')?.hasError('required') && editForm.get('marca')?.touched) {
                     <span class="error-msg">Requerido</span>
+                }
+                @if (editForm.get('marca')?.hasError('onlyWhitespace') && editForm.get('marca')?.touched) {
+                    <span class="error-msg">El campo no puede estar vacío</span>
                 }
             </div>
 
             <div class="form-group">
                 <label>Modelo</label>
                 <div class="input-wrapper">
-                    <input type="text" formControlName="modelo" placeholder="Corolla" />
+                    <input formControlName="modelo" placeholder="Corolla" type="text"/>
                     @if (editForm.get('modelo')?.value) {
-                        <button type="button" class="clear-btn" (click)="clearField('modelo')">⊗</button>
+                        <button (click)="clearField('modelo')" class="clear-btn" type="button">⊗</button>
                     }
                 </div>
                 @if (editForm.get('modelo')?.hasError('required') && editForm.get('modelo')?.touched) {
                     <span class="error-msg">Requerido</span>
+                }
+                @if (editForm.get('modelo')?.hasError('onlyWhitespace') && editForm.get('modelo')?.touched) {
+                    <span class="error-msg">El campo no puede estar vacío</span>
                 }
             </div>
         </div>
@@ -64,14 +80,14 @@
                 <label>Año</label>
                 <div class="input-wrapper">
                     <input
-                        type="number"
+                        [max]="maxYear"
+                        [min]="minYear"
                         formControlName="anyo"
                         placeholder="2020"
-                        [min]="minYear"
-                        [max]="maxYear"
+                        type="number"
                     />
                     @if (editForm.get('anyo')?.value) {
-                        <button type="button" class="clear-btn" (click)="clearField('anyo')">⊗</button>
+                        <button (click)="clearField('anyo')" class="clear-btn" type="button">⊗</button>
                     }
                 </div>
                 @if (editForm.get('anyo')?.touched) {
@@ -87,8 +103,8 @@
 
             <div class="form-group">
                 <label>Combustible</label>
-                <select formControlName="tipoCombustible" class="form-select">
-                    <option value="" disabled>Selecciona tipo</option>
+                <select class="form-select" formControlName="tipoCombustible">
+                    <option disabled value="">Selecciona tipo</option>
                     @for (tipo of FUEL_TYPES; track tipo) {
                         <option [value]="tipo">{{ tipo }}</option>
                     }
@@ -103,36 +119,37 @@
             <label>Consumo medio ({{ consumptionUnit() }})</label>
             <div class="input-wrapper">
                 <input
-                    type="number"
+                    [min]="minConsumoMedio"
                     formControlName="consumoMedio"
                     placeholder="5.5"
                     step="0.1"
-                    [min]="minConsumoMedio"
+                    type="number"
                 />
                 @if (editForm.get('consumoMedio')?.value) {
-                    <button type="button" class="clear-btn" (click)="clearField('consumoMedio')">⊗</button>
+                    <button (click)="clearField('consumoMedio')" class="clear-btn" type="button">⊗</button>
                 }
             </div>
             @if (editForm.get('consumoMedio')?.touched) {
                 @if (editForm.get('consumoMedio')?.hasError('required')) {
                     <span class="error-msg">El campo de consumo medio es obligatorio</span>
                 } @else if (editForm.get('consumoMedio')?.hasError('min')) {
-                    <span class="error-msg">El consumo medio debe ser un número positivo y mayor o igual que {{ minConsumoMedio }}</span>
+                    <span
+                        class="error-msg">El consumo medio debe ser un número positivo y mayor o igual que {{ minConsumoMedio }}</span>
                 }
             }
         </div>
 
         <div class="form-actions">
             <button
-                type="button"
-                class="btn btn-primary"
-                [disabled]="editForm.invalid"
                 (click)="onSave()"
+                [disabled]="editForm.invalid"
+                class="btn btn-primary"
+                type="button"
             >
                 GUARDAR
             </button>
 
-            <button type="button" class="btn btn-cancel" (click)="onCancel()">
+            <button (click)="onCancel()" class="btn btn-cancel" type="button">
                 CANCELAR
             </button>
         </div>

@@ -8,8 +8,13 @@
                     <button type="button" class="clear-btn" (click)="clearField('alias')">⊗</button>
                 }
             </div>
-            @if (editForm.get('alias')?.hasError('required') && editForm.get('alias')?.touched) {
+            @if (editForm.get('alias')?.hasError('required')) {
                 <span class="error-msg">Requerido</span>
+            }
+            @else if (editForm.get('alias')?.hasError('maxlength')) {
+                <span class="error-msg">
+                Máximo 50 caracteres (actual: {{ editForm.get('alias')?.errors?.['maxlength']?.actualLength }})
+                </span>
             }
         </div>
 

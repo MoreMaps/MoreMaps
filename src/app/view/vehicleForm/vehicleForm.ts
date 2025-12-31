@@ -1,5 +1,13 @@
 import {Component, computed, effect, inject, Signal, signal} from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {
+    AbstractControl,
+    FormBuilder,
+    FormGroup,
+    ReactiveFormsModule,
+    ValidationErrors,
+    ValidatorFn,
+    Validators
+} from '@angular/forms';
 import {toSignal} from '@angular/core/rxjs-interop';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {Router} from "@angular/router";
@@ -20,21 +28,24 @@ import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 
 
+export function noVowelsValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+        const value = control.value;
+        if (!value) return null;
+
+        // Test regex: busca a,e,i,o,u (case insensitive)
+        const hasVowels = /[aeiou]/i.test(value);
+
+        // Si tiene vocales, devuelve el error { hasVowels: true }
+        return hasVowels ? { hasVowels: true } : null;
+    };
+}
+
 @Component({
     selector: 'vehicle-form',
     imports: [
         ReactiveFormsModule,
-        MatFormField,
-        MatLabel,
-        MatIcon,
-        MatError,
-        MatSelect,
-        MatOption,
         MatProgressSpinner,
-        MatIconButton,
-        MatInput,
-        MatButton,
-        MatSuffix,
         NavbarComponent,
         ProfileButtonComponent,
         ThemeToggleComponent
@@ -61,8 +72,15 @@ export class VehicleForm {
 
     currentYear = new Date().getFullYear();
     vehicleForm: FormGroup = this.fb.nonNullable.group({
-        matricula: ['', [Validators.required]],
-        alias: ['', [Validators.required]],
+        matricula: ['', [
+            Validators.required,
+            // Asegurar estructura 4 números + 3 letras
+            Validators.pattern("^[0-9]{4}[A-Za-z]{3}$"),
+            // No incluir vocales
+            noVowelsValidator()]],
+        alias: ['', [Validators.required,
+            // Longitud mínima y máxima
+            Validators.minLength(1), Validators.maxLength(50)]],
         marca: ['', [Validators.required]],
         modelo: ['', [Validators.required]],
         anyo: [this.currentYear, [

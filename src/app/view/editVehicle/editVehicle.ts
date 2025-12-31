@@ -80,7 +80,7 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     // 1. Inicializa la estructura vacía (solo una vez)
     initFormStructure() {
         this.editForm = this.fb.group({
-            alias: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(150)]],
+            alias: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(50)]],
             matricula: ['', [Validators.required, Validators.pattern("^[0-9]{4}[A-Za-z]{3}$")]],
             marca: ['', [Validators.required]],
             modelo: ['', [Validators.required]],

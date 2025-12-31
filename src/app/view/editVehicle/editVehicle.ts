@@ -124,19 +124,15 @@ export class EditVehicleComponent implements OnInit, OnChanges {
         if (this.vehicle) {
             const f = this.editForm.getRawValue();
 
-            // Obtiene los elementos modificados
-            const dirtyControls = Object.keys(this.editForm.controls)
-                .filter(key => this.editForm.controls[key].dirty);
-
-            // Se construye el objeto parcial con únicamente los cambios
+            // Se construye el objeto parcial
             const updatedVehicleParts: Partial<VehicleModel> = {
-                alias: dirtyControls.includes('alias') ? f.alias : undefined,
-                matricula: dirtyControls.includes('matricula') ? f.matricula : undefined,
-                marca: dirtyControls.includes('marca') ? f.marca : undefined,
-                modelo: dirtyControls.includes('modelo') ? f.modelo : undefined,
-                anyo: dirtyControls.includes('anyo') ? Number(f.anyo) : undefined,
-                tipoCombustible: dirtyControls.includes('tipoCombustible') ? f.tipoCombustible : undefined,
-                consumoMedio: dirtyControls.includes('consumoMedio') ? Number(f.consumoMedio) : undefined
+                alias: f.alias,
+                matricula: f.matricula,
+                marca: f.marca,
+                modelo: f.modelo,
+                anyo: Number(f.anyo),
+                tipoCombustible: f.tipoCombustible,
+                consumoMedio: Number(f.consumoMedio)
             };
 
             const success = await this.service.updateVehicle(this.vehicle.matricula, updatedVehicleParts);

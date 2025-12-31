@@ -133,7 +133,6 @@
         <app-delete-confirmation-popup
             [geohash]="displayData.item.geohash"
             [poiName]="displayData.displayName"
-            [auth]="auth"
             (close)="onCancelDelete()"
             (success)="onDeleteSuccess($event)">
         </app-delete-confirmation-popup>

@@ -68,8 +68,6 @@ export class SavedPoiDialog implements OnInit {
 
     private fb = inject(FormBuilder);
     private poiService = inject(POIService);
-    // Public para pasarlo al DeleteConfirmationPopupComponent
-    public auth = inject(Auth);
 
     constructor(
         @Optional() public dialogRef: MatDialogRef<SavedPoiDialog>,
@@ -156,7 +154,7 @@ export class SavedPoiDialog implements OnInit {
     }
 
     async onSaveEdit(): Promise<void> {
-        if (this.editForm.valid && this.displayData.item && this.auth) {
+        if (this.editForm.valid && this.displayData.item) {
             const updatedData: Partial<POIModel> = {
                 alias: this.editForm.value.alias,
                 description: this.editForm.value.description,

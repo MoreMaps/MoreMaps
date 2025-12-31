@@ -147,10 +147,10 @@ const destinationIcon = L.icon({
         {provide: POI_REPOSITORY, useClass: POIDB},
         {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
         {provide: ROUTE_REPOSITORY, useClass: RouteDB},
-        { provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceCache },
-        { provide: ELECTRICITY_PRICE_SOURCE, useClass: ElectricityPriceAPI },
-        { provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceCache },
-        { provide: FUEL_PRICE_SOURCE, useClass: FuelPriceAPI },
+        {provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceCache},
+        {provide: ELECTRICITY_PRICE_SOURCE, useClass: ElectricityPriceAPI},
+        {provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceCache},
+        {provide: FUEL_PRICE_SOURCE, useClass: FuelPriceAPI},
     ],
 })
 export class LeafletMapComponent implements OnInit, AfterViewInit {

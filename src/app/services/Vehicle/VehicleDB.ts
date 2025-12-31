@@ -96,6 +96,8 @@ export class VehicleDB implements VehicleRepository {
                     ...update       // datos nuevos que sobreescriben a los originales
                 };
 
+                console.log(newData)
+
                 // Crear doc en la nueva ruta
                 batch.set(newVehicleRef, newData);
 

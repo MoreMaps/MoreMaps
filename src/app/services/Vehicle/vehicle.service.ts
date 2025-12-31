@@ -164,11 +164,14 @@ export class VehicleService {
         // MATRÍCULA
         // Debe ser una cadena
         if (typeof vehiculo.matricula !== 'string') {
-            throw new Error(`El campo 'matrícula' es obligatorio.`);
+            if (creating)
+                throw new Error(`El campo 'matrícula' es obligatorio.`);
         }
-        // No debe contener vocales
-        if (/[AEIOU]/i.test(vehiculo.matricula)) {
-            throw new Error(`Una matrícula no debe contener vocales.`);
+        else {
+            // No debe contener vocales
+            if (/[AEIOU]/i.test(vehiculo.matricula)) {
+                throw new Error(`Una matrícula no debe contener vocales.`);
+            }
         }
 
         // AÑO

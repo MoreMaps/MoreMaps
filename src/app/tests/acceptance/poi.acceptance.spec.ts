@@ -176,7 +176,7 @@ describe('Pruebas de aceptación sobre POI', () => {
             await expectAsync(mapSearchService.searchPOIByPlaceName(toponimoInexistente))
                 .toBeRejectedWith(new PlaceNameNotFoundError(toponimoInexistente));
             // THEN
-            // Se lanza el error MissingPOIError
+            // Se lanza el error PlaceNameNotFoundError
             // No se modifica el estado
         });
     });

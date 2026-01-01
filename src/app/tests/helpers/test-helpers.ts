@@ -71,7 +71,7 @@ export function createMockRepository(type: string): jasmine.SpyObj<any> | null {
             ]);
         }
         case 'electricityPrice': {
-            return jasmine.createSpyObj<ElectricityPriceRepository>('ElectrictyPriceRepository', [
+            return jasmine.createSpyObj<ElectricityPriceRepository>('ElectricityPriceRepository', [
                 'getPrice',
             ]);
         }

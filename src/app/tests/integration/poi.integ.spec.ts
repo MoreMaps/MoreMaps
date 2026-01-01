@@ -12,15 +12,15 @@ import {MAP_SEARCH_REPOSITORY, MapSearchRepository} from '../../services/map-sea
 import {POISearchModel} from '../../data/POISearchModel';
 import {createMockRepository} from '../helpers/test-helpers';
 import {USER_REPOSITORY, UserRepository} from '../../services/User/UserRepository';
+import {POIAlreadyExistsError} from '../../errors/POI/POIAlreadyExistsError';
 
 
 // Pruebas de integración sobre POI
-// HU201, HU202, HU203, HU204, HU205, HU206, HU501
+// HU201-202, HU203, HU204, HU205, HU206, HU501
 // Se excluye HU604 por ser sobre el guardado y recuperación de datos en la BBDD
 describe('Pruebas de integración sobre POI', () => {
     // SUT
     let poiService: POIService;
-    let mapSearchService: MapSearchService;
 
     // Mock de acceso a la BD (usuario)
     let mockUserRepository: jasmine.SpyObj<UserRepository>;
@@ -28,62 +28,52 @@ describe('Pruebas de integración sobre POI', () => {
     // Mock de acceso a la BD (POI)
     let mockPoiRepository: jasmine.SpyObj<POIRepository>;
 
-    // Mock de acceso a la API
-    let mockMapSearchRepository: jasmine.SpyObj<MapSearchRepository>;
-
+    // Datos de prueba
     const poiA: POIModel = POI_TEST_DATA[0];
     const poiB: POIModel = POI_TEST_DATA[1];
 
     beforeEach(async () => {
         mockUserRepository = createMockRepository('user');
         mockPoiRepository = createMockRepository('poi');
-        mockMapSearchRepository = createMockRepository('mapSearch');
 
         await TestBed.configureTestingModule({
             providers: [
                 POIService,
                 MapSearchService,
                 {provide: USER_REPOSITORY, useValue: mockUserRepository},
-                {provide: POI_REPOSITORY, useValue: mockPoiRepository},
-                {provide: MAP_SEARCH_REPOSITORY, useValue: mockMapSearchRepository},
+                {provide: POI_REPOSITORY, useValue: mockPoiRepository}
             ],
         }).compileComponents();
 
         // Inyección del servicio
         poiService = TestBed.inject(POIService);
-        mapSearchService = TestBed.inject(MapSearchService);
     });
 
 
     // Las pruebas empiezan a partir de AQUÍ
 
-    describe('HU201: Registrar POI por coordenadas', () => {
+    // Corresponde a más de una HU, puesto que utilizan el mismo method
+    describe('HU201 Y HU202: Registrar POI', () => {
 
-        it('HU201-EV01: Dar de alta un POI por coordenadas', async () => {
+        it('EV01: Dar de alta un POI nuevo', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
             // Lista de POI es ["A"]
             const mockSearchPOI: POISearchModel = new POISearchModel(poiB.lat, poiB.lon, poiB.placeName);
-            const mockPOI: POIModel = new POIModel(mockSearchPOI.lat, mockSearchPOI.lon, mockSearchPOI.placeName,
+            const mockPOIB: POIModel = new POIModel(mockSearchPOI.lat, mockSearchPOI.lon, mockSearchPOI.placeName,
                 poiB.geohash, poiB.pinned);
 
-            mockMapSearchRepository.searchPOIByCoords.and.resolveTo([mockSearchPOI]);
             mockUserRepository.sessionActive.and.resolveTo(true);
             mockPoiRepository.poiExists.and.resolveTo(false);
-            mockPoiRepository.createPOI.and.resolveTo(mockPOI);
+            mockPoiRepository.createPOI.and.resolveTo(mockPOIB);
 
             // WHEN
             // Se intenta dar de alta el POI "B" mediante sus coordenadas
-            const poiBuscado = await mapSearchService
-                .searchPOIByCoords(poiB.lat, poiB.lon);
-            const poiCreado = await poiService.createPOI(poiBuscado);
+            const poiCreado = await poiService.createPOI(mockSearchPOI);
 
             // THEN
-            // Se llama a la función "searchPOIByCoords" con los parámetros pertinentes
-            expect(mockMapSearchRepository.searchPOIByCoords).toHaveBeenCalledWith(poiB.lat, poiB.lon, 1);
-
             // Se llama a la función "createPOI" con los parámetros pertinentes
-            expect(mockPoiRepository.createPOI).toHaveBeenCalledWith(mockPOI);
+            expect(mockPoiRepository.createPOI).toHaveBeenCalledWith(mockPOIB);
 
             // Se da de alta el POI
             expect(poiCreado).toEqual(jasmine.objectContaining({
@@ -96,82 +86,18 @@ describe('Pruebas de integración sobre POI', () => {
             );
         });
 
-        it('HU201-EI03: Dar de alta un POI por coordenadas no válidas', async () => {
+        it('EI03: Dar de alta un POI ya existente', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
-            mockUserRepository.sessionActive.and.resolveTo(true);
-
-            // WHEN
-            // Se intenta dar de alta un POI de latitud 89 y longitud 999 (inválida)
-            await expectAsync(mapSearchService.searchPOIByCoords(89, 999))
-                .toBeRejectedWith(new LongitudeRangeError());
-            // THEN
-            // Se lanza el error LongitudeRangeError
-
-            // No se llama a la función "searchPOIByCoords"
-            expect(mockMapSearchRepository.searchPOIByCoords).not.toHaveBeenCalled();
-
-            // No se llama a la función "createPOI"
-            expect(mockPoiRepository.createPOI).not.toHaveBeenCalled();
-        });
-    });
-
-
-    describe('HU202: Registrar POI por topónimo', () => {
-
-        it('HU202-EV01: Dar de alta un POI por topónimo', async () => {
-            // GIVEN
-            // El usuario ramon ha iniciado sesión
-            // Lista de POI es ["A"]
             const mockSearchPOI: POISearchModel = new POISearchModel(poiB.lat, poiB.lon, poiB.placeName);
-            const mockPOI: POIModel = new POIModel(poiB.lat, poiB.lon, poiB.placeName, poiB.geohash, poiB.pinned);
-
             mockUserRepository.sessionActive.and.resolveTo(true);
-            mockMapSearchRepository.searchPOIByPlaceName.and.resolveTo([mockSearchPOI]);
-            mockPoiRepository.poiExists.and.resolveTo(false);
-            mockPoiRepository.createPOI.and.resolveTo(mockPOI);
+            mockPoiRepository.poiExists.and.resolveTo(true);
 
             // WHEN
-            // Se intenta dar de alta el POI “B” por topónimo ("Valencia")
-            const listaPoiEncontrados: POISearchModel[] = await mapSearchService
-                .searchPOIByPlaceName(poiB.placeName);
-            const poiBuscado: POISearchModel = listaPoiEncontrados[0];
-            const poiCreado = await poiService.createPOI(poiBuscado)
-
+            // Se intenta dar de alta el mismo POI 2 veces consecutivas
+            await expectAsync(poiService.createPOI(mockSearchPOI)).toBeRejectedWith(new POIAlreadyExistsError());
             // THEN
-            // Se llama a la función "searchPOIByPlaceName" con los parámetros pertinentes
-            expect(mockMapSearchRepository.searchPOIByPlaceName).toHaveBeenCalledWith(poiB.placeName, 10);
-
-            // Se llama a la función "createPOI" con los parámetros pertinentes
-            expect(mockPoiRepository.createPOI).toHaveBeenCalledWith(mockPOI);
-
-            // Se da de alta el POI
-            expect(poiCreado).toEqual(jasmine.objectContaining({
-                    lat: poiB.lat,
-                    lon: poiB.lon,
-                    placeName: poiB.placeName,
-                    geohash: poiB.geohash,
-                    pinned: false
-                })
-            );
-        });
-
-        it('HU202-EI03: Dar de alta un POI por topónimo que no corresponde a ningún sitio', async () => {
-            // GIVEN
-            // El usuario ramon ha iniciado sesión
-            mockUserRepository.sessionActive.and.resolveTo(true);
-            mockMapSearchRepository.searchPOIByPlaceName.and.resolveTo([]);
-
-            // WHEN
-            // Se intenta dar de alta un POI buscando el lugar "lkasdñfjalksdjf" (que no existe)
-            const toponimoInexistente = "lkasdñfjalksdjf";
-            await expectAsync(mapSearchService.searchPOIByPlaceName(toponimoInexistente))
-                .toBeRejectedWith(new PlaceNameNotFoundError(toponimoInexistente));
-            // THEN
-            // Se lanza el error MissingPOIError
-
-            // Se llama a la función "searchPOIByPlaceName" con los parámetros pertinentes
-            expect(mockMapSearchRepository.searchPOIByPlaceName).toHaveBeenCalledWith(toponimoInexistente, 10);
+            // Se lanza el error POIAlreadyExistsError
 
             // No se llama a la función "createPOI"
             expect(mockPoiRepository.createPOI).not.toHaveBeenCalled();

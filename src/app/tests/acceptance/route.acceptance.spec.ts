@@ -97,6 +97,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
         // Iniciar sesión
         await userService.login(datosRamon.email, datosRamon.pwd);
 
+
         // Borrar todas las rutas del usuario (si hubiere)
         await routeService.clear();
 
@@ -215,7 +216,6 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 rutaC.preferencia,
             )).toBeRejectedWith(new ImpossibleRouteError());
-
             // THEN
             // Se lanza el error ImpossibleRouteError.
         }, 30000);

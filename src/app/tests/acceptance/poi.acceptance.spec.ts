@@ -1,4 +1,3 @@
-// it02: HU201, HU202, HU203, HU204, HU205, HU206, HU501, HU604
 import {TestBed} from '@angular/core/testing'
 import {POI_TEST_DATA, USER_TEST_DATA} from '../test-data';
 import {USER_REPOSITORY} from '../../services/User/UserRepository';
@@ -20,7 +19,10 @@ import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
 
-describe('Pruebas sobre POI', () => {
+
+// Pruebas de aceptación sobre POI
+// HU201, HU202, HU203, HU204, HU205, HU206, HU501, HU604
+describe('Pruebas de aceptación sobre POI', () => {
     let userService: UserService;
     let poiService: POIService;
     let mapSearchService: MapSearchService;
@@ -281,6 +283,10 @@ describe('Pruebas sobre POI', () => {
                 // THEN
                 // Se actualiza el POI
                 expect(poiModificado).toBeTrue();
+
+                // El alias ha cambiado
+                const poi = await poiService.readPOI(poiRegistrado.geohash);
+                expect(poi.alias).toEqual("Al y Canto");
             }
             finally {
                 // CLEANUP

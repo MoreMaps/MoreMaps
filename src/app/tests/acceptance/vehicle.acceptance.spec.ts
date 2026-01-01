@@ -1,21 +1,21 @@
 import {TestBed} from '@angular/core/testing';
 import {appConfig} from '../../app.config';
 import {Auth} from '@angular/fire/auth';
-// Usuarios
 import {USER_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
 import {USER_REPOSITORY} from '../../services/User/UserRepository';
 import {UserService} from '../../services/User/user.service';
 import {UserDB} from '../../services/User/UserDB';
-// Vehículos
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {VehicleModel} from '../../data/VehicleModel';
-// Errores
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 
-describe('Pruebas sobre vehículos', () => {
+
+// Pruebas de aceptación sobre vehículos
+// HU301, HU302, HU303, HU304, HU305, HU502, HU605
+describe('Pruebas de aceptación sobre vehículos', () => {
     let userService: UserService;
     let vehicleService: VehicleService;
 

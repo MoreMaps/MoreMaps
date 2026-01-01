@@ -36,6 +36,9 @@ import {FUEL_PRICE_REPOSITORY, FUEL_PRICE_SOURCE} from '../../services/fuel-pric
 import {FuelPriceCache} from '../../services/fuel-price-service/FuelPriceCache';
 import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
 
+
+// Pruebas de aceptación sobre rutas
+// HU401, HU402, HU403, HU404, HU405, HU406, HU407, HU408, HU409, HU410, HU411, HU503, HU606
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 describe('Pruebas de aceptación sobre rutas', () => {
     let userService: UserService;
@@ -220,7 +223,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
 
     // --- HU402: Coste de una ruta en vehículo (precio en €) ---
 
-    xdescribe('HU402: Conocer coste de ruta en coche (combustible)', () => {
+    describe('HU402: Conocer coste de ruta en coche (combustible)', () => {
 
         it('HU402-EV01. Obtener coste (precio) asociado a una ruta registrada en vehículo.', async () => {
             // GIVEN

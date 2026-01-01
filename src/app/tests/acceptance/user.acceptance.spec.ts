@@ -11,8 +11,9 @@ import {appConfig} from '../../app.config';
 import {Auth} from '@angular/fire/auth';
 
 
-// it01: HU101, HU102, HU105, HU106, HU603
-describe('Pruebas sobre usuarios', () => {
+// Pruebas de aceptación sobre usuarios
+// HU101, HU102, HU105, HU106, HU603
+describe('Pruebas de aceptación sobre usuarios', () => {
     let userService: UserService;
     let usuarioRegistradoRamon: UserModel
     let auth: Auth;
@@ -101,19 +102,14 @@ describe('Pruebas sobre usuarios', () => {
     })
 
 
-
     describe('HU101: Registrar Usuario', () => {
 
         it('HU101-EV01: Registrar nuevo usuario válido', async () => {
             // GIVEN
-            //  lista de usuarios registrados vacía que no incluye a "maria"
-            //  no se ha iniciado sesión
-            if (auth.currentUser) {
-                await auth.signOut();
-            }
+            //  lista de usuarios registrados vacía que no incluye al usuario "maria"
             try {
                 // WHEN
-                //  el usuario "maria" intenta darse de alta
+                //  el usuario "maria" intenta darse de alta con datos que siguen el formato correcto
                 const usuarioCreado: UserModel = await userService
                     .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
@@ -134,10 +130,6 @@ describe('Pruebas sobre usuarios', () => {
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
             // GIVEN
             //  lista de usuarios registrados vacía que no incluye al usuario "maria"
-            //  no se ha iniciado sesión
-            if (auth.currentUser) {
-                await auth.signOut();
-            }
 
             // WHEN
             //  el usuario "maria" intenta darse de alta con contraseña "password" (no sigue el formato correcto)

@@ -9,7 +9,7 @@ export interface VehicleRepository {
     getVehicleList() : Promise<VehicleModel[]>;
     updateVehicle(matricula: string, vehicle: Partial<VehicleModel>) : Promise<boolean>;
     deleteVehicle(matricula : string) : Promise<boolean>;
-    readVehicle(matricula: string): Promise<VehicleModel>;
+    getVehicle(matricula: string): Promise<VehicleModel>;
 
     // Borra todos los vehículos
     clear(): Promise<boolean>;

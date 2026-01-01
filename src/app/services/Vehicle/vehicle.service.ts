@@ -136,7 +136,7 @@ export class VehicleService {
         }
 
         // Devuelve el vehículo leído
-        return this.vehicleDb.readVehicle(matricula);
+        return this.vehicleDb.getVehicle(matricula);
     }
 
     // HU502 Fijar vehículo

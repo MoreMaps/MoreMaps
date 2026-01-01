@@ -169,7 +169,7 @@ export class VehicleDB implements VehicleRepository {
      * Lee los datos de la base de datos correspondientes al vehículo con la matrícula especificada.
      * @param matricula matricula del vehículo
      */
-    async readVehicle(matricula: string): Promise<VehicleModel> {
+    async getVehicle(matricula: string): Promise<VehicleModel> {
         const path: string = `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`;
 
         // Obtener datos de Firebase
@@ -192,7 +192,7 @@ export class VehicleDB implements VehicleRepository {
      */
     async pinVehicle(matricula: string): Promise<boolean> {
         // Lectura del vehículo registrado.
-        const vehicle: VehicleModel = await this.readVehicle(matricula);
+        const vehicle: VehicleModel = await this.getVehicle(matricula);
 
         // Ruta para actualizar el vehículo
         const path: string = `/items/${this.auth.currentUser!.uid}/vehicles/${matricula}`;

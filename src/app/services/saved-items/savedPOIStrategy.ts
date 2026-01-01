@@ -12,7 +12,11 @@ export class SavedPOIStrategy implements SavedItemsStrategy {
     }
 
     async toggleFavorite(item: POIModel): Promise<boolean> {
-        return await this.poiService.pinPOI(item);
+        let res = await this.poiService.pinPOI(item);
+        if(res){
+            item.pinned = !item.pinned;
+        }
+        return res;
     }
 
     getEmptyMessage(): string {

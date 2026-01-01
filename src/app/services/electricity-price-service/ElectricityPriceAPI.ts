@@ -3,7 +3,6 @@ import {ElectricityPriceRepository} from './ElectricityPriceRepository';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import {firstValueFrom} from 'rxjs';
 import {APIAccessError} from '../../errors/APIAccessError';
-import {ElectricityPriceNotFoundError} from '../../errors/Route/ElectricityPriceNotFoundError';
 
 // Interfaz para mapear los datos necesarios de la respuesta de la API
 interface ReeApiResponse {
@@ -52,21 +51,17 @@ export class ElectricityPriceAPI implements ElectricityPriceRepository {
         const respuesta: ReeApiResponse = await this.getDataFromAPI<ReeApiResponse>(this.apiUrl, this.headers, params);
         const priceData = respuesta?.included?.[0]?.attributes?.values?.[0];
 
-        // Error si algo ha fallado en la petición
-        if (!priceData || priceData.value === undefined || priceData.value === null) {
-            console.error('Estructura de respuesta inesperada de REE:\n', JSON.stringify(respuesta));
-            throw new ElectricityPriceNotFoundError();
+        // La respuesta no contiene el valor que buscamos
+        if (!priceData || !priceData.value) {
+            console.error('No se encontró el precio de la electricidad, respuesta obtenida: ' + JSON.stringify(respuesta));
+            return -1;
         }
 
+        // Comprueba que el precio obtenido es un número
         const precio = Number(priceData.value);
-
-        // Error si no es un número para evitar devolver una respuesta incorrecta
         if (isNaN(precio)) {
-            throw new ElectricityPriceNotFoundError();
+            return -1;
         }
-
-        // todo: eliminar log
-        console.info("El precio de la electricidad es: ---> " + precio / 1000 + " €/kWh")
 
         // El valor devuelto por la API está en €/MWh; se quiere en €/kWh
         return precio / 1000;

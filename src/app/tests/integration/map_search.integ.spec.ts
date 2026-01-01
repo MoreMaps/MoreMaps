@@ -8,11 +8,15 @@ import {MAP_SEARCH_REPOSITORY, MapSearchRepository} from '../../services/map-sea
 import {POISearchModel} from '../../data/POISearchModel';
 import {createMockRepository} from '../helpers/test-helpers';
 import {RouteResultModel} from '../../data/RouteResultModel';
-import {RouteModel} from '../../data/RouteModel';
+import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geometry} from 'geojson';
 import {GeohashDecoder} from '../../utils/geohashDecoder';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 import {geohashForLocation} from 'geofire-common';
+import {CoordsNotFoundError} from '../../errors/POI/CoordsNotFoundError';
+import {WrongParamsError} from '../../errors/WrongParamsError';
+import {InvalidDataError} from '../../errors/InvalidDataError';
+import {LatitudeRangeError} from '../../errors/POI/LatitudeRangeError';
 
 
 // Pruebas de integración sobre el servicio de búsqueda de rutas
@@ -45,9 +49,9 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
 
     // Las pruebas empiezan a partir de AQUÍ
 
-    describe('HU201: Registrar POI por coordenadas', () => {
+    describe('HU201: Buscar POI por coordenadas', () => {
 
-        it('HU201-EV01: Buscar POI por coordenadas válidas', async () => {
+        it('HU201-EV01: Buscar POI por coordenadas', async () => {
             // GIVEN
             const mockSearchPOI: POISearchModel = new POISearchModel(poiB.lat, poiB.lon, poiB.placeName);
             mockMapSearchRepository.searchPOIByCoords.and.resolveTo([mockSearchPOI]);
@@ -64,7 +68,7 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
             expect(found).toEqual(mockSearchPOI);
         });
 
-        it('HU201-EI03: Dar de alta un POI por coordenadas no válidas', async () => {
+        it('HU201-EI01: Buscar un POI por longitud no válida', async () => {
             // GIVEN
 
             // WHEN
@@ -77,12 +81,42 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
             // No se llama a la función "searchPOIByCoords" de la API
             expect(mockMapSearchRepository.searchPOIByCoords).not.toHaveBeenCalled();
         });
+
+        it('HU201-EI02: Buscar un POI por latitud no válida', async () => {
+            // GIVEN
+
+            // WHEN
+            // Se intenta dar de alta un POI de latitud 89 y longitud 999 (inválida)
+            await expectAsync(mapSearchService.searchPOIByCoords(999, 179))
+                .toBeRejectedWith(new LatitudeRangeError());
+            // THEN
+            // Se lanza el error LongitudeRangeError
+
+            // No se llama a la función "searchPOIByCoords" de la API
+            expect(mockMapSearchRepository.searchPOIByCoords).not.toHaveBeenCalled();
+        });
+
+        it('HU201-EI03: Buscar un POI inexistente', async () => {
+            // GIVEN
+            // No hay ningún POI cercano
+            mockMapSearchRepository.searchPOIByCoords.and.resolveTo([]);
+
+            // WHEN
+            // Se intenta dar de alta un POI de latitud 89 y longitud 179
+            await expectAsync(mapSearchService.searchPOIByCoords(0, 0))
+                .toBeRejectedWith(new CoordsNotFoundError(0, 0));
+            // THEN
+            // Se lanza el error CoordsNotFoundError
+
+            // Se llama a la función "searchPOIByCoords" de la API con los parámetros pertinentes
+            expect(mockMapSearchRepository.searchPOIByCoords).toHaveBeenCalledWith(0, 0, 1);
+        });
     });
 
 
-    describe('HU202: Registrar POI por topónimo', () => {
+    describe('HU202: Buscar POI por topónimo', () => {
 
-        it('HU202-EV01: Dar de alta un POI por topónimo', async () => {
+        it('HU202-EV01: Buscar un POI por topónimo', async () => {
             // GIVEN
             const mockSearchPOI: POISearchModel = new POISearchModel(poiB.lat, poiB.lon, poiB.placeName);
             mockMapSearchRepository.searchPOIByPlaceName.and.resolveTo([mockSearchPOI]);
@@ -99,7 +133,7 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
             expect(found[0]).toEqual(mockSearchPOI);
         });
 
-        it('HU202-EI03: Dar de alta un POI por topónimo que no corresponde a ningún sitio', async () => {
+        it('HU202-EI01: Buscar un POI por topónimo que no corresponde a ningún sitio', async () => {
             // GIVEN
             mockMapSearchRepository.searchPOIByPlaceName.and.resolveTo([]);
 
@@ -138,7 +172,23 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
             expect(found).toEqual(mockRoute);
         });
 
-        it('EI01: Obtener una ruta imposible entre dos puntos.', async () => {
+        it('EI01: Obtener una ruta sin especificar parámetros', async () => {
+            // GIVEN
+
+            // WHEN
+            // El usuario pide la ruta "A-B", pero no especifica el tipo de transporte.
+            await expectAsync(mapSearchService.searchRoute(
+                rutaC.geohash_origen,
+                rutaC.geohash_destino,
+                undefined as unknown as TIPO_TRANSPORTE,
+                rutaC.preferencia,
+            )).toBeRejectedWith(new WrongParamsError('ruta'));
+
+            // THEN
+            // Se lanza el error ImpossibleRouteError.
+        });
+
+        it('EI02: Obtener una ruta imposible entre dos puntos.', async () => {
             // GIVEN
             mockMapSearchRepository.searchRoute.and.resolveTo(undefined);
 
@@ -155,6 +205,23 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
             // THEN
             // Se lanza el error ImpossibleRouteError.
         });
-    });
 
+        it('EI03: Obtener una ruta de coste nulo.', async () => {
+            // GIVEN
+            const mockRoute: RouteResultModel = new RouteResultModel(0, rutaC.distancia, undefined as unknown as Geometry);
+            mockMapSearchRepository.searchRoute.and.resolveTo(mockRoute);
+
+            // WHEN
+            // El usuario pide una ruta de coste nulo (entre 2 POI muy juntos).
+            await expectAsync(mapSearchService.searchRoute(
+                rutaC.geohash_origen,
+                rutaC.geohash_destino,
+                rutaC.transporte,
+                rutaC.preferencia,
+            )).toBeRejectedWith(new InvalidDataError());
+
+            // THEN
+            // Se lanza el error InvalidDataError.
+        });
+    });
 });

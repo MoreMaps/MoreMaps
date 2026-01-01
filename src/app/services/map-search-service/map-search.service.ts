@@ -25,6 +25,9 @@ export class MapSearchService {
      * @param lat Latitud del POI.
      * @param lon Longitud del POI.
      * @returns El primer POI encontrado.
+     * @throws LatitudeRangeError Si la latitud es inválida.
+     * @throws LongitudeRangeError Si la longitud es inválida.
+     * @throws CoordsNotFoundError Si no se encuentra ningún POI cercano.
      */
     async searchPOIByCoords(lat: number, lon: number): Promise<POISearchModel> {
         // Validar rangos
@@ -50,6 +53,7 @@ export class MapSearchService {
      * Busca un POI por topónimo.
      * @param placeName Topónimo del POI.
      * @returns Los primeros 10 POI encontrados.
+     * @throws PlaceNameNotFoundError Si no se encuentra el topónimo.
      */
     async searchPOIByPlaceName(placeName: string): Promise<POISearchModel[]> {
         // Número de features que va a devolver la llamada a la API de Geocode.
@@ -64,15 +68,16 @@ export class MapSearchService {
     // HU401, HU404-406: Buscar una ruta según preferencia entre dos POI
     /**
      * Busca una ruta entre 2 POI.
-     * @param origen origen de la ruta
-     * @param destino destino de la ruta
-     * @param transporte transporte escogido
-     * @param preferencia preferencia escogida
-     * @throws WrongParamsError si algún parámetro no es correcto
-     * @throws ImpossibleRouteError si la ruta es imposible
+     * @param origen Origen de la ruta
+     * @param destino Destino de la ruta
+     * @param transporte Transporte escogido
+     * @param preferencia Preferencia escogida
+     * @throws WrongParamsError Si algún parámetro no es correcto
+     * @throws ImpossibleRouteError Si la ruta es imposible
+     * @throws InvalidDataError Si los datos recibidos son inválidos
      */
     async searchRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA): Promise<RouteResultModel> {
-        // Comprobar que los parametros están bien
+        // Comprobar que los parámetros están bien
         if (!origen || !destino || !transporte || !preferencia) {
             throw new WrongParamsError('ruta');
         }
@@ -88,7 +93,7 @@ export class MapSearchService {
             throw new ImpossibleRouteError();
         }
         // Si la distancia o el tiempo son cero o negativos, la ruta no es válida porque no tiene coste alguno.
-        if (ruta.distancia < 0 || ruta.tiempo < 0) {
+        if (ruta.distancia <= 0 || ruta.tiempo <= 0) {
             throw new InvalidDataError();
         }
         return ruta;

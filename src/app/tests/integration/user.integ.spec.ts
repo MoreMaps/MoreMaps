@@ -7,12 +7,15 @@ import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {createMockRepository} from '../helpers/test-helpers';
+import {WrongParamsError} from '../../errors/WrongParamsError';
+import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
+import {UserAlreadyExistsError} from '../../errors/User/UserAlreadyExistsError';
 
 
 // Pruebas de integración sobre usuarios
 // HU101, HU102, HU105, HU106
 // Se excluye HU603 por ser sobre el guardado y recuperación de datos en la BBDD
-describe('Pruebas de integración sobre usuarios', () => {
+fdescribe('Pruebas de integración sobre usuarios', () => {
     // SUT
     let userService: UserService;
 
@@ -49,12 +52,12 @@ describe('Pruebas de integración sobre usuarios', () => {
             mockUserRepository.createUser.and.resolveTo(mockUser);
 
             // WHEN
-            //  el usuario "maria" intenta darse de alta con datos inválidos
+            //  el usuario "maria" intenta darse de alta con datos válidos
             const usuarioCreado: UserModel = await userService
                 .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
             // THEN
-            // se llama a la función "createUser"
+            //  se llama a la función "createUser"
             expect(mockUserRepository.createUser).toHaveBeenCalledWith(maria.email, maria.pwd, maria.nombre, maria.apellidos);
 
             //  se da de alta a "maria"
@@ -66,7 +69,37 @@ describe('Pruebas de integración sobre usuarios', () => {
             }));
         });
 
-        it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
+        it('HU101-EI01: Registrar nuevo usuario sin especificar parámetros', async () => {
+            // GIVEN
+
+            // WHEN
+            //  el usuario "maria" intenta darse de alta sin contraseña
+            await expectAsync(userService.signUp(maria.email, undefined as unknown as string, maria.nombre, maria.apellidos))
+                .toBeRejectedWith(new WrongParamsError('usuario'));
+            // THEN
+            //  se lanza el error WrongPasswordFormatError
+
+            //  no se llama a la función "createUser"
+            expect(mockUserRepository.createUser).not.toHaveBeenCalled();
+        });
+
+        it('HU101-EI02: Registrar usuario ya registrado', async () => {
+            // GIVEN
+            //  lista de usuarios registrados que incluye a "maria"
+            mockUserRepository.userExists.and.resolveTo(true);
+
+            // WHEN
+            //  el usuario "maria" intenta darse de alta
+            await expectAsync(userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos))
+                .toBeRejectedWith(new UserAlreadyExistsError());
+            // THEN
+            //  se lanza el error WrongPasswordFormatError
+
+            //  no se llama a la función "createUser"
+            expect(mockUserRepository.createUser).not.toHaveBeenCalled();
+        });
+
+        it('HU101-EI03: Registrar nuevo usuario con contraseña inválida', async () => {
             // GIVEN
             //  lista de usuarios registrados que no incluye a "maria"
             mockUserRepository.userExists.and.resolveTo(false);
@@ -105,7 +138,20 @@ describe('Pruebas de integración sobre usuarios', () => {
             expect(sesionIniciada).toBeTrue();
         });
 
-        it('HU102-EI01: Iniciar sesión con una cuenta que no existe', async () => {
+        it('HU102-EI01: Iniciar sesión sin especificar parámetros', async () => {
+            // GIVEN
+
+            // WHEN
+            // se intenta iniciar sesión con los datos del usuario "maria", pero sin especificar la contraseña
+            await expectAsync(userService.login(maria.email, undefined as unknown as string)).toBeRejectedWith(new WrongParamsError('usuario'));
+            // THEN
+            //  el usuario no se registra y se lanza el error UserNotFoundError
+
+            //  no se llama a la función "validateCredentials"
+            expect(mockUserRepository.validateCredentials).not.toHaveBeenCalled();
+        });
+
+        it('HU102-EI02: Iniciar sesión con una cuenta que no existe', async () => {
             // GIVEN
             //  lista de usuarios registrados que no incluye a "maria"
             mockUserRepository.userExists.and.resolveTo(false);
@@ -118,6 +164,21 @@ describe('Pruebas de integración sobre usuarios', () => {
 
             //  no se llama a la función "validateCredentials"
             expect(mockUserRepository.validateCredentials).not.toHaveBeenCalled();
+        });
+
+        it('HU102-EI03: Iniciar sesión con credenciales inválidas', async () => {
+            // GIVEN
+            //  lista de usuarios registrados que incluye a "maria"
+            mockUserRepository.userExists.and.resolveTo(true);
+
+            // WHEN
+            // se intenta iniciar sesión con los datos del usuario "maria", pero cambiando la contraseña por la del usuario "ramon"
+            await expectAsync(userService.login(maria.email, ramon.pwd)).toBeRejectedWith(new InvalidCredentialError());
+            // THEN
+            //  el usuario no se registra y se lanza el error UserNotFoundError
+
+            //  no se llama a la función "validateCredentials"
+            expect(mockUserRepository.validateCredentials).toHaveBeenCalled();
         });
     })
 

@@ -10,7 +10,7 @@ import {ElectricityPriceNotFoundError} from '../../errors/Route/ElectricityPrice
 
 // Pruebas de integración sobre el servicio de obtención del coste de la electricidad
 // HU402
-fdescribe('Pruebas de integración sobre el servicio de obtención del coste de la electricidad', () => {
+describe('Pruebas de integración sobre el servicio de obtención del coste de la electricidad', () => {
     // SUT
     let electricityPriceService: ElectricityPriceService;
 

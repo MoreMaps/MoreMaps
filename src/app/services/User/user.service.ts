@@ -6,7 +6,6 @@ import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatErr
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongParamsError} from '../../errors/WrongParamsError';
-import {MissingParamsError} from '../../errors/MissingParamsError';
 import {SessionAlreadyActiveError} from '../../errors/User/SessionAlreadyActiveError';
 import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
 
@@ -20,10 +19,11 @@ export class UserService {
      * @throws UserAlreadyExistsError si ya existe el usuario.
      * @throws WrongPasswordFormatError si la contraseña no cumple con los criterios mínimos.
      */
+    // TODO: se debería utilizar RegisterModel??
     async signUp(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
         // Comprobar si hay algún parámetro vacío
         if (!email || !pwd || !nombre || !apellidos) {
-            throw new MissingParamsError();
+            throw new WrongParamsError('usuario');
         }
 
         // Comprobar si el usuario existe
@@ -37,7 +37,6 @@ export class UserService {
         }
 
         // Crea un nuevo usuario
-        // TODO: se debería utilizar RegisterModel??
         return await this.userDb.createUser(email, pwd, nombre, apellidos);
     }
 

@@ -18,7 +18,7 @@ import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 import {geohashForLocation} from 'geofire-common';
 
 // Imports de UI (Dialogs)
-import {RouteDetailsDialog} from '../../view/route/route-details-dialog/routeDetailsDialog';
+import RouteDetailsDialog from '../../view/route/route-details-dialog/routeDetailsDialog';
 import {RouteFlowService} from './route-flow-service';
 import {FlowPoint} from './route-flow-state';
 import {LoadingRouteDialogComponent} from '../../utils/map-widgets';

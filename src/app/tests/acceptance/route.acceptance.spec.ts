@@ -436,7 +436,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             }
             finally {
                 // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
             }
         }, 30000);
 
@@ -457,7 +457,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             }
             finally {
                 // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
             }
         }, 30000);
     });
@@ -496,7 +496,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             }
             finally {
                 // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
             }
         },30000);
     });
@@ -517,7 +517,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 const ruta = await routeService.readRoute(
                     rutaC.geohash_origen,
                     rutaC.geohash_destino,
-                    rutaC.transporte
+                    rutaC.transporte,
+                    rutaC.matricula
                 );
 
                 // THEN
@@ -536,7 +537,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 }));
             } finally {
                 // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
             }
         },30000);
 
@@ -550,6 +551,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
                 rutaC.transporte,
+                rutaC.matricula
             )).toBeRejectedWith(new MissingRouteError());
 
             // THEN
@@ -572,7 +574,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
             const resultado = await routeService.deleteRoute(
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
-                rutaC.transporte
+                rutaC.transporte,
+                rutaC.matricula
             );
 
             // THEN
@@ -593,6 +596,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
                 rutaC.transporte,
+                rutaC.matricula
             )).toBeRejectedWith(new MissingRouteError());
 
             // THEN
@@ -620,6 +624,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                     rutaC.geohash_destino,
                     rutaC.transporte,
                     {transporte: rutaP.transporte},
+                    rutaC.matricula
                 );
                 transporteParaBorrar = rutaModificada.transporte;
 
@@ -629,8 +634,18 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 // Se recalcula la ruta. Ahora debería tardar más que en coche.
                 expect(rutaModificada.tiempo).toBeGreaterThan(rutaC.tiempo!);
             } finally {
-                // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, transporteParaBorrar);
+                // CLEANUP ROBUSTO
+                // Si el transporte a borrar es vehículo, necesitamos la matrícula. Si es a pie, undefined.
+                const matriculaBorrar = (transporteParaBorrar === TIPO_TRANSPORTE.VEHICULO)
+                    ? rutaC.matricula
+                    : undefined;
+
+                await routeService.deleteRoute(
+                    rutaC.geohash_origen,
+                    rutaC.geohash_destino,
+                    transporteParaBorrar,
+                    matriculaBorrar
+                );
             }
         },30000);
 
@@ -688,8 +703,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
             finally {
                 // CLEANUP
                 // Borrar ambas rutas
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
-                await routeService.deleteRoute(rutaP.geohash_origen, rutaP.geohash_destino, rutaP.transporte);
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
+                await routeService.deleteRoute(rutaP.geohash_origen, rutaP.geohash_destino, rutaP.transporte, rutaP.matricula);
             }
 
         });
@@ -741,7 +756,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             expect(listaRutas).toEqual(listaRutasAntes);
 
             // CLEANUP
-            await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
+            await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
         });
     });
 });

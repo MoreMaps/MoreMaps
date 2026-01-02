@@ -41,7 +41,7 @@ export class RouteService {
      */
     async getRouteCost(ruta: RouteResultModel, transporte: TIPO_TRANSPORTE, consumoMedio?: number,
                        tipoCombustible?: FUEL_TYPE): Promise<RouteCostResult> {
-        if (ruta.distancia < 0 || ruta.tiempo < 0 ){
+        if (ruta.distancia < 0 || ruta.tiempo < 0) {
             throw new InvalidDataError();
         }
 
@@ -53,14 +53,14 @@ export class RouteService {
 
         switch (transporte) {
             case TIPO_TRANSPORTE.A_PIE:
-                return { cost: tiempoH * kCalPie, unit: 'kCal' };
+                return {cost: tiempoH * kCalPie, unit: 'kCal'};
 
             case TIPO_TRANSPORTE.BICICLETA:
-                return { cost: tiempoH * kCalBici, unit: 'kCal' };
+                return {cost: tiempoH * kCalBici, unit: 'kCal'};
 
             case TIPO_TRANSPORTE.VEHICULO:
                 // Si faltan datos, se devuelve 0
-                if (consumoMedio === undefined || consumoMedio < 0 || !tipoCombustible ) {
+                if (consumoMedio === undefined || consumoMedio < 0 || !tipoCombustible) {
                     console.error('Faltan datos para calcular el coste del vehículo.');
                     throw new InvalidDataError();
                 }
@@ -81,10 +81,10 @@ export class RouteService {
                 }
 
                 const total = precio * cantidadEnergia;
-                return { cost: total, unit: '€' };
+                return {cost: total, unit: '€'};
 
             default:
-                return { cost: 0, unit: '€' };
+                return {cost: 0, unit: '€'};
         }
     }
 
@@ -113,7 +113,7 @@ export class RouteService {
         }
 
         // Comprueba que la ruta NO exista
-        if (await this.routeDb.routeExists(origen, destino, transporte)) {
+        if (await this.routeDb.routeExists(origen, destino, transporte, matricula)) {
             throw new RouteAlreadyExistsError();
         }
 
@@ -153,22 +153,23 @@ export class RouteService {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @param matricula Matrícula del vehículo (si ese es el medio de transporte)
      * @throws SessionNotActiveError Si la sesión no está activa.
      * @throws MissingRouteError Si no existe la ruta.
      */
-    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<RouteModel> {
+    async readRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
         }
 
         // Comprueba que la ruta exista
-        if (!await this.routeDb.routeExists(origen, destino, transporte)) {
+        if (!await this.routeDb.routeExists(origen, destino, transporte, matricula)) {
             throw new MissingRouteError();
         }
 
         // Obtiene la ruta
-        return this.routeDb.getRoute(origen, destino, transporte);
+        return this.routeDb.getRoute(origen, destino, transporte, matricula);
     }
 
     // HU410: Eliminar ruta
@@ -177,23 +178,24 @@ export class RouteService {
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
+     * @param matricula Matrícula del vehículo (si ese es el medio de transporte).
      * @returns Promise con true si se borra, false si no.
      * @throws SessionNotActiveError Si la sesión no está activa.
      * @throws MissingRouteError Si no existe la ruta.
      */
-    async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean> {
+    async deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
         }
 
         // Comprueba que la ruta exista
-        if (!await this.routeDb.routeExists(origen, destino, transporte)) {
+        if (!await this.routeDb.routeExists(origen, destino, transporte, matricula)) {
             throw new MissingRouteError();
         }
 
         // Borra la ruta
-        return this.routeDb.deleteRoute(origen, destino, transporte);
+        return this.routeDb.deleteRoute(origen, destino, transporte, matricula);
     }
 
     /**
@@ -211,23 +213,24 @@ export class RouteService {
      * @param destino Geohash del POI de destino.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta).
      * @param update Partial con los atributos que se van a actualizar.
+     * @param matriculaOriginal Matrícula del vehículo original (si el medio de transporte original era vehículo)
      * @returns Promise con la ruta actualizada.
      * @throws SessionNotActiveError si la sesión no está activa.
      * @throws MissingRouteError si la ruta no existe.
      */
-    async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>): Promise<RouteModel> {
+    async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>, matriculaOriginal?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa
-        if(!await this.userDb.sessionActive()) {
+        if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
         }
 
         // Comprueba que la ruta original existe
-        if(!await this.routeDb.routeExists(origen, destino, transporte)) {
+        if (!await this.routeDb.routeExists(origen, destino, transporte, matriculaOriginal)) {
             throw new MissingRouteError();
         }
 
         // Obtenemos la ruta original ANTES de hacer nada para comparar
-        const rutaOriginal = await this.routeDb.getRoute(origen, destino, transporte);
+        const rutaOriginal = await this.routeDb.getRoute(origen, destino, transporte, matriculaOriginal);
 
         // Comprobamos si hay cambios reales
         const aliasCambia = update.alias && update.alias !== rutaOriginal.alias;
@@ -269,7 +272,7 @@ export class RouteService {
             }
         }
         // Llamada al repositorio
-        return this.routeDb.updateRoute(origen, destino, transporte, update);
+        return this.routeDb.updateRoute(origen, destino, transporte, update, matriculaOriginal);
     }
 
     // HU503 Fijar ruta
@@ -287,7 +290,7 @@ export class RouteService {
         }
 
         // Comprueba que el vehículo exista
-        if (!await this.routeDb.routeExists(ruta.geohash_origen, ruta.geohash_destino, ruta.transporte)) {
+        if (!await this.routeDb.routeExists(ruta.geohash_origen, ruta.geohash_destino, ruta.transporte, ruta.matricula)) {
             throw new MissingRouteError();
         }
 

@@ -26,7 +26,7 @@ import {Geohash} from 'geofire-common';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
-import {RouteDetailsDialog} from '../route/route-details-dialog/routeDetailsDialog';
+import RouteDetailsDialog from '../route/route-details-dialog/routeDetailsDialog';
 import {MapCoreService} from '../../services/map/map-core-service';
 import {RouteLayerService} from '../../services/map/route-layer-service';
 import {BeaconLayerService} from '../../services/map/beacon-layer-service';

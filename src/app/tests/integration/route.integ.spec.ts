@@ -13,6 +13,7 @@ import {ElectricityPriceService} from '../../services/electricity-price-service/
 import {FUEL_TYPE} from '../../data/VehicleModel';
 import {InvalidDataError} from '../../errors/InvalidDataError';
 import {WrongParamsError} from '../../errors/WrongParamsError';
+import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
 
 
 // Pruebas de integración sobre rutas
@@ -28,6 +29,9 @@ describe('Pruebas de integración sobre rutas', () => {
 
     // Mock de acceso a la BD (rutas)
     let mockRouteRepository: jasmine.SpyObj<RouteRepository>;
+
+    // Mock del servicio (mapas)
+    let mockMapService: jasmine.SpyObj<MapSearchService>;
 
     // Mock del servicio (combustible)
     let mockFuelService: jasmine.SpyObj<FuelPriceService>;
@@ -46,6 +50,7 @@ describe('Pruebas de integración sobre rutas', () => {
         mockRouteRepository = createMockRepository('route');
         mockFuelService = createMockRepository('fuel');
         mockElectricityService = createMockRepository('electricity');
+        mockMapService = createMockRepository('maps');
 
         await TestBed.configureTestingModule({
             providers: [
@@ -53,7 +58,8 @@ describe('Pruebas de integración sobre rutas', () => {
                 {provide: USER_REPOSITORY, useValue: mockUserRepository},
                 {provide: ROUTE_REPOSITORY, useValue: mockRouteRepository},
                 {provide: ElectricityPriceService, useValue: mockElectricityService},
-                {provide: FuelPriceService, useValue: mockFuelService}
+                {provide: FuelPriceService, useValue: mockFuelService},
+                {provide: MapSearchService, useValue: mockMapService}
             ],
         }).compileComponents();
 
@@ -272,7 +278,8 @@ describe('Pruebas de integración sobre rutas', () => {
             const ruta = await routeService.readRoute(
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
-                rutaC.transporte
+                rutaC.transporte,
+                rutaC.matricula
             );
 
             // THEN
@@ -281,7 +288,7 @@ describe('Pruebas de integración sobre rutas', () => {
             expect(ruta).toEqual(mockRouteModel);
 
             // Se llama a la función "getRoute" con los parámetros pertinentes.
-            expect(mockRouteRepository.getRoute).toHaveBeenCalledWith(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
+            expect(mockRouteRepository.getRoute).toHaveBeenCalledWith(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
         });
 
         it('HU409-EI03. Consultar información de una ruta no registrada.', async () => {
@@ -296,6 +303,7 @@ describe('Pruebas de integración sobre rutas', () => {
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
                 rutaC.transporte,
+                rutaC.matricula
             )).toBeRejectedWith(new MissingRouteError());
             // THEN
             // Se lanza el error MissingRouteError.
@@ -319,14 +327,15 @@ describe('Pruebas de integración sobre rutas', () => {
             const resultado = await routeService.deleteRoute(
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
-                rutaC.transporte
+                rutaC.transporte,
+                rutaC.matricula
             );
             // THEN
             // No se lanza ningún error. Se elimina la ruta.
             expect(resultado).toBeTrue();
 
             // Se llama a la función "deleteRoute" con los parámetros pertinentes.
-            expect(mockRouteRepository.deleteRoute).toHaveBeenCalledWith(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
+            expect(mockRouteRepository.deleteRoute).toHaveBeenCalledWith(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
         });
 
         it('HU410-EI03. Eliminar una ruta no registrada.', async () => {
@@ -341,6 +350,7 @@ describe('Pruebas de integración sobre rutas', () => {
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
                 rutaC.transporte,
+                rutaC.matricula
             )).toBeRejectedWith(new MissingRouteError());
             // THEN
             // Se lanza el error MissingRouteError.
@@ -356,12 +366,19 @@ describe('Pruebas de integración sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             // Se simula el coste de la ruta.
+            const mockRouteResultModel = new RouteResultModel(rutaP.tiempo, rutaP.distancia, undefined as any);
             const mockRouteModel = new RouteModel(rutaC.geohash_origen, rutaC.geohash_destino,
                 rutaC.alias, rutaP.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
                 0, 0, false, rutaC.matricula);
+            const mockNewRouteModel = new RouteModel(rutaC.geohash_origen, rutaC.geohash_destino,
+                rutaC.alias, rutaP.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
+                0, 0, false, rutaC.matricula);
+
             mockUserRepository.sessionActive.and.resolveTo(true);
             mockRouteRepository.routeExists.and.resolveTo(true);
-            mockRouteRepository.updateRoute.and.resolveTo(mockRouteModel);
+            mockRouteRepository.getRoute.and.resolveTo(mockRouteModel);
+            mockMapService.searchRoute.and.resolveTo(mockRouteResultModel);
+            mockRouteRepository.updateRoute.and.resolveTo(mockNewRouteModel);
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B" y modifica el modo de transporte a "A pie".
@@ -370,14 +387,15 @@ describe('Pruebas de integración sobre rutas', () => {
                 rutaC.geohash_destino,
                 rutaC.transporte,
                 {transporte: rutaP.transporte},
+                rutaC.matricula
             );
 
             // THEN
             // No se lanza ningún error. El transporte de "A-B" se modifica a "A pie".
-            expect(rutaModificada.transporte).toBe(rutaP.transporte);
+            expect(rutaModificada).toBe(mockNewRouteModel);
 
             // Se llama a la función "updateRoute" con los parámetros pertinentes.
-            expect(mockRouteRepository.updateRoute).toHaveBeenCalledWith(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, {transporte: rutaP.transporte});
+            expect(mockRouteRepository.updateRoute).toHaveBeenCalledWith(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, {transporte: rutaP.transporte}, rutaC.matricula);
         });
 
         it('HU411-EI02. Modificar una ruta no registrada', async () => {

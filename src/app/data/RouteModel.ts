@@ -78,10 +78,7 @@ export class RouteModel {
     }
 
     static buildId(origen: string, destino: string, transporte: string, matricula?: string): string {
-        if (transporte === TIPO_TRANSPORTE.VEHICULO && matricula) {
-            return `${origen}-${destino}-${matricula}`;
-        }
-        return `${origen}-${destino}-${transporte}`;
+        return `${origen}-${destino}-${transporte === TIPO_TRANSPORTE.VEHICULO && matricula ? matricula : transporte}`;
     }
 
     id(): string {

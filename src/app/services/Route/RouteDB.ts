@@ -18,7 +18,6 @@ import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {DBAccessError} from '../../errors/DBAccessError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
-import {MissingRouteError} from '../../errors/Route/MissingRouteError';
 
 @Injectable({
     providedIn: 'root'
@@ -105,10 +104,6 @@ export class RouteDB implements RouteRepository {
             const oldDocRef = doc(this.firestore, oldPath);
             const snapshot = await getDoc(oldDocRef);
 
-            if (!snapshot.exists()) {
-                throw new MissingRouteError();
-            }
-
             const currentRoute = RouteModel.fromJSON(snapshot.data());
 
             // Preparamos el nuevo objeto fusionando los datos
@@ -146,7 +141,6 @@ export class RouteDB implements RouteRepository {
 
             return updatedRoute;
         } catch (error: any) {
-            if (error instanceof RouteAlreadyExistsError) throw error;
             console.error('Error al actualizar ruta en Firebase: ' + error);
             throw new DBAccessError();
         }

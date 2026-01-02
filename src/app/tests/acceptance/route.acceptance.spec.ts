@@ -93,7 +93,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
         // Resultado de la API para la ruta "A-B-Ford Fiesta" (evita llamadas innecesarias)
         rutaABCBuscada = await mapSearchService.searchRoute(rutaC.geohash_origen, rutaC.geohash_destino,
             rutaC.transporte, rutaC.preferencia);
-    });
+    }, 30000);
 
     afterAll(async () => {
         // Borrar POI B de la BD

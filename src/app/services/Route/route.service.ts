@@ -12,6 +12,8 @@ import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 import {MissingRouteError} from '../../errors/Route/MissingRouteError';
 import {WrongParamsError} from '../../errors/WrongParamsError';
+import {MapSearchService} from '../map/map-search-service/map-search.service';
+import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 
 export interface RouteCostResult {
     cost: number;
@@ -264,7 +266,7 @@ export class RouteService {
                 update.distancia = nuevoCalculo.distancia;
                 update.tiempo = nuevoCalculo.tiempo;
             } catch (e) {
-                if (e instanceof ImpossibleRouteError) throw ImpossibleRouteError;
+                if (e instanceof ImpossibleRouteError) throw e;
                 console.error("Error recalculando la ruta al actualizar: ", e);
                 throw new InvalidDataError();
             }

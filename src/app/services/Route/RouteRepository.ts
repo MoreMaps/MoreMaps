@@ -27,7 +27,7 @@ export interface RouteRepository {
     pinRoute(ruta: RouteModel): Promise<boolean>;
 
     // Métodos auxiliares
-    routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean>;
+    routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean>;
     getRoutesUsingVehicle(matricula: string): Promise<RouteModel[]>;
     getRoutesUsingPOI(geohash: Geohash): Promise<RouteModel[]>;
 }

@@ -9,6 +9,7 @@ import {APIAccessError} from '../../../errors/APIAccessError';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../../data/RouteModel';
 import {RouteResultModel} from '../../../data/RouteResultModel';
 import {coords} from './map-search.service';
+import {ImpossibleRouteError} from '../../../errors/Route/ImpossibleRouteError';
 
 @Injectable({
     providedIn: 'root',
@@ -129,7 +130,7 @@ export class MapSearchAPI implements MapSearchRepository {
             // Si la ruta es imposible, devolver un resultado inválido.
             if (error.status === 400) {
                 console.warn('Ruta imposible detectada por el API');
-                return null;
+                throw new ImpossibleRouteError();
             }
 
             // Ha ocurrido un error inesperado en ORS.

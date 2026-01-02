@@ -120,7 +120,7 @@ export class POIDB implements POIRepository {
      * Borra todos los POI del usuario actual de forma atómica.
      */
     async clear(): Promise<boolean> {
-        const pois = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles`)));
+        const pois = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/pois`)));
 
         try {
             // Transacción

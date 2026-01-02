@@ -17,7 +17,6 @@ import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {DBAccessError} from '../../errors/DBAccessError';
-import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 
 @Injectable({
     providedIn: 'root'
@@ -125,9 +124,6 @@ export class RouteDB implements RouteRepository {
             const newId = updatedRoute.id();
             if (newId !== oldId) {
                 const newPath = `items/${this.auth.currentUser!.uid}/routes/${newId}`;
-
-                // Comprobar que no existe ya el nuevo path
-                if (await this.routeExists(origen, destino, updatedRoute.transporte, updatedRoute.matricula)) throw new RouteAlreadyExistsError();
 
                 // Usamos un batch para que sea una operación atómica
                 const batch = writeBatch(this.firestore);

@@ -1,4 +1,4 @@
-import {Injectable, inject, signal} from '@angular/core';
+import {Injectable, inject, signal, OnDestroy} from '@angular/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {Router, ActivatedRoute} from '@angular/router';
@@ -45,7 +45,7 @@ export interface RouteContext {
 @Injectable({
     providedIn: 'root'
 })
-export class RouteManagerService {
+export class RouteManagerService implements OnDestroy{
     // --- INYECCIONES DE UI Y NAVEGACIÓN ---
     private dialog = inject(MatDialog);
     private snackBar = inject(MatSnackBar);
@@ -66,6 +66,10 @@ export class RouteManagerService {
     private currentParams: RouteParams | null = null;
     private currentContext: RouteContext | null = null;
     public hasActiveRoute = signal<boolean>(false);
+
+    ngOnDestroy(): void {
+        this.clearRouteSession();
+    }
 
     /**
      * Inicia una sesión de ruta completa.
@@ -102,8 +106,9 @@ export class RouteManagerService {
 
     /**
      * Limpia Capas, Diálogos, URL y Estado.
+     * @param navigate Si es true, limpia la URL. Si es false (ngOnDestroy), solo limpia datos internos.
      */
-    clearRouteSession(): void {
+    clearRouteSession(navigate: boolean = true): void {
         this.routeLayerService.clear();
         this.markerLayerService.clearMarkers();
 
@@ -116,12 +121,14 @@ export class RouteManagerService {
         this.currentContext = null;
         this.hasActiveRoute.set(false);
 
-        // Limpiar URL
-        void this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: {},
-            replaceUrl: true
-        });
+        // Solo navegamos si nos lo piden explícitamente (evita conflictos al salir del mapa)
+        if (navigate) {
+            void this.router.navigate([], {
+                relativeTo: this.route,
+                queryParams: {},
+                replaceUrl: true
+            });
+        }
     }
 
     // --- LÓGICA PRIVADA DE CÁLCULO ---
@@ -213,8 +220,8 @@ export class RouteManagerService {
         // 3. Guardar
         instance.save.subscribe(async () => {
             try {
-                await this.saveCurrentRoute(); // Lógica de guardado en BD
-                this.snackBar.open('Ruta guardada correctamente', 'OK', { duration: 3000 });
+                const routeId = await this.saveCurrentRoute()
+                this.showActionSnackBar('Ruta guardada correctamente', 'VER', routeId)
             } catch (e) {
                 if (e instanceof RouteAlreadyExistsError)
                     this.snackBar.open(e.message, 'OK', { duration: 3000 });
@@ -231,6 +238,23 @@ export class RouteManagerService {
         // 5. Cerrar
         instance.closeRoute.subscribe(() => {
             this.clearRouteSession();
+        });
+    }
+
+    private showActionSnackBar(msg: string, action: string, routeId: string) {
+        const snackBarRef =
+            this.snackBar.open(msg, action, {
+                duration: 5000,
+                horizontalPosition: 'left',
+                verticalPosition: 'bottom'
+            });
+        snackBarRef.onAction().subscribe(() => {
+            void this.router.navigate(['/saved'], {
+                queryParams: {
+                    type: 'rutas',
+                    id: routeId,
+                }
+            });
         });
     }
 

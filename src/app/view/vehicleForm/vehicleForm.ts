@@ -122,7 +122,7 @@ export class VehicleForm {
             });
 
         snackBarRef.onAction().subscribe(() => {
-            this.router.navigate(['/saved'], {
+            void this.router.navigate(['/saved'], {
                 queryParams: {
                     type: 'vehiculos',
                     id: matricula,

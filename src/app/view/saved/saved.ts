@@ -1,4 +1,4 @@
-import {Component, computed, effect, inject, OnDestroy, signal} from '@angular/core';
+import {Component, computed, effect, inject, OnDestroy, OnInit, signal} from '@angular/core';
 import {CommonModule, Location, NgOptimizedImage} from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -16,12 +16,6 @@ import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
 import {SavedVehiclesStrategy} from '../../services/saved-items/savedVehiclesStrategy';
 import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
 import {SavedItemsStrategy} from '../../services/saved-items/savedItemsStrategy';
-import {POIService} from '../../services/POI/poi.service';
-import {POI_REPOSITORY} from '../../services/POI/POIRepository';
-import {POIDB} from '../../services/POI/POIDB';
-import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
-import {VehicleDB} from '../../services/Vehicle/VehicleDB';
-import {VehicleService} from '../../services/Vehicle/vehicle.service';
 
 // Componentes
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
@@ -30,20 +24,10 @@ import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {SavedPoiDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
-import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
 import {Subscription} from 'rxjs';
 import {RouteModel} from '../../data/RouteModel';
 import {geohashForLocation} from 'geofire-common';
-import {RouteService} from '../../services/Route/route.service';
-import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
-import {RouteDB} from '../../services/Route/RouteDB';
 import {SavedRouteDialog} from './saved-route-dialog/saved-route-dialog';
-import {ELECTRICITY_PRICE_REPOSITORY} from '../../services/electricity-price-service/ElectricityPriceRepository';
-import {ElectricityPriceAPI} from '../../services/electricity-price-service/ElectricityPriceAPI';
-import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
-import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
-import {FUEL_PRICE_REPOSITORY} from '../../services/fuel-price-service/FuelPriceRepository';
-import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
 import {RouteFlowService} from '../../services/map/route-flow-service';
 import {SpinnerSnackComponent} from '../../utils/map-widgets';
 import {FlowPoint, RouteFlowConfig} from '../../services/map/route-flow-state';
@@ -66,26 +50,15 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
         SavedVehicleDialog,
         SavedRouteDialog
     ],
-    templateUrl: './saved.html',
-    styleUrls: ['./saved.scss'],
     providers: [
-        POIService,
-        VehicleService,
-        RouteService,
-        MapSearchService,
-        FuelPriceService,
-        ElectricityPriceService,
-        {provide: POI_REPOSITORY, useClass: POIDB},
-        {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
-        {provide: ROUTE_REPOSITORY, useClass: RouteDB},
-        {provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceAPI},
-        {provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceAPI},
         SavedPOIStrategy,
         SavedVehiclesStrategy,
         SavedRouteStrategy
-    ]
+    ],
+    templateUrl: './saved.html',
+    styleUrls: ['./saved.scss'],
 })
-export class SavedItemsComponent implements OnDestroy {
+export class SavedItemsComponent implements OnInit, OnDestroy {
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
     private activeSnackRef: MatSnackBarRef<any> | null = null;
@@ -96,6 +69,7 @@ export class SavedItemsComponent implements OnDestroy {
     private location = inject(Location)
     private activeDialogRef: MatDialogRef<any> | null = null;
     private breakpointSubscription: Subscription | null = null;
+    private queryParamsSubscription: Subscription | null = null;
     private routeFlowService = inject(RouteFlowService);
 
     isDesktop = signal(false);
@@ -135,8 +109,7 @@ export class SavedItemsComponent implements OnDestroy {
             this.currentPage.set(parseInt(savedPage, 10));
         }
 
-        this.fetchDataWithLoading().then();
-
+        // Guardar la pestaña actual
         effect(() => {
             const currentType = this.selectedType();
             localStorage.setItem('user_preference_saved_tab', currentType);
@@ -158,12 +131,42 @@ export class SavedItemsComponent implements OnDestroy {
             });
     }
 
+    ngOnInit(): void {
+        // Reaccionar a cambios en la URL
+        this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
+            const typeParam = params['type'];
+            const idParam = params['id'];
+
+            if (typeParam && this.strategies[typeParam]) {
+                if (this.selectedType() !== typeParam) {
+                    this.selectedType.set(typeParam as ItemType);
+                    this.deselectItem();
+                } else if (idParam) {
+                    this.deselectItem();
+                }
+            }
+
+            // Determinar si permitimos el fallback a localStorage
+            //   Si la URL trae parámetros (type o id), la navegación es explícita y NO debemos usar el histórico.
+            //   Si la URL está limpia, permitimos recuperar la última selección.
+            const allowStorageFallback = !idParam && !typeParam;
+
+            // Cargar datos
+            this.fetchDataWithLoading(allowStorageFallback, idParam).then();
+        });
+    }
+
     ngOnDestroy(): void {
         this.clearLoadingState()
 
         if (this.breakpointSubscription) {
             this.breakpointSubscription.unsubscribe();
             this.breakpointSubscription = null;
+        }
+
+        if (this.queryParamsSubscription) {
+            this.queryParamsSubscription.unsubscribe();
+            this.queryParamsSubscription = null;
         }
 
         if (this.activeDialogRef) {
@@ -195,64 +198,50 @@ export class SavedItemsComponent implements OnDestroy {
 
     // --- CARGA DE DATOS ---
 
-    async loadItems(): Promise<void> {
-        try {
-            await this.checkAndSelectFromParams();
-        } catch (error) {
-            if (error instanceof SessionNotActiveError) {
-                await this.router.navigate(['']);
-                return;
-            }
-            console.error('Error loading items:', error);
-            this.items.set([]);
-        }
-    }
-
-    private async checkAndSelectFromParams(): Promise<void> {
-        const params = this.route.snapshot.queryParams;
-
-        const typeParam = params['type'];
-        let targetId = params['id'];
-
-        if (!targetId && !typeParam) {
-            targetId = localStorage.getItem('user_preference_saved_item_id');
-        }
-
-        if (typeParam && this.strategies[typeParam]) {
-            this.selectedType.set(typeParam);
-        }
-
-        // Carga de items
+    async loadItems(allowStorageFallback: boolean, specificId?: string): Promise<void> {
         const items = await this.currentStrategy().loadItems();
         this.items.set(items);
 
-        // Validación de página
         const realTotalPages = Math.ceil(items.length / this.itemsPerPage()) || 1;
         if (this.currentPage() > realTotalPages) {
             this.currentPage.set(realTotalPages);
         }
 
-        if (targetId && items) {
-            // Buscamos el item usando el helper o la lógica inline
+        // Llamamos a la selección pasándole explícitamente si puede usar storage
+        await this.checkAndSelectFromParams(items, specificId, allowStorageFallback);
+    }
+
+    private async checkAndSelectFromParams(items: any[], urlId: string | undefined, allowStorageFallback: boolean): Promise<void> {
+        let targetId = urlId;
+
+        // SOLO miramos en localStorage si no hay ID de URL y tenemos permiso explícito (navegación limpia)
+        if (!targetId && allowStorageFallback) {
+            targetId = localStorage.getItem('user_preference_saved_item_id')?.toString();
+        }
+
+        if (targetId && items.length > 0) {
             const foundItem = items.find(item => this.getItemId(item) === targetId);
 
             if (foundItem) {
-                // Seleccionamos el item
                 this.selectItem(foundItem);
 
-                // Calculamos la página
                 const index = items.indexOf(foundItem);
                 const page = Math.floor(index / this.itemsPerPage()) + 1;
                 this.currentPage.set(page);
 
-                // Limpieza silenciosa de la URL
-                if (params['id']) {
+                // Limpiar URL solo si venía con parámetros para dejarla limpia
+                if (urlId || this.route.snapshot.queryParams['type']) {
                     const urlTree = this.router.createUrlTree([], {
                         relativeTo: this.route,
                         queryParams: {}
                     });
                     this.location.replaceState(urlTree.toString());
                 }
+            } else {
+                // Caso importante: Si venía un ID en la URL, pero no se encontró (ej. retardo en BD),
+                // NO seleccionamos nada. No hacemos fallback a localStorage para evitar confusión.
+                console.warn(`Item con id ${targetId} no encontrado en la lista cargada.`);
+                this.snackBar.open('Elemento no encontrado o aún no disponible.', 'Ok', {duration: 3000});
             }
         }
     }
@@ -265,7 +254,7 @@ export class SavedItemsComponent implements OnDestroy {
             case 'vehiculos':
                 return (item as VehicleModel).matricula;
             case 'rutas':
-                return (item as any).id();
+                return (item as any).id(); // RouteModel.id()
             default:
                 return null;
         }
@@ -276,11 +265,13 @@ export class SavedItemsComponent implements OnDestroy {
 
         this.selectedType.set(type);
         this.currentPage.set(1);
-        this.selectedItem = null;
-        void this.fetchDataWithLoading();
+
+        // Cambio manual: limpiar selección y no permitir fallback a storage
+        this.deselectItem();
+        void this.fetchDataWithLoading(false);
     }
 
-    private async fetchDataWithLoading(): Promise<void> {
+    private async fetchDataWithLoading(allowStorageFallback: boolean, specificId?: string): Promise<void> {
         this.items.set([]);
         if (this.activeSnackRef) this.activeSnackRef.dismiss();
 
@@ -293,9 +284,14 @@ export class SavedItemsComponent implements OnDestroy {
         }, 300);
 
         try {
-            await this.loadItems();
-        } catch (e) {
-            console.error(e);
+            await this.loadItems(allowStorageFallback, specificId);
+        } catch (error) {
+            if (error instanceof SessionNotActiveError) {
+                await this.router.navigate(['']);
+                return;
+            }
+            console.error('Error loading items:', error);
+            this.items.set([]);
         } finally {
             this.clearLoadingState();
         }
@@ -306,6 +302,9 @@ export class SavedItemsComponent implements OnDestroy {
     selectItem(item: any): void {
         this.selectedItem = item;
 
+        const id = this.getItemId(item);
+        if (id) localStorage.setItem('user_preference_saved_item_id', id);
+
         // Si es móvil, abrimos diálogo. Si es Desktop, se muestra incrustado
         if (!this.isDesktop()) {
             this.openDialogForItem(item);
@@ -313,7 +312,12 @@ export class SavedItemsComponent implements OnDestroy {
     }
 
     private openDialogForItem(item: any): void {
-        if (this.dialog.openDialogs.length > 0) return;
+        if (this.activeDialogRef) return;
+
+        // Si hay otros diálogos, forzamos su cierre para limpiar la pantalla.
+        if (this.dialog.openDialogs.length > 0) {
+            this.dialog.closeAll();
+        }
 
         const dialogConfig = {
             panelClass: 'saved-item-dialog-panel',
@@ -361,10 +365,10 @@ export class SavedItemsComponent implements OnDestroy {
         switch (action) {
             case 'delete':
                 this.deselectItem();
-                void this.loadItems(); // Recargar lista
+                void this.loadItems(false); // Recargar lista
                 break;
             case 'update':
-                void this.loadItems(); // Recargar lista para reflejar cambios (ej. alias)
+                void this.loadItems(false); // Recargar lista para reflejar cambios (ej. alias)
                 break;
             case 'showOnMap':
                 if (this.selectedItem && this.selectedType() === 'lugares') {
@@ -403,6 +407,7 @@ export class SavedItemsComponent implements OnDestroy {
 
     deselectItem(): void {
         this.selectedItem = null;
+        localStorage.removeItem('user_preference_saved_item_id');
     }
 
     getDisplayName(item: any): string {
@@ -437,7 +442,7 @@ export class SavedItemsComponent implements OnDestroy {
                 ? `Se ha fijado ${this.getDisplayName(item)}.`
                 : `${this.getDisplayName(item)} ya no está fijado.`;
             this.showSnackbar(message);
-            await this.loadItems();
+            await this.loadItems(false);
         }
     }
 

@@ -19,7 +19,7 @@ import {WrongParamsError} from '../../errors/WrongParamsError';
 // HU401, HU402, HU403, HU404, HU405, HU406, HU407, HU408, HU409, HU410, HU411, HU503, HU606
 // Se excluye HU606 por ser sobre el guardado y recuperación de datos en la BBDD
 
-fdescribe('Pruebas de integración sobre rutas', () => {
+describe('Pruebas de integración sobre rutas', () => {
     // SUT
     let routeService: RouteService;
 

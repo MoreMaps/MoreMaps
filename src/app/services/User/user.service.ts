@@ -112,8 +112,7 @@ export class UserService {
             throw new UserNotFoundError();
         }
 
-        // Borramos el perfil de Auth y el documento de 'users'
-        // TODO:  en it06 - borrar /items
+        // Borramos el perfil de Auth, el documento de 'users' y los items del usuario
         return this.userDb.deleteAuthUser();
     }
 

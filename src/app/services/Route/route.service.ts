@@ -103,7 +103,7 @@ export class RouteService {
      */
     async createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
                       nombreOrigen: string, nombreDestino: string,
-                      preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
+                      preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();

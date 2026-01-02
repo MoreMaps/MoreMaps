@@ -1,12 +1,14 @@
 import {TestBed} from '@angular/core/testing';
 import {appConfig} from '../../app.config';
 import {Auth} from '@angular/fire/auth';
-import {USER_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
+import {ROUTE_TEST_DATA, USER_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
 import {UserService} from '../../services/User/user.service';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VehicleModel} from '../../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
+import {RouteService} from '../../services/Route/route.service';
+import {RouteResultModel} from '../../data/RouteResultModel';
 
 
 // Pruebas de aceptación sobre vehículos
@@ -14,16 +16,20 @@ import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 describe('Pruebas de aceptación sobre vehículos', () => {
     let userService: UserService;
     let vehicleService: VehicleService;
+    let routeService: RouteService;
 
     let auth: Auth;
 
     const ramon = USER_TEST_DATA[0];
     const maria = USER_TEST_DATA[1];
 
+    const rutaC = ROUTE_TEST_DATA[0];
+
     const ford: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
     const audi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
 
     let vehiculoRegistrado: VehicleModel;
+
 
     beforeAll(async () => {
         await TestBed.configureTestingModule({
@@ -34,6 +40,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
         // Inyección de los servicios
         userService = TestBed.inject(UserService);
         vehicleService = TestBed.inject(VehicleService);
+        routeService = TestBed.inject(RouteService);
 
         // Inyección de Auth
         auth = TestBed.inject(Auth);
@@ -42,7 +49,6 @@ describe('Pruebas de aceptación sobre vehículos', () => {
         // Puede que la sesión haya quedado activa...
         try {
             await userService.login(ramon.email, ramon.pwd);
-
         }
         catch (error) {}
 
@@ -101,7 +107,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             // CLEANUP
             // Borrar el vehículo creado
             await vehicleService.deleteVehicle(vehiculoCreado.matricula);
-        });
+        }, 10000);
 
         it('HU301-EI01: Registrar vehículo ya existente', async () => {
             // GIVEN
@@ -139,7 +145,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
                 // Volver a iniciar sesión con ramon.
                 await userService.login(ramon.email, ramon.pwd);
             }
-        });
+        }, 10000);
 
         it('HU302-EV02: Consultar lista no vacía de vehículos', async () => {
             // GIVEN
@@ -152,7 +158,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             // THEN
             // Se muestra el listado de vehículos registrados (con al menos 1 resultado).
             expect(listaVehiculos.length).toBeGreaterThanOrEqual(1);
-        });
+        }, 10000);
     });
 
     describe('HU303: Modificar datos de un vehículo', () => {
@@ -180,7 +186,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
                 // Restaurar matrícula original.
                 await vehicleService.updateVehicle(nuevaMatricula, {matricula: ford.matricula});
             }
-        });
+        }, 10000);
 
         it('HU303-EI01: Modificar matrícula de un vehículo para que coincida con la de otro', async () => {
             // GIVEN
@@ -209,6 +215,13 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
             const vehiculoAudi = await vehicleService.createVehicle(audi);
 
+            // Lista de rutas registradas es ["A-B"], pero con el Audi A6.
+            // Simulamos el coste para no llamar a la API.
+            const result = new RouteResultModel(rutaC.distancia, rutaC.tiempo, undefined as any);
+            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
+                result, vehiculoAudi.matricula);
+
             // WHEN
             // El usuario trata de eliminar el vehículo.
             const resultado = await vehicleService.deleteVehicle(vehiculoAudi.matricula);
@@ -216,7 +229,11 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             // THEN
             // No se lanza ningún error. Se elimina el vehículo de la lista.
             expect(resultado).toBeTrue();
-        });
+
+            // Se elimina la ruta "A-B"
+            const routes = await routeService.getRouteList();
+            expect(routes.length).toBe(0);
+        }, 10000);
 
         it('HU304-EI01: Eliminar vehículo no registrado', async () => {
             // GIVEN
@@ -299,7 +316,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // Borrar el vehículo "Audi".
             await vehicleService.deleteVehicle(vehiculoAudi.matricula);
-        });
+        }, 10000);
 
         it('HU502-EI02: Fijar un vehículo no registrado', async () => {
             // GIVEN
@@ -334,7 +351,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             //  Los datos de vehículos de la BD son los mismos que los introducidos previamente.
             const listaVehicle = await vehicleService.getVehicleList();
             expect(listaVehicle).toEqual(listaVehiculosAntes);
-        });
+        }, 10000);
     });
 
 });

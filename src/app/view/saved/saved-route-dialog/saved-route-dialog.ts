@@ -3,7 +3,7 @@ import {
     EventEmitter,
     Inject,
     inject,
-    Input,
+    Input, OnChanges,
     OnInit,
     Optional,
     Output,
@@ -18,6 +18,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {RouteModel} from '../../../data/RouteModel';
 import {DeleteConfirmationRoutePopupComponent} from '../../deleteRoute/deleteRoute';
+import {EditRouteComponent} from '../../editRoute/editRoute';
 
 export interface SavedRouteDialogData {
     item: RouteModel;
@@ -33,13 +34,13 @@ export interface SavedRouteDialogData {
         MatButtonModule,
         MatIconModule,
         DeleteConfirmationRoutePopupComponent,
-        // EditRouteComponent,                      IMPORTAR EN MERGE
+        EditRouteComponent,
         NgOptimizedImage
     ],
     templateUrl: './saved-route-dialog.html',
     styleUrls: ['./saved-route-dialog.scss']
 })
-export class SavedRouteDialog implements OnInit {
+export class SavedRouteDialog implements OnInit, OnChanges {
     @Input() item?: RouteModel;
     @Input() displayName?: string;
 

@@ -77,9 +77,12 @@ export class RouteModel {
             json.nombre_origen, json.nombre_destino, json.preferencia, json.distancia, json.tiempo, json.pinned, json.matricula);
     }
 
-    // Devuelve el ID de la ruta
+    static buildId(origen: string, destino: string, transporte: string, matricula?: string): string {
+        return `${origen}-${destino}-${transporte === TIPO_TRANSPORTE.VEHICULO && matricula ? matricula : transporte}`;
+    }
+
     id(): string {
-        return `${this.geohash_origen}-${this.geohash_destino}-${this.transporte}`;
+        return RouteModel.buildId(this.geohash_origen, this.geohash_destino, this.transporte, this.matricula);
     }
 
     // Devuelve la etiqueta equivalente del transporte de la ruta

@@ -57,13 +57,11 @@
         }
 
         @else {
-            <!-- DESCOMENTAR EN MERGE
             <app-edit-route
                 [route]="displayData.item"
                 (close)="onCancelEdit()"
                 (update)="onUpdateSuccess($event)">
             </app-edit-route>
-            -->
         }
     </div>
 
@@ -73,6 +71,7 @@
             [destino]="displayData.item.geohash_destino"
             [tipo]="displayData.item.transporte"
             [alias]="displayData.item.alias"
+            [matricula]="displayData.item.matricula"
             (close)="onCancelDelete()"
             (success)="onDeleteSuccess($event)">
         </app-delete-confirmation-popup>

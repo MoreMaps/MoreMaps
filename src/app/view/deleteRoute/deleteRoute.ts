@@ -19,6 +19,7 @@ export class DeleteConfirmationRoutePopupComponent {
     @Input() destino: Geohash = " ";
     @Input() tipo: TIPO_TRANSPORTE = undefined as unknown as TIPO_TRANSPORTE;
     @Input() alias: string = '';
+    @Input() matricula?: string;
     @Output() success = new EventEmitter<boolean>();
     @Output() close = new EventEmitter<void>();
 
@@ -28,7 +29,7 @@ export class DeleteConfirmationRoutePopupComponent {
     // Propaga el valor obtenido al padre, que es quien muestra el snackbar
     // Si se ha borrado la ruta, debería ser "true" y el padre se cerrará también
     async onConfirm(): Promise<void> {
-        this.success.emit(await this.service.deleteRoute(this.origen, this.destino, this.tipo));
+        this.success.emit(await this.service.deleteRoute(this.origen, this.destino, this.tipo, this.matricula));
         this.close.emit();
     }
 

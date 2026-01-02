@@ -14,6 +14,7 @@ import {
 } from '@angular/fire/firestore';
 import {DBAccessError} from '../../errors/DBAccessError';
 import {ROUTE_REPOSITORY, RouteRepository} from '../Route/RouteRepository';
+import {RouteModel} from '../../data/RouteModel';
 
 @Injectable({
     providedIn: 'root'
@@ -98,8 +99,9 @@ export class POIDB implements POIRepository {
             const routes = await this.routeDb.getRoutesUsingPOI(geohash);
             const batch = writeBatch(this.firestore);
             for (const route of routes) {
-                batch.delete(doc(this.firestore,
-                    `items/${this.auth.currentUser!.uid}/routes/${route.geohash_origen}-${route.geohash_destino}-${route.transporte}`));
+                const path = `items/${this.auth.currentUser!.uid}/routes/` + RouteModel.buildId(route.geohash_origen, route.geohash_destino, route.transporte, route.matricula);
+                console.log(path);
+                batch.delete(doc(this.firestore, path));
             }
             batch.delete(poiRef);
 
@@ -118,7 +120,7 @@ export class POIDB implements POIRepository {
      * Borra todos los POI del usuario actual de forma atómica.
      */
     async clear(): Promise<boolean> {
-        const pois = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles`)));
+        const pois = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/pois`)));
 
         try {
             // Transacción

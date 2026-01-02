@@ -29,7 +29,7 @@ export interface RouteDialogData {
     templateUrl: './routeDetailsDialog.html',
     styleUrls: ['./routeDetailsDialog.scss']
 })
-export class RouteDetailsDialog {
+class RouteDetailsDialog {
     @Output() save = new EventEmitter<void>();
     @Output() closeRoute = new EventEmitter<void>();
 
@@ -122,3 +122,5 @@ export class RouteDetailsDialog {
         this.dialogRef.close();
     }
 }
+
+export default RouteDetailsDialog

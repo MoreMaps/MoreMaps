@@ -16,6 +16,7 @@ import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
 import {SavedVehiclesStrategy} from '../../services/saved-items/savedVehiclesStrategy';
 import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
 import {SavedItemsStrategy} from '../../services/saved-items/savedItemsStrategy';
+import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 
 // Componentes
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
@@ -25,7 +26,7 @@ import {SavedPoiDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {Subscription} from 'rxjs';
-import {RouteModel} from '../../data/RouteModel';
+import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {geohashForLocation} from 'geofire-common';
 import {SavedRouteDialog} from './saved-route-dialog/saved-route-dialog';
 import {RouteFlowService} from '../../services/map/route-flow-service';
@@ -71,6 +72,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     private breakpointSubscription: Subscription | null = null;
     private queryParamsSubscription: Subscription | null = null;
     private routeFlowService = inject(RouteFlowService);
+    private vehicleRepo = inject(VEHICLE_REPOSITORY);
 
     isDesktop = signal(false);
 
@@ -97,6 +99,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     });
 
     currentStrategy = computed(() => this.strategies[this.selectedType()]);
+
+    vehicleMap = signal<Map<string, string>>(new Map());
 
     constructor() {
         const savedType = localStorage.getItem('user_preference_saved_tab');
@@ -202,6 +206,11 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         const items = await this.currentStrategy().loadItems();
         this.items.set(items);
 
+        if (this.selectedType() === 'rutas') {
+            await this.loadVehicleAliases();
+        }
+
+        // Validación de página
         const realTotalPages = Math.ceil(items.length / this.itemsPerPage()) || 1;
         if (this.currentPage() > realTotalPages) {
             this.currentPage.set(realTotalPages);
@@ -244,6 +253,41 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 this.snackBar.open('Elemento no encontrado o aún no disponible.', 'Ok', {duration: 3000});
             }
         }
+    }
+
+    private async loadVehicleAliases(): Promise<void> {
+        try {
+            const vehicles = await this.vehicleRepo.getVehicleList();
+            const map = new Map<string, string>();
+
+            vehicles.forEach(v => {
+                // Mapeamos matrícula -> alias
+                const displayName = v.alias;
+                map.set(v.matricula, displayName);
+            });
+
+            this.vehicleMap.set(map);
+        } catch (error) {
+            console.error('Error cargando alias de vehículos', error);
+        }
+    }
+
+    getRouteTransportLabel(item: any): string {
+        // Validación de seguridad
+        if (this.selectedType() !== 'rutas' || !item) return '';
+
+        const route = item as RouteModel;
+
+        // Si es vehículo y tiene matrícula
+        if (route.transporte === TIPO_TRANSPORTE.VEHICULO && route.matricula) {
+            const alias = this.vehicleMap().get(route.matricula);
+            if (alias) {
+                return `En ${alias}`;
+            }
+        }
+
+        // Fallback al texto por defecto ("En coche", "A pie", etc.)
+        return route.transportLabel();
     }
 
     private getItemId(item: any): string | null {

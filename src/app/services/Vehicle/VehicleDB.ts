@@ -15,6 +15,7 @@ import {
     writeBatch
 } from '@angular/fire/firestore';
 import {ROUTE_REPOSITORY, RouteRepository} from '../Route/RouteRepository';
+import {RouteModel} from '../../data/RouteModel';
 
 
 @Injectable({
@@ -133,7 +134,7 @@ export class VehicleDB implements VehicleRepository {
             const routesWithVehicle = await this.routeDb.getRoutesUsingVehicle(matricula);
             const batch = writeBatch(this.firestore);
             for (const route of routesWithVehicle) {
-                const path = `items/${this.auth.currentUser!.uid}/routes/${route.geohash_origen}-${route.geohash_destino}-${route.transporte}`;
+                const path = `items/${this.auth.currentUser!.uid}/routes/` + RouteModel.buildId(route.geohash_origen, route.geohash_destino, route.transporte, route?.matricula);
                 batch.delete(doc(this.firestore, path));
             }
             batch.delete(vehicleRef);

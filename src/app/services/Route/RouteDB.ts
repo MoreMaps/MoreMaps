@@ -221,7 +221,7 @@ export class RouteDB implements RouteRepository {
      * Borra todas las rutas del usuario actual de forma atómica.
      */
     async clear(): Promise<boolean> {
-        const routes = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles`)));
+        const routes = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/routes`)));
 
         try {
             // Transacción

@@ -22,6 +22,7 @@ import {RouteDetailsDialog} from '../../view/route/route-details-dialog/routeDet
 import {RouteFlowService} from './route-flow-service';
 import {FlowPoint} from './route-flow-state';
 import {LoadingRouteDialogComponent} from '../../utils/map-widgets';
+import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 
 // Tipos
 export interface RouteParams {
@@ -215,7 +216,10 @@ export class RouteManagerService {
                 await this.saveCurrentRoute(); // Lógica de guardado en BD
                 this.snackBar.open('Ruta guardada correctamente', 'OK', { duration: 3000 });
             } catch (e) {
-                this.snackBar.open('Error al guardar ruta', 'Cerrar');
+                if (e instanceof RouteAlreadyExistsError)
+                    this.snackBar.open(e.message, 'OK', { duration: 3000 });
+                else
+                    this.snackBar.open('Error al guardar ruta', 'Cerrar');
             }
         });
 

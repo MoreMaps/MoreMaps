@@ -1,4 +1,4 @@
-import {Injectable, inject, signal} from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {MatSnackBar, MatSnackBarRef} from '@angular/material/snack-bar';
 import {Router} from '@angular/router';
@@ -207,17 +207,18 @@ export class PoiManagerService {
         }
     }
 
-    clearSession(): void {
+    clearSession(navigate: boolean = true): void {
         this.markerLayerService.clearMarkers();
         this.listPOIs.set([]);
         this.currentPOI.set(null);
         this.closePOIDetailsDialog();
 
-        // Limpiar URL
-        void this.router.navigate([], {
-            queryParams: {},
-            replaceUrl: true
-        });
+        if (navigate) {
+            void this.router.navigate([], {
+                queryParams: {},
+                replaceUrl: true
+            });
+        }
     }
 
     public async refreshSavedList() {
@@ -243,9 +244,19 @@ export class PoiManagerService {
     }
 
     private showActionSnackBar(msg: string, action: string, geohash: string) {
-        const ref = this.snackBar.open(msg, action, {duration: 5000});
-        ref.onAction().subscribe(() => {
-            void this.router.navigate(['/saved'], {queryParams: {type: 'lugares', id: geohash}});
+        const snackBarRef =
+            this.snackBar.open(msg, action, {
+                duration: 5000,
+                horizontalPosition: 'left',
+                verticalPosition: 'bottom'
+            });
+        snackBarRef.onAction().subscribe(() => {
+            void this.router.navigate(['/saved'], {
+                queryParams: {
+                    type: 'lugares',
+                    id: geohash,
+                }
+            });
         });
     }
 

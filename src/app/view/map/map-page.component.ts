@@ -13,7 +13,7 @@ import {CommonModule} from '@angular/common';
 import {MapUpdateService} from '../../services/map/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatDialogModule, MatDialogRef} from '@angular/material/dialog';
+import {MatDialogModule} from '@angular/material/dialog';
 import {Auth, authState} from '@angular/fire/auth';
 import {ActivatedRoute, Router} from '@angular/router';
 import {Subscription} from 'rxjs';
@@ -21,12 +21,10 @@ import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {POISearchModel} from '../../data/POISearchModel';
-import {PoiDetailsDialog} from './poi-details-dialog/poi-details-dialog';
 import {Geohash} from 'geofire-common';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
-import RouteDetailsDialog from '../route/route-details-dialog/routeDetailsDialog';
 import {MapCoreService} from '../../services/map/map-core-service';
 import {RouteLayerService} from '../../services/map/route-layer-service';
 import {BeaconLayerService} from '../../services/map/beacon-layer-service';
@@ -63,10 +61,8 @@ export class MapPageComponent implements OnInit, OnDestroy, AfterViewInit {
     protected currentIndex = signal<number>(-1);
     private snackBar = inject(MatSnackBar);
     private authSubscription: Subscription | null = null;
-    private poiDialogRef: MatDialogRef<PoiDetailsDialog> | null = null
     private route = inject(ActivatedRoute);
     private shouldCenterOnLocation = true;
-    private routeDialogRef: MatDialogRef<RouteDetailsDialog> | null = null;
     private routeSubscription: Subscription | null = null;
     isRouteMode: boolean = false;
     private mapCoreService = inject(MapCoreService);
@@ -125,32 +121,29 @@ export class MapPageComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     ngOnDestroy(): void {
-
+        // 1. Limpiar suscripciones propias del componente
         if (this.authSubscription) {
             this.authSubscription.unsubscribe();
         }
-        if (this.poiDialogRef) {
-            this.poiDialogRef.close({ignore: true});
+        if (this.routeSubscription) {
+            this.routeSubscription.unsubscribe();
         }
-
-        if (this.routeDialogRef) {
-            this.routeDialogRef.close();
-        }
-
-        if (this.loadingSnackBarRef) {
-            this.loadingSnackBarRef.dismiss()
-        }
-
         if (this.mapSubscriptions) {
             this.mapSubscriptions.unsubscribe();
         }
 
-        this.mapCoreService.destroy();
-        this.poiManager.clearSession();
-
-        if (this.routeSubscription) {
-            this.routeSubscription.unsubscribe();
+        // 2. Limpiar UI local (Snackbar de carga)
+        if (this.loadingSnackBarRef) {
+            this.loadingSnackBarRef.dismiss();
         }
+
+        // 3. LIMPIEZA DE SERVICIOS GLOBALES (Managers)
+        // Decimos a los singletons que limpien su estado porque el usuario está abandonando la pantalla del mapa.
+        this.routeManagerService.clearRouteSession(false); // <---  Limpia ruta, capas y diálogo de ruta
+        this.poiManager.clearSession(false);               // <---  Limpia marcadores y diálogo de POI
+
+        // 4. Destruir mapa base
+        this.mapCoreService.destroy();
     }
 
     private setupMapEventSubscriptions(): void {

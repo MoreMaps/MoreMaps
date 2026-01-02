@@ -230,9 +230,24 @@ export class RouteService {
             throw new MissingRouteError();
         }
 
-        // Comprueba que la nueva ruta NO existe
-        if (await this.routeDb.routeExists(origen, destino, transporte ?? update.transporte, matriculaOriginal ?? update.matricula)) {
-            throw new RouteAlreadyExistsError();
+        // 1. Identificar si hay un cambio en la identidad de la ruta
+        const nuevoTransporte = update.transporte ?? transporte;
+        const nuevaMatricula = update.hasOwnProperty('matricula') ? update.matricula : matriculaOriginal;
+
+        const cambiaIdentidad = nuevoTransporte !== transporte || nuevaMatricula !== matriculaOriginal;
+
+        // 2. Solo comprobar existencia si la identidad está cambiando
+        if (cambiaIdentidad) {
+            const yaExisteDestino = await this.routeDb.routeExists(
+                origen,
+                destino,
+                nuevoTransporte,
+                nuevaMatricula
+            );
+
+            if (yaExisteDestino) {
+                throw new RouteAlreadyExistsError();
+            }
         }
 
         // Obtenemos la ruta original ANTES de hacer nada para comparar

@@ -105,6 +105,14 @@
                             "src/styles.css"
                         ],
                         "karmaConfig": "karma.conf.js"
+                    },
+                    "configurations": {
+                        "integration": {
+                            "include": [ "src/**/*.integ.spec.ts" ]
+                        },
+                        "acceptance": {
+                            "include": [ "src/**/*.acceptance.spec.ts" ]
+                        }
                     }
                 }
             }

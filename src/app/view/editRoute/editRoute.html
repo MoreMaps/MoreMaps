@@ -12,7 +12,7 @@
                 @if (editForm.get('alias')?.hasError('required') || editForm.get('alias')?.hasError('onlyWhitespace')) {
                     <span class="error-msg">Requerido</span>
                 } @else if (editForm.get('alias')?.hasError('maxlength')) {
-                    <span class="error-msg">Máximo 50 caracteres</span>
+                    <span class="error-msg">Máximo 100 caracteres</span>
                 }
             }
         </div>

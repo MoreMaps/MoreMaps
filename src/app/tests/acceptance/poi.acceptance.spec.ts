@@ -13,9 +13,9 @@ import {LongitudeRangeError} from '../../errors/POI/LongitudeRangeError';
 import {MissingPOIError} from '../../errors/POI/MissingPOIError';
 import {PlaceNameNotFoundError} from '../../errors/POI/PlaceNameNotFoundError';
 import {DescriptionLengthError} from '../../errors/POI/DescriptionLengthError';
-import {MapSearchService} from '../../services/map-search-service/map-search.service';
-import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
-import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
+import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
+import {MAP_SEARCH_REPOSITORY} from '../../services/map/map-search-service/MapSearchRepository';
+import {MapSearchAPI} from '../../services/map/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
 

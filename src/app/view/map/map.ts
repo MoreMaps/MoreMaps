@@ -3,14 +3,14 @@ import {
     Component,
     ElementRef,
     inject,
+    OnDestroy,
     OnInit,
     signal,
     ViewChild,
     ViewEncapsulation
 } from '@angular/core';
 import {CommonModule, Location} from '@angular/common';
-import * as L from 'leaflet';
-import {MapUpdateService} from '../../services/map-update-service/map-updater';
+import {MapUpdateService} from '../../services/map/map-update-service/map-updater';
 import {MatSnackBar, MatSnackBarModule, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
@@ -19,16 +19,15 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {firstValueFrom, Subscription} from 'rxjs';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
-import {ProfileButtonComponent, UserData} from '../profileButton/profileButton';
-import {MapSearchService} from '../../services/map-search-service/map-search.service';
-import {MAP_SEARCH_REPOSITORY} from '../../services/map-search-service/MapSearchRepository';
-import {MapSearchAPI} from '../../services/map-search-service/MapSearchAPI';
+import {ProfileButtonComponent} from '../profileButton/profileButton';
+import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
+import {MAP_SEARCH_REPOSITORY} from '../../services/map/map-search-service/MapSearchRepository';
+import {MapSearchAPI} from '../../services/map/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../../data/POISearchModel';
 import {PoiDetailsDialog} from './poi-details-dialog/poi-details-dialog';
 import {POIService} from '../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
-import {ProfileMenuComponent} from './profile-menu.component/profile-menu.component';
 import {Geohash, geohashForLocation} from 'geofire-common';
 import {MatIcon} from '@angular/material/icon';
 import {MatFabButton} from '@angular/material/button';
@@ -43,6 +42,10 @@ import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
 import {RouteDB} from '../../services/Route/RouteDB';
+import {MapCoreService} from '../../services/map/map-core-service';
+import {MarkerLayerService} from '../../services/map/marker-layer-service';
+import {RouteLayerService} from '../../services/map/route-layer-service';
+import {BeaconLayerService} from '../../services/map/beacon-layer-service';
 
 // --- IMPORTS PARA EDICIÓN DE RUTA (Traídos del Navbar) ---
 import {RouteOriginDialog, RouteOriginMethod} from '../route/route-origin-dialog/route-origin-dialog';
@@ -53,7 +56,7 @@ import {PlaceNameSearchDialogComponent} from '../navbar/placename-search-dialog/
 import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-dialog/savedSelectorData';
 import {PointConfirmationDialog} from '../navbar/point-confirmation-dialog/point-confirmation-dialog';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
-import {FUEL_TYPE, VehicleModel} from '../../data/VehicleModel';
+import {FUEL_TYPE} from '../../data/VehicleModel';
 import {GeohashDecoder} from '../../utils/geohashDecoder';
 import {
     ELECTRICITY_PRICE_REPOSITORY,
@@ -97,27 +100,6 @@ export class SpinnerSnackComponent {
 export class LoadingRouteDialogComponent {
 }
 
-const customIcon = L.icon({
-    iconUrl: 'assets/images/poi/customMarker.png',
-    iconSize: [27, 35],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-});
-
-const selectedIcon = L.icon({
-    iconUrl: 'assets/images/poi_active.png',
-    iconSize: [27, 35],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-})
-
-const destinationIcon = L.icon({
-    iconUrl: 'assets/images/poi_destination.png',
-    iconSize: [27, 35],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-})
-
 @Component({
     selector: 'app-map',
     templateUrl: './map.html',
@@ -153,18 +135,14 @@ const destinationIcon = L.icon({
         {provide: FUEL_PRICE_SOURCE, useClass: FuelPriceAPI},
     ],
 })
-export class LeafletMapComponent implements OnInit, AfterViewInit {
+export class LeafletMapComponent implements OnInit, OnDestroy, AfterViewInit {
     @ViewChild('mapContainer') private mapContainer!: ElementRef<HTMLDivElement>;
     private router = inject(Router);
-    private map: L.Map | null = null;
-    protected listMarkers: L.Marker[] = [];
-    protected currentMarker: L.Marker | null = null;
+
     protected currentPOI = signal<POISearchModel | null>(null);
     protected listPOIs = signal<POISearchModel[]>([]);
     protected currentIndex = signal<number>(-1);
     private snackBar = inject(MatSnackBar);
-    private elementRef = inject(ElementRef);
-    private userLocationMarker: L.Marker | null = null;
     private dialog = inject(MatDialog);
     private authSubscription: Subscription | null = null;
     private mapSearchService = inject(MapSearchService);
@@ -173,16 +151,17 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     private savedPOIs: Geohash[] = []
     private route = inject(ActivatedRoute);
     private shouldCenterOnLocation = true;
-    private routeLayer: L.GeoJSON | null = null;
     private routeDialogRef: MatDialogRef<RouteDetailsDialog> | null = null;
     private routeService = inject(RouteService);
-    private routeStartMarker: L.Marker | null = null;
-    private routeEndMarker: L.Marker | null = null;
     private vehicleService = inject(VehicleService);
     private routeSubscription: Subscription | null = null;
     isRouteMode: boolean = false;
     private isRouteLoading: boolean = false;
     private location = inject(Location);
+    private mapCoreService = inject(MapCoreService);
+    private markerLayerService = inject(MarkerLayerService);
+    private routeLayerService = inject(RouteLayerService);
+    private beaconLayerService = inject(BeaconLayerService);
 
 
     // Estado de la ruta
@@ -200,11 +179,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     // Referencia al snackbar de carga para poder cerrarlo
     private loadingSnackBarRef: MatSnackBarRef<any> | null = null;
 
-    protected userData = signal<UserData>({
-        fullName: '',
-        email: '',
-        profileImage: 'assets/images/pfp.png'
-    });
+    private mapSubscriptions: Subscription = new Subscription();
 
     constructor(private mapUpdateService: MapUpdateService, private auth: Auth) {
     }
@@ -219,7 +194,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
 
         this.mapUpdateService.searchCoords$.subscribe((coords) => {
-            if (this.routeLayer) {
+            if (this.routeLayerService.hasActiveRoute()) {
                 this.showSnackbar('Cierra la ruta actual para realizar nuevas búsquedas.', 'OK');
                 return;
             }
@@ -228,7 +203,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         });
 
         this.mapUpdateService.searchPlaceName$.subscribe((placeName) => {
-            if (this.routeLayer) {
+            if (this.routeLayerService.hasActiveRoute()) {
                 this.showSnackbar('Cierra la ruta actual para realizar nuevas búsquedas.', 'OK');
                 return;
             }
@@ -245,14 +220,11 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     ngAfterViewInit() {
         this.authSubscription = authState(this.auth).subscribe(async (user) => {
             if (user) {
-                const mapContainer = this.elementRef.nativeElement.querySelector('#map');
-                if (mapContainer && !this.map) {
-                    if (!this.map) {
-                        this.initMap();
-                        this.handleInitialLocationLogic();
-                    }
+                const mapElement = this.mapContainer.nativeElement;
+                this.mapCoreService.initMap(mapElement);
+                this.setupMapEventSubscriptions();
+                this.handleInitialLocationLogic();
 
-                }
                 let currentList = await this.poiService.getPOIList();
                 for (const item of currentList) {
                     this.savedPOIs.push(item.geohash);
@@ -282,51 +254,60 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.loadingSnackBarRef.dismiss()
         }
 
-        if (this.map) {
-            this.map.remove();
-            this.map = null;
+        if (this.mapSubscriptions) {
+            this.mapSubscriptions.unsubscribe();
         }
+
+        this.mapCoreService.destroy();
 
         if (this.routeSubscription) {
             this.routeSubscription.unsubscribe();
         }
     }
 
-    private initMap() {
-        if (this.map) return;
+    private setupMapEventSubscriptions(): void {
+        // Evento Click en el mapa
+        this.mapSubscriptions.add(
+            this.mapCoreService.mapClick$.subscribe(coords => {
+                // Comprobamos bloqueos
+                if (this.isRouteLoading || this.routeLayerService.hasActiveRoute()) return;
+                this.searchByCoords(coords.lat, coords.lon).then();
+            })
+        );
 
-        // Limit config
-        const latBuffer = 50;
-        const lonBuffer = 50;
-        const southWest = L.latLng(-90 - latBuffer, -180 - lonBuffer);
-        const northEast = L.latLng(90 + latBuffer, 180 + lonBuffer);
-        const bounds = L.latLngBounds(southWest, northEast);
+        // Evento Ubicación encontrada
+        this.mapSubscriptions.add(
+            this.beaconLayerService.locationFound$.subscribe(latlng => {
+                this.mapUpdateService.lastKnownLocation = latlng;
 
-        this.map = L.map(this.mapContainer.nativeElement, {
-            maxBounds: bounds,
-            maxBoundsViscosity: 0.5,
-            zoomControl: false
-        });
+                if (this.loadingSnackBarRef) {
+                    this.loadingSnackBarRef.dismiss();
+                }
 
-        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-        L.tileLayer(osmUrl, {
-            maxZoom: 19,
-            minZoom: 3,
-            noWrap: true,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(this.map);
+                // Gestionamos UI y movimiento
+                if (this.shouldCenterOnLocation) {
+                    this.beaconLayerService.centerOnUser(true);
+                    if (this.loadingSnackBarRef)
+                        this.showSnackbar('Ubicación encontrada.', '¡Bien!');
+                }
+            })
+        );
 
-        this.map.whenReady(() => {
-            setTimeout(() => {
-                if (this.map) this.map.invalidateSize();
-            }, 100);
-        });
+        // Evento Error Ubicación
+        this.mapSubscriptions.add(
+            this.beaconLayerService.locationError$.subscribe(() => {
+                if (this.loadingSnackBarRef) this.loadingSnackBarRef.dismiss();
 
-        this.setupMapClickHandler();
-        this.setupLocationEventHandlers();
-
-        this.map.setView([39.9864, -0.0513], 13); // vista por defecto
+                const snackRef = this.snackBar.open(
+                    'No se ha podido obtener la ubicación actual.',
+                    'Reintentar',
+                    {duration: 10000}
+                );
+                snackRef.onAction().subscribe(() => this.startLocating());
+            })
+        );
     }
+
 
     private handleInitialLocationLogic() {
         if (this.routeSubscription) this.routeSubscription.unsubscribe();
@@ -371,31 +352,31 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             // GESTIÓN DE UBICACIÓN DEL USUARIO (BEACON)
             if (this.mapUpdateService.lastKnownLocation) {
                 // Si ya la tenemos, la pintamos
-                this.handleLocationSuccess(this.mapUpdateService.lastKnownLocation);
+                this.beaconLayerService.setUserLocation(this.mapUpdateService.lastKnownLocation);
+                // Si la lógica dice que debemos centrar, lo hacemos
+                if (this.shouldCenterOnLocation) {
+                    this.beaconLayerService.centerOnUser(false);
+                }
             } else {
-                // Si no, empezamos a buscar (en silencio si shouldCenterOnLocation es false)
+                // Si no, empezamos a buscar
                 this.startLocating();
             }
 
             // INICIALIZACIÓN DEL MAPA Y POIs
-            if (this.map) {
-                this.map!.invalidateSize();
-                // si tengo lan y lon...
-                if (hasCoords) {
-                    console.info('Cargando mapa con coordenadas específicas:', lat, lon);
-                    this.map.setView([latNum, lonNum], 16);
-                    if (name) {
-                        const savedPoi = new POISearchModel(latNum, lonNum, name);
-                        this.selectPOI(savedPoi, false);
-                    } else {
-                        await this.searchByCoords(latNum, lonNum);
-                    }
+            if (hasCoords) {
+                this.mapCoreService.setView(latNum, lonNum, 16);
+                if (name) {
+                    const savedPoi = new POISearchModel(latNum, lonNum, name);
+                    this.selectPOI(savedPoi);
                 } else {
-                    if (name) {
-                        await this.searchByPlaceName(name);
-                    }
+                    await this.searchByCoords(latNum, lonNum);
+                }
+            } else {
+                if (name) {
+                    await this.searchByPlaceName(name);
                 }
             }
+
         });
     }
 
@@ -405,59 +386,58 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         transport: string, preference: string,
         matricula?: string
     ) {
-        // Comprobación
+        // 1. Validaciones (Igual que antes)
         if (startHash === endHash) {
             this.showSnackbar('El origen y el destino no pueden ser el mismo.', 'Cerrar');
-            // no se limpia la ruta anterior si ya existe una
             return;
         }
 
         let loadingDialogRef: MatDialogRef<LoadingRouteDialogComponent> | null = null;
 
         try {
-            // 1. Activar bloqueo
+            // 2. UI: Bloqueo y Carga (Igual que antes)
             this.isRouteLoading = true;
-
-            // 2. Mostrar diálogo bloqueante
             loadingDialogRef = this.dialog.open(LoadingRouteDialogComponent, {
                 disableClose: true,
                 hasBackdrop: true,
                 panelClass: 'loading-dialog-panel'
             });
 
-            // 3. Llamada a API. Antes de borrar, verificamos que la ruta existe
+            // 3. LÓGICA DE NEGOCIO: Llamadas a API (Igual que antes)
             const result: RouteResultModel = await this.mapSearchService.searchRoute(
                 startHash, endHash, transport as TIPO_TRANSPORTE, preference as PREFERENCIA
             );
 
-            // 4. Cálculo de costes
+            // 4. LÓGICA DE NEGOCIO: Cálculo de costes (Igual que antes)
             let coste: RouteCostResult | null;
-
-            try{
-                if( transport == TIPO_TRANSPORTE.A_PIE || transport == TIPO_TRANSPORTE.BICICLETA ) {
+            try {
+                if (transport == TIPO_TRANSPORTE.A_PIE || transport == TIPO_TRANSPORTE.BICICLETA) {
                     coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE);
-                }
-                else {
-                    const datosVehiculo: VehicleModel = await this.vehicleService.readVehicle(matricula!);
-
+                } else {
+                    // Nota: Asumimos que vehicleService y routeService siguen funcionando igual
+                    const datosVehiculo = await this.vehicleService.readVehicle(matricula!);
                     coste = await this.routeService.getRouteCost(result, transport as TIPO_TRANSPORTE,
-                        datosVehiculo.consumoMedio, datosVehiculo.tipoCombustible as FUEL_TYPE)
+                        datosVehiculo.consumoMedio, datosVehiculo.tipoCombustible as FUEL_TYPE);
                 }
             } catch (error) {
                 coste = null;
             }
 
-            // ------ A PARTIR DE AQUÍ, PODEMOS CAMBIAR LA RUTA ------
+            // 5. GESTIÓN DE ESTADO VISUAL
 
-            // 5. Cerrar diálogo de la ruta anterior y limpiar mapa
+            // A) Limpiar diálogos previos
             if (this.routeDialogRef) {
                 this.routeDialogRef.close();
                 this.routeDialogRef = null;
             }
-            this.clearMapSearchData();
-            this.clearRouteMarkers();
 
-            // 6. Guardar estado de la ruta y pintar marcadores Inicio y Fin
+            // B) Limpiar mapa: Quitamos POIs y rutas viejas
+            // Usamos los métodos de limpieza lógica del paso anterior
+            this.clearMapSearchData();
+            // Delegamos la limpieza visual de la ruta al servicio
+            this.routeLayerService.clear(); // Reemplaza a clearRouteMarkers() y removeLayer()
+
+            // C) Guardar estado lógico de la ruta actual
             this.currentRouteState = {
                 startHash, endHash, startName, endName,
                 transport: transport as TIPO_TRANSPORTE,
@@ -465,23 +445,25 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 matricula: matricula,
                 vehicleAlias: undefined
             };
+
+            // D) PINTAR EN EL MAPA (DELEGACIÓN)
+            // Decodificamos geohashes para obtener lat/lon
             const startCoords = GeohashDecoder.decodeGeohash(startHash);
             const endCoords = GeohashDecoder.decodeGeohash(endHash);
 
-            this.routeStartMarker = L.marker([startCoords[1], startCoords[0]], {
-                icon: customIcon
-            }).addTo(this.map!).bindPopup(`Origen: ${startName}`);
+            // Pinta los marcadores de Inicio y Fin
+            this.routeLayerService.drawAnchors(
+                {lat: startCoords[1], lon: startCoords[0], name: startName},
+                {lat: endCoords[1], lon: endCoords[0], name: endName}
+            );
 
-            this.routeEndMarker = L.marker([endCoords[1], endCoords[0]], {
-                icon: destinationIcon
-            }).addTo(this.map!).bindPopup(`Destino: ${endName}`);
-
-            // 7. Pintar Geometría de Ruta
+            // Pinta la línea naranja de la ruta (si existe geometría)
             if (result.geometry) {
-                this.drawRouteGeometry(result.geometry);
+                this.routeLayerService.drawGeometry(result.geometry);
             }
 
-            // 8. Obtener nombre del vehículo y Abrir Diálogo
+            // 6. Finalización (Igual que antes)
+            // Obtener alias del vehículo
             let vehicleAlias = matricula || '';
             if (matricula && transport === TIPO_TRANSPORTE.VEHICULO) {
                 const myVehicles = await this.vehicleService.getVehicleList();
@@ -492,14 +474,13 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             }
             if (vehicleAlias != '') this.currentRouteState.vehicleAlias = vehicleAlias;
 
-            // Cerramos el diálogo bloqueante de carga
             if (loadingDialogRef) loadingDialogRef.close();
             this.isRouteLoading = false;
 
-            // Abrimos el diálogo de detalles
+            // Abrir el diálogo de detalles (sin cambios en la llamada)
             this.openRouteDetailsDialog(result, startName, endName, transport, preference, coste, vehicleAlias);
 
-            // Limpieza silenciosa de la URL
+            // Actualizar URL
             const urlTree = this.router.createUrlTree([], {
                 relativeTo: this.route,
                 queryParams: {}
@@ -507,43 +488,20 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.location.replaceState(urlTree.toString());
 
         } catch (e) {
-            // Cerramos el diálogo de carga bloqueante
+            // Manejo de errores (Igual que antes)
             if (loadingDialogRef) loadingDialogRef.close();
 
-            // Mostramos el error
             if (e instanceof ImpossibleRouteError)
                 this.showSnackbar('No existe una ruta entre los dos puntos.', 'Cerrar');
             else
                 this.showSnackbar('Error calculando la ruta', 'Cerrar');
             console.error(e);
 
-            /* NO borramos nada de la ruta anterior cuando exista.
-            Si no había ruta anterior, limpiamos la URL. */
-            if (!this.routeLayer) {
-                await this.router.navigate([], {
-                    relativeTo: this.route,
-                    queryParams: {}, // Limpiamos params para quitar mode=route
-                    replaceUrl: true
-                });
+            // Comprobación segura usando el servicio en lugar de this.routeLayer visual
+            if (!this.routeLayerService.hasActiveRoute()) {
+                await this.router.navigate([], {relativeTo: this.route, queryParams: {}, replaceUrl: true});
             }
         }
-    }
-
-    private drawRouteGeometry(geometry: any) {
-        if (this.routeLayer) this.map?.removeLayer(this.routeLayer);
-
-        this.routeLayer = L.geoJSON(geometry, {
-            style: {
-                color: '#FF9539', // Naranja corporativo
-                weight: 6,
-                opacity: 0.9,
-                lineJoin: 'round',
-                lineCap: 'round'
-            }
-        }).addTo(this.map!);
-
-        // Ajustar zoom a la ruta
-        this.map?.fitBounds(this.routeLayer.getBounds(), {padding: [50, 200]});
     }
 
     private openRouteDetailsDialog(
@@ -611,95 +569,23 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     }
 
     private clearRoute() {
-        if (this.routeLayer) {
-            this.map?.removeLayer(this.routeLayer);
-            this.routeLayer = null;
-        }
-        this.clearRouteMarkers();
-        this.deleteMarkers();
+        // 1. Limpieza Visual Delegada
+        this.routeLayerService.clear(); // Limpia línea y marcadores de ruta
+        this.markerLayerService.clearMarkers(); // Limpia POIs si quedaron
 
-        // Limpiar URL
+        // 2. Limpieza Lógica y URL
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: {}
-        });
+        }).then();
     }
 
-    private clearRouteMarkers() {
-        if (this.routeStartMarker) {
-            this.routeStartMarker.remove();
-            this.routeStartMarker = null;
-        }
-        if (this.routeEndMarker) {
-            this.routeEndMarker.remove();
-            this.routeEndMarker = null;
-        }
-    }
-
-    private setupLocationEventHandlers() {
-        if (this.map) this.map.on('locationfound', (e: L.LocationEvent) => {
-
-            this.mapUpdateService.lastKnownLocation = e.latlng;
-
-            if (this.loadingSnackBarRef) {
-                this.loadingSnackBarRef.dismiss();
-            }
-
-            this.handleLocationSuccess(e.latlng);
-            if (this.shouldCenterOnLocation && this.loadingSnackBarRef) {
-                this.showSnackbar('Ubicación encontrada.', '¡Bien!');
-            }
-        });
-
-        if (this.map) this.map.on('locationerror', (_: L.ErrorEvent) => {
-            if (this.loadingSnackBarRef) {
-                this.loadingSnackBarRef.dismiss();
-            }
-
-            const snackRef = this.snackBar.open(
-                'No se ha podido obtener la ubicación actual.',
-                'Reintentar',
-                {
-                    duration: 10000,
-                    horizontalPosition: 'left',
-                    verticalPosition: 'bottom',
-                }
-            );
-
-            snackRef.onAction().subscribe(() => {
-                this.startLocating();
-            });
-        });
-    }
-
-    private handleLocationSuccess(latlng: L.LatLng) {
-        if (this.userLocationMarker) {
-            this.userLocationMarker.setLatLng(latlng);
-        } else {
-            const pulsingIcon = L.divIcon({
-                className: 'pulsing-beacon',
-                html: '<div class="beacon-core"></div>',
-                iconSize: [22, 22],
-                iconAnchor: [11, 11],
-                popupAnchor: [0, -10]
-            });
-
-            this.userLocationMarker = L.marker(latlng, {
-                icon: pulsingIcon,
-                zIndexOffset: 1000
-            }).addTo(this.map!);
-        }
-
-        if (this.shouldCenterOnLocation) {
-            if (this.loadingSnackBarRef) {
-                this.loadingSnackBarRef.dismiss();
-            }
-            if (this.map) this.map.setView(latlng, 15);
-        }
-    }
-
+    /** Si no estamos en modo ruta, inicia la localización del usuario.
+     * */
     private startLocating() {
-        if (this.routeLayer) return;
+        // Validación: No localizar si hay una ruta pintada
+        if (this.routeLayerService.hasActiveRoute()) return;
+
         if (this.shouldCenterOnLocation)
             this.loadingSnackBarRef = this.snackBar.openFromComponent(SpinnerSnackComponent, {
                 horizontalPosition: 'left',
@@ -707,52 +593,32 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
                 duration: 0
             });
 
-        if (this.map) this.map.locate({
-            setView: false,
-            maxZoom: 16,
-            watch: false,
-            enableHighAccuracy: false,
-            timeout: 10000
-        });
+        // El servicio se encarga de llamar a map.locate
+        this.beaconLayerService.startLocating();
     }
 
-    private deleteCurrentMarker(): void {
-        if (this.currentMarker) {
-            this.currentMarker.remove();
-            this.currentMarker = null;
-        }
-        if (this.currentPOI()) {
-            this.currentPOI.set(null);
-        }
-    }
 
-    private deleteMarkers(): void {
-        this.listMarkers!.forEach(marker => marker.remove());
-        this.listMarkers = [];
-    }
-
-    /** Limpia la memoria, el mapa visual y la URL
-     * */
+    /** Limpia la memoria, el mapa visual y la URL */
     private resetMapState(): void {
-        // Limpia datos visuales
         this.clearMapSearchData();
 
-        // Limpia la URL (Solo usar esto cuando salimos del modo ruta o búsqueda totalmente)
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: {},
             replaceUrl: true
-        });
+        }).then();
     }
 
-    /** Limpia la memoria y el mapa visual.
-     * */
+    /** Limpia la memoria y el mapa visual. */
     private clearMapSearchData(): void {
-        this.deleteCurrentMarker();
-        this.deleteMarkers();
+        // Limpieza Lógica
         this.listPOIs.set([]);
         this.currentIndex.set(-1);
         this.poiDialogRef = null;
+        this.currentPOI.set(null);
+
+        // Limpieza Visual DELEGADA
+        this.markerLayerService.clearMarkers();
     }
 
     private async updateSaved(): Promise<void> {
@@ -761,43 +627,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         for (const item of currentList) {
             this.savedPOIs.push(item.geohash);
         }
-    }
-
-    private addMarker(poi: POISearchModel): L.Marker {
-        if (!this.map) throw new Error("El mapa no está inicializado");
-
-        let marker = L.marker([poi.lat, poi.lon], {icon: customIcon})
-            .addTo(this.map)
-            .bindPopup("Encontrado: " + poi.placeName);
-
-        this.listMarkers!.push(marker);
-        return marker;
-    }
-
-    private addListMarkers(list: POISearchModel[]): void {
-        for (const marker of list) {
-            this.addMarker(marker);
-        }
-    }
-
-    private fitMapToMarkers(): void {
-        if (!this.listMarkers || this.listMarkers.length === 0) return;
-
-        if (this.listMarkers.length === 1) {
-            const marker = this.listMarkers[0];
-            if (this.map) this.map.flyTo(marker.getLatLng(), 16, {animate: true, duration: 1});
-            marker.openPopup();
-            return;
-        }
-
-        const group = L.featureGroup(this.listMarkers);
-
-        if (this.map) this.map.fitBounds(group.getBounds(), {
-            padding: [50, 50],
-            maxZoom: 16,
-            animate: true,
-            duration: 1
-        });
     }
 
     private showSnackbar(msg: string, action: string, geohash?: Geohash): void {
@@ -811,7 +640,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             switch (action) {
                 case 'Ver':
                     snackBarRef.dismiss();
-                    this.router.navigate(['/saved'], {queryParams: {type: 'lugares', id: geohash}});
+                    this.router.navigate(['/saved'], {queryParams: {type: 'lugares', id: geohash}}).then();
                     break;
                 default:
                     snackBarRef.dismiss();
@@ -828,7 +657,7 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
 
         snackBarRef.onAction().subscribe(() => {
             snackBarRef.dismiss();
-            this.router.navigate(['/saved'], {queryParams: {type: 'rutas', id: route}});
+            this.router.navigate(['/saved'], {queryParams: {type: 'rutas', id: route}}).then();
         })
     }
 
@@ -896,18 +725,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         }
     }
 
-    private setupMapClickHandler(): void {
-        if (this.map) this.map.on('click', async (e: L.LeafletMouseEvent) => {
-
-            if (this.isRouteLoading || this.routeLayer) return; // ignorar clics en ambos casos
-
-            const lat = e.latlng.lat;
-            const lon = e.latlng.lng;
-
-            await this.searchByCoords(lat, lon);
-        });
-    }
-
     openPOIDetailsDialog(): void {
         this.poiDialogRef = this.dialog.open(PoiDetailsDialog, {
             position: {bottom: '20px', left: '20px'},
@@ -929,17 +746,14 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             },
         });
 
-        this.poiDialogRef.componentInstance.save.subscribe(() => {
+        this.poiDialogRef.componentInstance.save.subscribe(async () => {
             this.poiDialogRef!.close({savePOI: true});
         });
 
         this.poiDialogRef.componentInstance.center.subscribe(() => {
             const poi = this.currentPOI();
-            if (poi && this.map) {
-                this.map.flyTo([poi.lat, poi.lon], this.map.getZoom(), {
-                    animate: true,
-                    duration: 1,
-                })
+            if (poi) {
+                this.mapCoreService.flyTo(poi.lat, poi.lon);
             }
         });
 
@@ -950,16 +764,16 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.goToPreviousPOI();
         });
 
-        this.poiDialogRef.afterClosed().subscribe(result => {
+        this.poiDialogRef.afterClosed().subscribe(async result => {
             if (result?.ignore) return;
             if (result?.savePOI && result.savePOI && this.currentPOI()) {
                 let curPOI = <POISearchModel>this.currentPOI();
-                this.poiService.createPOI(curPOI);
+                await this.poiService.createPOI(curPOI).then();
                 let lat = curPOI.lat;
                 let lon = curPOI.lon;
                 let geohash = geohashForLocation([lat, lon], 7);
                 this.resetMapState();
-                this.updateSaved();
+                void this.updateSaved().then();
                 this.showSnackbar('El punto de interés se ha guardado correctamente.', 'Ver', geohash);
             } else {
                 console.info('Cerrando el diálogo sin guardar...')
@@ -973,34 +787,24 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         openDialogArray.at(0)?.close({ignore: true});
     }
 
-    openProfileMenu(): void {
-        this.dialog.open(ProfileMenuComponent, {
-            backdropClass: 'transparent-backdrop',
-            hasBackdrop: true,
-            panelClass: 'profile-menu-dialog',
-            position: {top: '16px', right: '16px'},
-            maxWidth: 'none',
-            enterAnimationDuration: '200ms',
-            exitAnimationDuration: '200ms',
-            data: this.userData()
-        });
-    }
-
     private goToPOIIndex(index: number): void {
         const list = this.listPOIs();
         if (!list.length || index < 0 || index >= list.length) return;
 
         const nextPoi = list[index];
+
+        // Actualizar estado lógico
         this.currentIndex.set(index);
         this.currentPOI.set(nextPoi);
 
-        this.highlightMarker(index);
-
+        // Actualizar POI en el diálogo si está abierto
         if (this.poiDialogRef && this.poiDialogRef.componentInstance) {
             this.poiDialogRef.componentInstance.updatePOI(nextPoi, index, this.savedPOIs);
         }
 
-        if (this.map) this.map.panTo([nextPoi.lat, nextPoi.lon], {animate: true, duration: 0.5});
+        // DELEGACIÓN VISUAL: Resaltar y Mover cámara
+        this.markerLayerService.highlightMarker(index);
+        this.mapCoreService.panTo(nextPoi.lat, nextPoi.lon); // Usamos el Core para mover la cámara
     }
 
     public goToPreviousPOI(): void {
@@ -1013,70 +817,36 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
         this.goToPOIIndex(this.currentIndex());
     }
 
-    private selectPOI(poi: POISearchModel | POISearchModel[], animate: boolean = true): void {
-        this.deleteCurrentMarker();
-        this.deleteMarkers();
+    private selectPOI(poi: POISearchModel | POISearchModel[]): void {
+        // Limpieza de estado lógico
         this.closePOIDetailsDialog();
 
+        // Actualización de estado lógico
         const isList = Array.isArray(poi);
         const newData = isList ? poi : [poi];
 
-        this.listPOIs.set(newData)
+        this.listPOIs.set(newData);
         this.currentIndex.set(0);
         this.currentPOI.set(newData[0]);
 
-        if (isList) {
-            this.addListMarkers(newData);
-            this.currentMarker = this.listMarkers![0];
-        } else {
-            this.currentMarker = this.addMarker(poi as POISearchModel);
-        }
+        // Pintar markers con el servicio
+        this.markerLayerService.renderMarkers(newData);
 
-        this.highlightMarker(0);
-        if (animate) {
-            this.fitMapToMarkers();
-        } else {
-            if (this.currentMarker) {
-                this.currentMarker.openPopup();
-            }
-        }
+        // Resaltar el primer marker
+        this.markerLayerService.highlightMarker(0);
+
+        // Abrir diálogo
         this.openPOIDetailsDialog();
     }
 
     public centerOnUser(): void {
-        if (!this.map) return;
-
-        if (this.userLocationMarker) {
-            this.map.flyTo(this.userLocationMarker.getLatLng(), 16, {
-                animate: true,
-                duration: 1
-            });
-        } else if (this.mapUpdateService.lastKnownLocation) {
-            this.map.flyTo(this.mapUpdateService.lastKnownLocation, 16);
-        } else {
-            this.startLocating();
-        }
+        this.beaconLayerService.centerOnUser();
     }
 
     public refreshLocation(): void {
-        this.router.navigate(['/map'], {queryParams: {}});
+        if (this.snackBar) this.snackBar.dismiss();
+        this.shouldCenterOnLocation = true;
         this.startLocating();
-    }
-
-    private highlightMarker(index: number): void {
-        if (!this.listMarkers || this.listMarkers.length === 0) return;
-
-        this.listMarkers.forEach(marker => {
-            marker.setIcon(customIcon);
-            marker.setZIndexOffset(0);
-        });
-
-        const activeMarker = this.listMarkers[index];
-        if (activeMarker) {
-            activeMarker.setIcon(selectedIcon);
-            activeMarker.setZIndexOffset(700);
-        }
-        activeMarker.openPopup();
     }
 
     /**
@@ -1161,13 +931,13 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             nextTransport,
             this.currentRouteState.preference, // Mantenemos preferencia actual
             nextMatricula
-        );
+        ).then();
     }
 
     /** Invierte valores de origen y destino temporalmente y los envía a valorar.
      * */
     swapOriginDest() {
-        this.calculateAndDrawRoute(
+        void this.calculateAndDrawRoute(
             this.currentRouteState.endHash,   // Start <- End
             this.currentRouteState.startHash, // End <- Start
             this.currentRouteState.endName,   // StartName <- EndName
@@ -1177,13 +947,14 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             this.currentRouteState.matricula
         );
     }
+
     /** Envía la nueva preferencia a probar.
      * */
     updatePreference(newPref: PREFERENCIA) {
         if (newPref === this.currentRouteState.preference) {
             return;
         }
-        this.calculateAndDrawRoute(
+        void this.calculateAndDrawRoute(
             this.currentRouteState.startHash,
             this.currentRouteState.endHash,
             this.currentRouteState.startName,
@@ -1192,22 +963,6 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
             newPref, // Nueva preferencia
             this.currentRouteState.matricula
         );
-    }
-
-    private recalculateCurrentRoute() {
-        this.calculateAndDrawRoute(
-            this.currentRouteState.startHash,
-            this.currentRouteState.endHash,
-            this.currentRouteState.startName,
-            this.currentRouteState.endName,
-            this.currentRouteState.transport,
-            this.currentRouteState.preference,
-            this.currentRouteState.matricula
-        );
-    }
-
-    private reopenRouteDialog() {
-        this.recalculateCurrentRoute();
     }
 
     // ==========================================================

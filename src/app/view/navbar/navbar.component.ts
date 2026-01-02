@@ -5,7 +5,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {CoordsSearchDialogComponent} from './coords-search-dialog/coords-search-dialog';
-import {MapUpdateService} from '../../services/map-update-service/map-updater';
+import {MapUpdateService} from '../../services/map/map-update-service/map-updater';
 import {PlaceNameSearchDialogComponent} from './placename-search-dialog/placename-search-dialog';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
@@ -15,7 +15,7 @@ import {AddPoiDialogComponent, AddPoiMethod} from './add-poi-dialog/add-poi-dial
 import {RouteOptionsDialogComponent} from '../route/route-options-dialog/route-options-dialog';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-dialog/savedSelectorData';
-import {MapSearchService} from '../../services/map-search-service/map-search.service';
+import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
 import {POISearchModel} from '../../data/POISearchModel';
 import {PointConfirmationDialog} from './point-confirmation-dialog/point-confirmation-dialog';
 import {Geohash, geohashForLocation} from 'geofire-common';

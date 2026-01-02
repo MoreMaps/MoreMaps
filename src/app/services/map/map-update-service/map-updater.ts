@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import * as L from 'leaflet';
-import {POISearchModel} from '../../data/POISearchModel';
+import {POISearchModel} from '../../../data/POISearchModel';
 
 @Injectable({ providedIn: 'root' })
 export class MapUpdateService {

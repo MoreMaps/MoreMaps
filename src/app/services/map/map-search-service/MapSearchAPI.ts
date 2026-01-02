@@ -3,11 +3,11 @@ import {firstValueFrom} from 'rxjs';
 import {GeoJSON} from 'leaflet';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import {MapSearchRepository} from './MapSearchRepository';
-import {POISearchModel} from "../../data/POISearchModel";
-import {environment} from '../../../environments/environment';
-import {APIAccessError} from '../../errors/APIAccessError';
-import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {RouteResultModel} from '../../data/RouteResultModel';
+import {POISearchModel} from "../../../data/POISearchModel";
+import {environment} from '../../../../environments/environment';
+import {APIAccessError} from '../../../errors/APIAccessError';
+import {PREFERENCIA, TIPO_TRANSPORTE} from '../../../data/RouteModel';
+import {RouteResultModel} from '../../../data/RouteResultModel';
 import {coords} from './map-search.service';
 
 @Injectable({

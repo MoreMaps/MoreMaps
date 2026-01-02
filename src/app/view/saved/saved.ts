@@ -31,7 +31,7 @@ import {SpinnerSnackComponent} from '../map/map';
 import {SavedPoiDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
-import {MapSearchService} from '../../services/map-search-service/map-search.service';
+import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
 import {firstValueFrom, Subscription} from 'rxjs';
 import {RouteOptionsDialogComponent} from '../route/route-options-dialog/route-options-dialog';
 import {PointConfirmationDialog} from '../navbar/point-confirmation-dialog/point-confirmation-dialog';

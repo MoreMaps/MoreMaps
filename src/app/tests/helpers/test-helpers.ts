@@ -3,7 +3,7 @@ import {UserRepository} from '../../services/User/UserRepository';
 import {POIRepository} from '../../services/POI/POIRepository';
 import {VehicleRepository} from '../../services/Vehicle/VehicleRepository';
 import {RouteRepository} from '../../services/Route/RouteRepository';
-import {MapSearchRepository} from '../../services/map-search-service/MapSearchRepository';
+import {MapSearchRepository} from '../../services/map/map-search-service/MapSearchRepository';
 import {FuelPriceRepository} from '../../services/fuel-price-service/FuelPriceRepository';
 import {ElectricityPriceRepository} from '../../services/electricity-price-service/ElectricityPriceRepository';
 

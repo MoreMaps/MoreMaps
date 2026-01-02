@@ -1,17 +1,17 @@
 import {inject, Injectable} from '@angular/core';
 import {MAP_SEARCH_REPOSITORY, MapSearchRepository} from './MapSearchRepository';
-import {POISearchModel} from '../../data/POISearchModel';
+import {POISearchModel} from '../../../data/POISearchModel';
 import {Geohash} from 'geofire-common';
-import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {RouteResultModel} from '../../data/RouteResultModel';
-import {LatitudeRangeError} from '../../errors/POI/LatitudeRangeError';
-import {LongitudeRangeError} from '../../errors/POI/LongitudeRangeError';
-import {CoordsNotFoundError} from '../../errors/POI/CoordsNotFoundError';
-import {PlaceNameNotFoundError} from '../../errors/POI/PlaceNameNotFoundError';
-import {WrongParamsError} from '../../errors/WrongParamsError';
-import {GeohashDecoder} from '../../utils/geohashDecoder';
-import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
-import {InvalidDataError} from '../../errors/InvalidDataError';
+import {PREFERENCIA, TIPO_TRANSPORTE} from '../../../data/RouteModel';
+import {RouteResultModel} from '../../../data/RouteResultModel';
+import {LatitudeRangeError} from '../../../errors/POI/LatitudeRangeError';
+import {LongitudeRangeError} from '../../../errors/POI/LongitudeRangeError';
+import {CoordsNotFoundError} from '../../../errors/POI/CoordsNotFoundError';
+import {PlaceNameNotFoundError} from '../../../errors/POI/PlaceNameNotFoundError';
+import {WrongParamsError} from '../../../errors/WrongParamsError';
+import {GeohashDecoder} from '../../../utils/geohashDecoder';
+import {ImpossibleRouteError} from '../../../errors/Route/ImpossibleRouteError';
+import {InvalidDataError} from '../../../errors/InvalidDataError';
 
 export type coords = [number, number];
 

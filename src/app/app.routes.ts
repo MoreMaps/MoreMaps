@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import {MainPageComponent} from './view/mainPage/mainPage';
-import {LeafletMapComponent} from './view/map/map';
+import {MapPageComponent} from './view/map/map-page.component';
 import {AccountSettingsComponent} from './view/deleteUser/deleteUser';
 import {SavedItemsComponent} from './view/saved/saved';
 import {AuthGuard} from '@angular/fire/auth-guard';
@@ -13,7 +13,7 @@ export const routes: Routes = [
     },
     {
         path: 'map',
-        component: LeafletMapComponent,
+        component: MapPageComponent,
         canActivate: [AuthGuard],
     },
     {

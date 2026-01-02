@@ -27,22 +27,13 @@ import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
-import {SpinnerSnackComponent} from '../map/map';
 import {SavedPoiDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
-import {firstValueFrom, Subscription} from 'rxjs';
-import {RouteOptionsDialogComponent} from '../route/route-options-dialog/route-options-dialog';
-import {PointConfirmationDialog} from '../navbar/point-confirmation-dialog/point-confirmation-dialog';
-import {PlaceNameSearchDialogComponent} from '../navbar/placename-search-dialog/placename-search-dialog';
-import {CoordsSearchDialogComponent} from '../navbar/coords-search-dialog/coords-search-dialog';
-import {AddPoiDialogComponent, AddPoiMethod} from '../navbar/add-poi-dialog/add-poi-dialog';
-import {POISearchModel} from '../../data/POISearchModel';
-import {RouteOriginDialog, RouteOriginMethod} from '../route/route-origin-dialog/route-origin-dialog';
+import {Subscription} from 'rxjs';
 import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {geohashForLocation} from 'geofire-common';
-import {SavedItemSelector} from '../../services/saved-items/saved-item-selector-dialog/savedSelectorData';
 import {RouteService} from '../../services/Route/route.service';
 import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
 import {RouteDB} from '../../services/Route/RouteDB';
@@ -53,6 +44,8 @@ import {ElectricityPriceService} from '../../services/electricity-price-service/
 import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
 import {FUEL_PRICE_REPOSITORY} from '../../services/fuel-price-service/FuelPriceRepository';
 import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
+import {FlowPoint, RouteFlowService} from '../../services/map/route-flow-service';
+import {SpinnerSnackComponent} from '../../utils/map-widgets';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -99,10 +92,10 @@ export class SavedItemsComponent implements OnDestroy {
     private route = inject(ActivatedRoute);
     private dialog = inject(MatDialog);
     private breakpointObserver = inject(BreakpointObserver);
-    private mapSearchService = inject(MapSearchService);
     private location = inject(Location)
     private activeDialogRef: MatDialogRef<any> | null = null;
     private breakpointSubscription: Subscription | null = null;
+    private routeFlowService = inject(RouteFlowService);
 
     isDesktop = signal(false);
 
@@ -116,7 +109,6 @@ export class SavedItemsComponent implements OnDestroy {
     selectedType = signal<ItemType>('lugares');
     items = signal<any[]>([]); // Lista genérica
 
-    // REFACTORIZADO: Ya no usamos selectedPOI ni selectedVehicle por separado
     selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
 
     // Paginación
@@ -152,17 +144,17 @@ export class SavedItemsComponent implements OnDestroy {
         this.breakpointSubscription = this.breakpointObserver
             .observe('(min-width: 1025px)')
             .subscribe(result => {
-            const isDesktopNow = result.matches
-            this.isDesktop.set(isDesktopNow);
+                const isDesktopNow = result.matches
+                this.isDesktop.set(isDesktopNow);
 
-            if (!isDesktopNow && this.selectedItem) {
-                // Si pasamos a móvil y hay algo seleccionado, abrir diálogo
-                this.openDialogForItem(this.selectedItem);
-            } else if (isDesktopNow) {
-                // Si pasamos a desktop, cerrar diálogos (se verá en el panel lateral)
-                this.dialog.closeAll();
-            }
-        });
+                if (!isDesktopNow && this.selectedItem) {
+                    // Si pasamos a móvil y hay algo seleccionado, abrir diálogo
+                    this.openDialogForItem(this.selectedItem);
+                } else if (isDesktopNow) {
+                    // Si pasamos a desktop, cerrar diálogos (se verá en el panel lateral)
+                    this.dialog.closeAll();
+                }
+            });
     }
 
     ngOnDestroy(): void {
@@ -267,10 +259,14 @@ export class SavedItemsComponent implements OnDestroy {
     private getItemId(item: any): string | null {
         if (!item) return null;
         switch (this.selectedType()) {
-            case 'lugares': return (item as POIModel).geohash;
-            case 'vehiculos': return (item as VehicleModel).matricula;
-            case 'rutas': return (item as any).id();
-            default: return null;
+            case 'lugares':
+                return (item as POIModel).geohash;
+            case 'vehiculos':
+                return (item as VehicleModel).matricula;
+            case 'rutas':
+                return (item as any).id();
+            default:
+                return null;
         }
     }
 
@@ -280,7 +276,7 @@ export class SavedItemsComponent implements OnDestroy {
         this.selectedType.set(type);
         this.currentPage.set(1);
         this.selectedItem = null;
-        this.fetchDataWithLoading();
+        void this.fetchDataWithLoading();
     }
 
     private async fetchDataWithLoading(): Promise<void> {
@@ -364,21 +360,21 @@ export class SavedItemsComponent implements OnDestroy {
         switch (action) {
             case 'delete':
                 this.deselectItem();
-                this.loadItems(); // Recargar lista
+                void this.loadItems(); // Recargar lista
                 break;
             case 'update':
-                this.loadItems(); // Recargar lista para reflejar cambios (ej. alias)
+                void this.loadItems(); // Recargar lista para reflejar cambios (ej. alias)
                 break;
             case 'showOnMap':
                 if (this.selectedItem && this.selectedType() === 'lugares') {
                     const poi = this.selectedItem as POIModel;
-                    this.router.navigate(['/map'], {
-                        queryParams: { lat: poi.lat, lon: poi.lon, name: poi.alias }
+                    void this.router.navigate(['/map'], {
+                        queryParams: {lat: poi.lat, lon: poi.lon, name: poi.alias}
                     });
                 } else if (this.selectedType() === 'rutas') {
                     const route = this.selectedItem as RouteModel;
                     // Navegamos al mapa reconstruyendo los parámetros de la ruta
-                    this.router.navigate(['/map'], {
+                    void this.router.navigate(['/map'], {
                         queryParams: {
                             mode: 'route',
                             start: route.geohash_origen,
@@ -393,13 +389,13 @@ export class SavedItemsComponent implements OnDestroy {
                 }
                 break;
             case 'route-from': // Origen fijado (Lugar)
-                this.initRouteFlow({ fixedOrigin: this.selectedItem });
+                void this.initRouteFlow({fixedOrigin: this.selectedItem});
                 break;
             case 'route-to': // Destino fijado (Lugar)
-                this.initRouteFlow({ fixedDest: this.selectedItem });
+                void this.initRouteFlow({fixedDest: this.selectedItem});
                 break;
             case 'route-vehicle': // Vehículo fijado
-                this.initRouteFlow({ fixedVehicle: this.selectedItem });
+                void this.initRouteFlow({fixedVehicle: this.selectedItem});
                 break;
         }
     }
@@ -445,7 +441,7 @@ export class SavedItemsComponent implements OnDestroy {
     }
 
     private showSnackbar(msg: string): void {
-        this.snackBar.open(msg, 'Ok', { duration: 5000, horizontalPosition: 'left', verticalPosition: 'bottom' });
+        this.snackBar.open(msg, 'Ok', {duration: 5000, horizontalPosition: 'left', verticalPosition: 'bottom'});
     }
 
     // LÓGICA DE RUTA ---------------------
@@ -457,14 +453,14 @@ export class SavedItemsComponent implements OnDestroy {
         let step = 1;
         const totalSteps = 4;
 
-        let originData = prefilled.fixedOrigin ? {
+        let originData: FlowPoint | null = prefilled.fixedOrigin ? {
             name: this.getDisplayName(prefilled.fixedOrigin),
             hash: prefilled.fixedOrigin.geohash,
             lat: prefilled.fixedOrigin.lat,
             lon: prefilled.fixedOrigin.lon,
         } : null;
 
-        let destData = prefilled.fixedDest ? {
+        let destData: FlowPoint | null = prefilled.fixedDest ? {
             name: this.getDisplayName(prefilled.fixedDest),
             hash: prefilled.fixedDest.geohash,
             lat: prefilled.fixedDest.lat,
@@ -478,10 +474,13 @@ export class SavedItemsComponent implements OnDestroy {
         while (step <= totalSteps && step > 0) {
             switch (step) {
                 case 1: // Origen
-                    if (prefilled.fixedOrigin) { step++; break; } // Saltar si ya tenemos origen
-                    const resO = await this.getPointFromUser('Punto de Origen', '¿Desde dónde quieres salir?', 1, 4, true); // showBack true para cancelar
+                    if (prefilled.fixedOrigin) {
+                        step++;
+                        break;
+                    } // Saltar si ya tenemos origen
+                    const resO = await this.routeFlowService.getPointFromUser('Punto de Origen', '¿Desde dónde quieres salir?', 1, 4, true); // showBack true para cancelar
                     if (!resO || resO === 'BACK') return;
-                    originData = resO;
+                    originData = resO as FlowPoint;
                     if (destData && destData.hash === originData?.hash) {
                         this.showSnackbar('El origen y el destino son el mismo lugar.');
                         break;
@@ -490,16 +489,19 @@ export class SavedItemsComponent implements OnDestroy {
                     break;
 
                 case 2: // Destino
-                    if (prefilled.fixedDest) { step++; break; } // Saltar si ya tenemos destino
-                    const resD = await this.getPointFromUser('Punto de Destino', '¿A dónde quieres ir?', 2, 4, true);
+                    if (prefilled.fixedDest) {
+                        step++;
+                        break;
+                    } // Saltar si ya tenemos destino
+                    const resD = await this.routeFlowService.getPointFromUser('Punto de Destino', '¿A dónde quieres ir?', 2, 4, true);
                     if (resD === 'BACK') {
                         // Si retrocedemos y el origen estaba fijado, cancelamos
-                        if(prefilled.fixedOrigin) return;
+                        if (prefilled.fixedOrigin) return;
                         step--;
                         break;
                     }
                     if (!resD) return;
-                    destData = resD;
+                    destData = resD as FlowPoint;
                     if (originData && originData.hash === destData?.hash) {
                         this.showSnackbar('El origen y el destino son el mismo lugar.');
                         break;
@@ -508,11 +510,14 @@ export class SavedItemsComponent implements OnDestroy {
                     break;
 
                 case 3: // Transporte
-                    if (prefilled.fixedVehicle) { step++; break; } // Saltar si ya tenemos vehículo
+                    if (prefilled.fixedVehicle) {
+                        step++;
+                        break;
+                    } // Saltar si ya tenemos vehículo
 
-                    const resT = await this.getRouteOption<TIPO_TRANSPORTE | 'BACK'>('transport', step, totalSteps);
+                    const resT = await this.routeFlowService.getRouteOption<TIPO_TRANSPORTE | 'BACK'>('transport', step, totalSteps);
                     if (resT === 'BACK') {
-                        if(prefilled.fixedDest) {
+                        if (prefilled.fixedDest) {
                             // Si el destino estaba fijado, al dar atrás en paso 3 vamos al 1 (origen)
                             step = 1;
                             originData = null; // Limpiamos origen manual para volver a pedirlo
@@ -525,7 +530,7 @@ export class SavedItemsComponent implements OnDestroy {
                     transporte = resT as TIPO_TRANSPORTE;
 
                     if (transporte === TIPO_TRANSPORTE.VEHICULO) {
-                        const savedVehicle = await this.selectSavedItem('vehiculos', 'Selecciona tu vehículo', true);
+                        const savedVehicle = await this.routeFlowService.selectSavedItem('vehiculos', 'Selecciona tu vehículo', true);
                         if (savedVehicle === 'BACK') break; // Reintentar transporte
                         if (!savedVehicle) return;
                         selectedVehicleMatricula = savedVehicle.matricula;
@@ -536,7 +541,7 @@ export class SavedItemsComponent implements OnDestroy {
                     break;
 
                 case 4: // Preferencia
-                    const resP = await this.getRouteOption<PREFERENCIA | 'BACK'>('preference', step, totalSteps);
+                    const resP = await this.routeFlowService.getRouteOption<PREFERENCIA | 'BACK'>('preference', step, totalSteps);
                     if (resP === 'BACK') {
                         // Si teníamos vehículo fijo, al dar atrás en pref, volvemos a destino (paso 2)
                         // porque el paso 3 (transporte) se salta automáticamente.
@@ -577,112 +582,5 @@ export class SavedItemsComponent implements OnDestroy {
             const cleanParams = JSON.parse(JSON.stringify(routeParams));
             await this.router.navigate(['/map'], {queryParams: cleanParams});
         }
-    }
-
-    // ==========================================================
-    // HELPERS
-    // ==========================================================
-
-    private async getPointFromUser(title: string, subtitle: string, currentStep: number, totalSteps: number, showBack: boolean): Promise<any | 'BACK' | null> {
-        while (true) {
-            const dialogRef = this.dialog.open(RouteOriginDialog, {
-                width: '90%', maxWidth: '400px',
-                data: {title, subtitle, currentStep, totalSteps, showBack}
-            });
-            const originMethod = await firstValueFrom(dialogRef.afterClosed()) as RouteOriginMethod;
-
-            if (originMethod === 'BACK') return 'BACK';
-            if (!originMethod) return null;
-
-            if (originMethod === 'saved') {
-                const savedPoi = await this.selectSavedItem('lugares', 'Mis lugares guardados', true);
-                if (savedPoi === 'BACK') continue; // Volver al diálogo
-                if (!savedPoi) return null; // Cerrar
-                return {
-                    hash: savedPoi.geohash,
-                    name: savedPoi.alias || savedPoi.placeName,
-                    lat: savedPoi.lat, lon: savedPoi.lon
-                };
-            }
-
-            const searchMethod = await this.askForSearchMethod();
-            if (!searchMethod) continue;
-
-            const search = await this.executeSearchMethod(searchMethod, true);
-            if (search === 'BACK') continue;
-            if (search) return search;
-        }
-    }
-
-    private async askForSearchMethod(): Promise<AddPoiMethod> {
-        const dialogRef = this.dialog.open(AddPoiDialogComponent, { width: '90%', maxWidth: '400px' });
-        return await firstValueFrom(dialogRef.afterClosed());
-    }
-
-    private async executeSearchMethod(method: AddPoiMethod, confirm: boolean): Promise<any | 'BACK' | null> {
-        let potentialPOI: POISearchModel | null = null;
-        try {
-            if (method === 'coords') {
-                const dialogRef = this.dialog.open(CoordsSearchDialogComponent, {width: '90%', maxWidth: '400px'});
-                const coords = await firstValueFrom(dialogRef.afterClosed());
-                if (!coords) return 'BACK';
-
-                const snackBarRef =  this.snackBar.open('Obteniendo dirección...', '', {duration: 0});
-                try { potentialPOI = await this.mapSearchService.searchPOIByCoords(coords.lat, coords.lon); }
-                finally { snackBarRef.dismiss(); }
-
-                if (!potentialPOI) {
-                    this.snackBar.open("No se pudo obtener la dirección.", 'OK', {duration: 3000});
-                    return 'BACK';
-                }
-            } else if (method === 'name') {
-                const dialogRef = this.dialog.open(PlaceNameSearchDialogComponent, {width: '90%', maxWidth: '400px'});
-                const nameStr = await firstValueFrom(dialogRef.afterClosed());
-                if (!nameStr) return 'BACK';
-
-                this.snackBar.open('Buscando lugar...', '', {duration: 1500});
-                const results = await this.mapSearchService.searchPOIByPlaceName(nameStr);
-
-                if (results && results.length > 0) {
-                    if (!confirm) return {name: nameStr};
-                    const selectedResult = await this.selectSavedItem('search-results', 'Resultados', true, results);
-                    if (selectedResult === 'BACK') return 'BACK';
-                    if (!selectedResult) return null;
-                    potentialPOI = selectedResult;
-                } else {
-                    this.snackBar.open('No se encontraron resultados', 'OK', {duration: 3000});
-                    return 'BACK';
-                }
-            }
-        } catch (error) {
-            console.error(error);
-            this.snackBar.open(`Tu búsqueda no dió resultados.`, '', { duration: 3000 });
-            return 'BACK';
-        }
-
-        if (potentialPOI && confirm) {
-            const confirmRef = this.dialog.open(PointConfirmationDialog, {
-                width: '90%', maxWidth: '400px', data: potentialPOI
-            });
-            const confirmed = await firstValueFrom(confirmRef.afterClosed());
-            return confirmed ? { lat: potentialPOI.lat, lon: potentialPOI.lon, name: potentialPOI.placeName } : 'BACK';
-        }
-        return null;
-    }
-
-    private async getRouteOption<T>(type: 'transport' | 'preference', currentStep: number, totalSteps: number): Promise<T | null> {
-        const dialogRef = this.dialog.open(RouteOptionsDialogComponent, {
-            width: '90%', maxWidth: '400px', disableClose: false,
-            data: {type, currentStep, totalSteps, showBack: true}
-        });
-        return await firstValueFrom(dialogRef.afterClosed());
-    }
-
-    private async selectSavedItem(type: 'lugares' | 'vehiculos' | 'search-results', title?: string, showBack: boolean = false, items?: any[]): Promise<any | 'BACK' | null> {
-        const dialogRef = this.dialog.open(SavedItemSelector, {
-            width: '90%', maxWidth: '450px', height: 'auto', maxHeight: '80vh',
-            data: {type, title, showBack, items}
-        });
-        return await firstValueFrom(dialogRef.afterClosed());
     }
 }

@@ -216,7 +216,8 @@ export class RouteService {
      * @param matriculaOriginal Matrícula del vehículo original (si el medio de transporte original era vehículo)
      * @returns Promise con la ruta actualizada.
      * @throws SessionNotActiveError si la sesión no está activa.
-     * @throws MissingRouteError si la ruta no existe.
+     * @throws MissingRouteError si la ruta original no existe.
+     * @throws RouteAlreadyExistsError si la nueva ruta ya existe.
      */
     async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>, matriculaOriginal?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa
@@ -227,6 +228,11 @@ export class RouteService {
         // Comprueba que la ruta original existe
         if (!await this.routeDb.routeExists(origen, destino, transporte, matriculaOriginal)) {
             throw new MissingRouteError();
+        }
+
+        // Comprueba que la nueva ruta NO existe
+        if (await this.routeDb.routeExists(origen, destino, transporte ?? update.transporte, matriculaOriginal ?? update.matricula)) {
+            throw new RouteAlreadyExistsError();
         }
 
         // Obtenemos la ruta original ANTES de hacer nada para comparar

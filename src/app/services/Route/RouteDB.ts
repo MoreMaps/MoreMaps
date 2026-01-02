@@ -126,9 +126,6 @@ export class RouteDB implements RouteRepository {
             if (newId !== oldId) {
                 const newPath = `items/${this.auth.currentUser!.uid}/routes/${newId}`;
 
-                // Comprobar que no existe ya el nuevo path
-                if (await this.routeExists(origen, destino, updatedRoute.transporte, updatedRoute.matricula)) throw new RouteAlreadyExistsError();
-
                 // Usamos un batch para que sea una operación atómica
                 const batch = writeBatch(this.firestore);
                 batch.delete(oldDocRef);

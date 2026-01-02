@@ -86,4 +86,8 @@
     .step-indicator {
         color: var(--color-white);
     }
+    /* Flecha atrás específica */
+    button[mat-icon-button] mat-icon {
+        color: var(--color-lavender) !important;
+    }
 }

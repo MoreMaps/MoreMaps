@@ -891,8 +891,31 @@ mat-error,
     color: #f37a15 !important;
     caret-color: #f37a15 !important;
 }
+
 .mat-icon {
-    color: var(--color-purple-dark);
+    color: var(-color-purple-dark);
+}
+
+/* Override para iconos en modo oscuro */
+.dark-theme {
+    .mat-icon,
+    .close-btn mat-icon,
+    .swap-btn mat-icon {
+        color: var(--color-lavender) !important;
+    }
+
+    /* 2. EXCEPCIÓN: Iconos dentro de botones con fondo Menta (verde) */
+    /* Estos DEBEN ser oscuros para que se vean sobre el verde */
+    .method-btn mat-icon,
+    .save-btn mat-icon,
+    .action-item .icon-circle .mat-icon {
+        color: var(--color-teal-dark) !important;
+    }
+}
+
+/* Forzar botones de iconos específicos (como flecha atrás) en modo oscuro */
+.dark-theme .mat-mdc-icon-button .mat-icon {
+    color: var(--color-lavender);
 }
 
 .mdc-icon-button.cdk-focused .mat-icon {

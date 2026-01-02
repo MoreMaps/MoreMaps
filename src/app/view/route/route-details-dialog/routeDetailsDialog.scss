@@ -270,9 +270,8 @@
 
 .close-btn {
     background-color: var(--color-orange);
-
     mat-icon {
-        color: white;
+        color: black !important; /* Siempre negro sobre naranja */
     }
 }
 
@@ -284,10 +283,45 @@
     margin-bottom: 2px;
 }
 
+.origin mat-icon{
+    color: var(--color-orange) !important;
+}
+.destination mat-icon {
+    color: var(--color-purple) !important;
+}
+
 :host-context(.dark-theme) {
     .route-card {
         background-color: var(--color-teal-dark);
     }
+
+    /* --- BOTÓN SWAP (INTERCAMBIAR) --- */
+    .swap-btn {
+        // Cambiamos el fondo a una versión sutil y el icono a claro
+        background-color: var(--color-lavender) !important;
+        border: 1px solid var(--color-gray-blue);
+        color: var(--color-lavender) !important;
+
+        &:hover {
+            filter: brightness(90%);
+        }
+
+        mat-icon {
+            color: var(--color-purple-dark) !important;
+        }
+    }
+    /* --- LÍNEA CONECTORA --- */
+    .connector-line {
+        .line {
+            background: var(--color-lavender);
+            opacity: 0.3; // Bajamos la opacidad para que no brille demasiado
+        }
+
+        .dot {
+            background: var(--color-teal-dark);
+        }
+    }
+
 
 
     /* Decoración Línea izquierda (Puntos y línea) */

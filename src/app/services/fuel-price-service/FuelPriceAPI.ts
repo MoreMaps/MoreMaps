@@ -3,7 +3,6 @@ import {firstValueFrom} from 'rxjs';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import {FuelPriceRepository, MapaCombustible} from './FuelPriceRepository';
 import {FUEL_TYPE} from '../../data/VehicleModel';
-import {FuelPriceNotFoundError} from '../../errors/Route/FuelPriceNotFoundError';
 import {APIAccessError} from '../../errors/APIAccessError';
 
 // Interfaz para mapear los datos de la respuesta de la API
@@ -53,18 +52,11 @@ export class FuelPriceAPI implements FuelPriceRepository {
     constructor(private http: HttpClient) { }
 
     /**
-     * Obtiene el precio del combustible en €/L ó €/Kg.
-     * @throws {FuelPriceNotFoundError} Si no hay datos disponibles o la API responde con formato incorrecto.
+     * Obtiene el precio del combustible en €/L ó €/Kg, si existe en la BD.
      * @throws {APIAccessError} Si hay un error accediendo a la API.
      */
     async getPrice(type: FUEL_TYPE, mapa: MapaCombustible): Promise<number> {
-        const precio: number = mapa.get(type) || 0;
-
-        if (!precio || precio === 0){
-            throw new FuelPriceNotFoundError();
-        }
-
-        return precio;
+        return mapa.get(type) || -1;
     }
 
     /**

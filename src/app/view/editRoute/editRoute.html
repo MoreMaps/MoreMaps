@@ -1,0 +1,72 @@
+<div class="edit-mode">
+    <form [formGroup]="editForm" class="edit-form">
+        <div class="form-group">
+            <label>Alias</label>
+            <div class="input-wrapper">
+                <input formControlName="alias" placeholder="Ruta al trabajo" type="text"/>
+                @if (editForm.get('alias')?.value) {
+                    <button (click)="clearField('alias')" class="clear-btn" type="button">⊗</button>
+                }
+            </div>
+            @if (editForm.get('alias')?.touched) {
+                @if (editForm.get('alias')?.hasError('required') || editForm.get('alias')?.hasError('onlyWhitespace')) {
+                    <span class="error-msg">Requerido</span>
+                } @else if (editForm.get('alias')?.hasError('maxlength')) {
+                    <span class="error-msg">Máximo 100 caracteres</span>
+                }
+            }
+        </div>
+
+        <div class="form-group">
+            <label>Medio de transporte</label>
+            <select class="form-select" formControlName="transporte">
+                @for (opt of transportOptions; track opt.key) {
+                    <option [value]="opt.key">{{ opt.value | titlecase }}</option>
+                }
+            </select>
+        </div>
+
+        @if (showMatricula()) {
+            <div class="form-group">
+                <label>Vehículo asignado</label>
+                <div class="input-wrapper">
+                    <select class="form-select" formControlName="matricula">
+                        <option value="" disabled>Selecciona tu vehículo</option>
+                        @for (v of savedVehicles(); track v.matricula) {
+                            <option [value]="v.matricula">
+                                {{ v.alias || v.marca + ' ' + v.modelo }} ({{ v.matricula }})
+                            </option>
+                        }
+                    </select>
+                </div>
+                @if (editForm.get('matricula')?.touched && editForm.get('matricula')?.hasError('required')) {
+                    <span class="error-msg">Debes seleccionar un vehículo</span>
+                }
+            </div>
+        }
+
+        <div class="form-group">
+            <label>Preferencia de ruta</label>
+            <select class="form-select" formControlName="preferencia">
+                @for (opt of preferenceOptions; track opt.key) {
+                    <option [value]="opt.key">{{ opt.value | titlecase }}</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <button
+                (click)="onSave()"
+                [disabled]="editForm.invalid || isSaving()"
+                class="btn btn-primary"
+                type="button"
+            >
+                @if (isSaving()) { GUARDANDO... } @else { GUARDAR }
+            </button>
+
+            <button (click)="onCancel()" class="btn btn-cancel" type="button" [disabled]="isSaving()">
+                CANCELAR
+            </button>
+        </div>
+    </form>
+</div>

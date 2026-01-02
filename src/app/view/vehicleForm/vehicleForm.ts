@@ -7,35 +7,20 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {FUEL_TYPE, VehicleModel} from '../../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {ForbiddenContentError} from '../../errors/ForbiddenContentError';
-import {MatError, MatFormField, MatLabel, MatSuffix} from '@angular/material/form-field';
-import {MatIcon} from '@angular/material/icon';
-import {MatOption, MatSelect} from '@angular/material/select';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {MatButton, MatIconButton} from '@angular/material/button';
-import {MatInput} from '@angular/material/input';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {NavbarComponent} from '../navbar/navbar.component';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
-import {object} from '@angular/fire/database';
+import {notOnlyWhitespaceValidator, noVowelsValidator} from '../../utils/validators';
 
 
 @Component({
     selector: 'vehicle-form',
     imports: [
         ReactiveFormsModule,
-        MatFormField,
-        MatLabel,
-        MatIcon,
-        MatError,
-        MatSelect,
-        MatOption,
         MatProgressSpinner,
-        MatIconButton,
-        MatInput,
-        MatButton,
-        MatSuffix,
         NavbarComponent,
         ProfileButtonComponent,
         ThemeToggleComponent
@@ -62,10 +47,19 @@ export class VehicleForm {
 
     currentYear = new Date().getFullYear();
     vehicleForm: FormGroup = this.fb.nonNullable.group({
-        matricula: ['', [Validators.required]],
-        alias: ['', [Validators.required]],
-        marca: ['', [Validators.required]],
-        modelo: ['', [Validators.required]],
+        matricula: ['', [
+            Validators.required,
+            // Asegurar estructura 4 números + 3 letras
+            Validators.pattern("^[0-9]{4}[A-Za-z]{3}$"),
+            // No incluir vocales
+            noVowelsValidator()]],
+        alias: ['', [Validators.required,
+            // Longitud mínima y máxima
+            Validators.minLength(1), Validators.maxLength(50),
+            // solo espacios
+            notOnlyWhitespaceValidator()]],
+        marca: ['', [Validators.required, notOnlyWhitespaceValidator()]],
+        modelo: ['', [Validators.required, notOnlyWhitespaceValidator()]],
         anyo: [this.currentYear, [
             Validators.required,
             Validators.min(1900),
@@ -128,9 +122,9 @@ export class VehicleForm {
             });
 
         snackBarRef.onAction().subscribe(() => {
-            this.router.navigate(['/saved'], {
+            void this.router.navigate(['/saved'], {
                 queryParams: {
-                    type: 'vehicle',
+                    type: 'vehiculos',
                     id: matricula,
                 }
             });

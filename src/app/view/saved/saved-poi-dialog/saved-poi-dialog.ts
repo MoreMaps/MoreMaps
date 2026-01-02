@@ -23,6 +23,7 @@ import {POIDB} from '../../../services/POI/POIDB';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {DeleteConfirmationPOIPopupComponent} from '../../deletePOI/deletePOI';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
+import {notOnlyWhitespaceValidator} from '../../../utils/validators';
 
 export interface SavedItemDialogData {
     item: POIModel;
@@ -68,8 +69,6 @@ export class SavedPoiDialog implements OnInit {
 
     private fb = inject(FormBuilder);
     private poiService = inject(POIService);
-    // Public para pasarlo al DeleteConfirmationPopupComponent
-    public auth = inject(Auth);
 
     constructor(
         @Optional() public dialogRef: MatDialogRef<SavedPoiDialog>,
@@ -142,8 +141,8 @@ export class SavedPoiDialog implements OnInit {
 
     initForm(): void {
         this.editForm = this.fb.group({
-            alias: [this.displayData.item.alias || '',],
-            description: [this.displayData.item.description || '', [Validators.maxLength(150)]]
+            alias: [this.displayData.item.alias || '', [Validators.maxLength(50), notOnlyWhitespaceValidator()]],
+            description: [this.displayData.item.description || '', [Validators.maxLength(150), notOnlyWhitespaceValidator()]]
         });
     }
 
@@ -156,7 +155,7 @@ export class SavedPoiDialog implements OnInit {
     }
 
     async onSaveEdit(): Promise<void> {
-        if (this.editForm.valid && this.displayData.item && this.auth) {
+        if (this.editForm.valid && this.displayData.item) {
             const updatedData: Partial<POIModel> = {
                 alias: this.editForm.value.alias,
                 description: this.editForm.value.description,

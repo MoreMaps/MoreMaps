@@ -1,7 +1,7 @@
 import {InjectionToken} from '@angular/core';
-import {POISearchModel} from '../../data/POISearchModel';
-import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {RouteResultModel} from '../../data/RouteResultModel';
+import {POISearchModel} from '../../../data/POISearchModel';
+import {PREFERENCIA, TIPO_TRANSPORTE} from '../../../data/RouteModel';
+import {RouteResultModel} from '../../../data/RouteResultModel';
 import {coords} from './map-search.service';
 
 export const MAP_SEARCH_REPOSITORY = new InjectionToken<MapSearchRepository>('MapSearchRepository');

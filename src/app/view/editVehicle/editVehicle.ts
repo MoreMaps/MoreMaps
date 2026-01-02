@@ -12,13 +12,12 @@ import {
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {Auth} from '@angular/fire/auth';
 import {VehicleModel} from '../../data/VehicleModel';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {Subscription} from 'rxjs';
-
+import {notOnlyWhitespaceValidator, noVowelsValidator} from '../../utils/validators';
 const MIN_YEAR = 1900;
 const MIN_CONSUMO = 0.1;
 const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
@@ -34,7 +33,6 @@ const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
 })
 export class EditVehicleComponent implements OnInit, OnChanges {
     @Input() vehicle: VehicleModel | null = null;
-    @Input() auth: Auth | null = null;
     @Output() close = new EventEmitter<void>();
     @Output() update = new EventEmitter<VehicleModel | null>();
 
@@ -44,12 +42,10 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     readonly maxYear = this.currentYear + 1;
     readonly minYear = MIN_YEAR;
     readonly minConsumoMedio = MIN_CONSUMO;
-    readonly tiposCombustible = FUEL_TYPES;
+    protected readonly FUEL_TYPES = FUEL_TYPES;
 
     private fb = inject(FormBuilder);
     private service = inject(VehicleService);
-
-    fuelTypes = signal<string[]>(FUEL_TYPES);
 
     selectedFuel = signal<string>('');
 
@@ -84,10 +80,10 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     // 1. Inicializa la estructura vacía (solo una vez)
     initFormStructure() {
         this.editForm = this.fb.group({
-            alias: ['', [Validators.required]],
-            matricula: ['', [Validators.required]],
-            marca: ['', [Validators.required]],
-            modelo: ['', [Validators.required]],
+            alias: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(50), notOnlyWhitespaceValidator(), ]],
+            matricula: ['', [Validators.required, Validators.pattern("^[0-9]{4}[A-Za-z]{3}$"), noVowelsValidator()]],
+            marca: ['', [Validators.required, notOnlyWhitespaceValidator()]],
+            modelo: ['', [Validators.required, notOnlyWhitespaceValidator()]],
             anyo: [this.currentYear, [
                 Validators.required,
                 Validators.min(this.minYear),
@@ -108,7 +104,7 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     updateFormValues(v: VehicleModel) {
         this.editForm.patchValue({
             alias: v.alias,
-            matricula: v.matricula, // Ahora entra limpio
+            matricula: v.matricula.replace('\s', '').toUpperCase(), // Ahora entra limpio
             marca: v.marca,
             modelo: v.modelo,
             anyo: v.anyo,
@@ -125,13 +121,13 @@ export class EditVehicleComponent implements OnInit, OnChanges {
             return;
         }
 
-        if (this.vehicle && this.auth) {
+        if (this.vehicle) {
             const f = this.editForm.getRawValue();
 
-            // Se construye el objeto parcial con los cambios
+            // Se construye el objeto parcial
             const updatedVehicleParts: Partial<VehicleModel> = {
                 alias: f.alias,
-                matricula: f.matricula.replace(/\s/g, '').toUpperCase(),
+                matricula: f.matricula,
                 marca: f.marca,
                 modelo: f.modelo,
                 anyo: Number(f.anyo),
@@ -164,7 +160,4 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     ngOnDestroy() {
         if (this.sub) this.sub.unsubscribe();
     }
-
-
-    protected readonly FUEL_TYPES = FUEL_TYPES;
 }

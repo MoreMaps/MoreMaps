@@ -25,7 +25,7 @@
 
     <div class="actions-container">
         @if (data.type === 'transport') {
-            <button class="method-btn" (click)="selectOption(eTransporte.VEHICULO)">
+            <button class="method-btn" cdkFocusInitial (click)="selectOption(eTransporte.VEHICULO)">
                 <mat-icon>directions_car</mat-icon> <span>Coche</span>
             </button>
             <button class="method-btn" (click)="selectOption(eTransporte.BICICLETA)">

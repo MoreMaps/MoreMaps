@@ -4,9 +4,9 @@ import {CommonModule} from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { POIModel } from '../../data/POIModel';
 import {POIService} from '../../services/POI/poi.service';
-import {Auth} from '@angular/fire/auth';
 import {POI_REPOSITORY} from '../../services/POI/POIRepository';
 import {POIDB} from '../../services/POI/POIDB';
+import {notOnlyWhitespaceValidator} from '../../utils/validators';
 
 @Component({
     selector: 'app-poi-modify-menu',
@@ -18,8 +18,6 @@ import {POIDB} from '../../services/POI/POIDB';
 })
 export class PoiDetailEdit implements OnInit {
     @Input() poi: POIModel | null = null;
-    // Sería mejor obtener esto de un contexto global...
-    @Input() auth: Auth | null = null;
     @Output() close = new EventEmitter<void>();
     @Output() update = new EventEmitter<boolean>();
     editForm!: FormGroup;
@@ -32,22 +30,22 @@ export class PoiDetailEdit implements OnInit {
 
     initForm(): void {
         this.editForm = this.fb.group({
-            alias: ['', ],
+            alias: ['', [Validators.maxLength(50), notOnlyWhitespaceValidator()]],
             description: ['', [Validators.maxLength(150)]]
         });
 
         // Obtiene los datos del POI y los pone por defecto
         if (this.poi) {
             this.editForm.patchValue({
-                alias: this.poi?.alias,
-                description: this.poi?.description
+                alias: this.poi.alias,
+                description: this.poi.description
             });
         }
     }
 
     // Guarda los nuevos datos del POI, y emite el evento de cierre
     async onSave(): Promise<void> {
-        if (this.editForm.valid && this.poi && this.auth) {
+        if (this.editForm.valid && this.poi) {
             const updatedPOI: Partial<POIModel> = {
                 alias: this.editForm.value?.alias,
                 description: this.editForm.value?.description

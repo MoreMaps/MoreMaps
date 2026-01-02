@@ -216,10 +216,30 @@
     text-align: right;
 }
 
-.error {
-    font-size: 12px;
-    color: #d32f2f;
+/* Estilo para mensaje de error similar a mat-error */
+.error-msg {
+    color: var(--color-orange);; /* Color naranja de error */
+    font-size: 12px; /* Mismo tamaño que mat-error */
     margin-top: 4px;
+    margin-left: 4px;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ajuste visual para cuando el input tiene error */
+.input-wrapper input.ng-invalid.ng-touched,
+.input-wrapper textarea.ng-invalid.ng-touched,
+.form-select.ng-invalid.ng-touched {
+    border-color: var(--color-orange);
+    background-color: rgba(255, 149, 57, 0.05); /* Fondo naranja muy sutil */
 }
 
 .form-actions {

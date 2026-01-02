@@ -7,12 +7,27 @@ export const ROUTE_REPOSITORY = new InjectionToken<RouteRepository>('RouteReposi
 
 export interface RouteRepository {
     // Operaciones CRUDE
-    // (por ahora solo crear y borrar)
-    createRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA,
-                modelo?: RouteResultModel, matricula?: string): Promise<RouteModel>;
+    createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
+                nombreOrigen: string, nombreDestino: string,
+                preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel>;
+
+    getRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<RouteModel>;
+
+    updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE,
+                update: Partial<RouteModel>, matricula?: string): Promise<RouteModel>;
+
+    getRouteList(): Promise<RouteModel[]>;
 
     deleteRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean>;
 
+    // Borrar todos los elementos
+    clear(): Promise<boolean>;
+
+    // Fijar ruta
+    pinRoute(ruta: RouteModel): Promise<boolean>;
+
     // Métodos auxiliares
     routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean>;
+    getRoutesUsingVehicle(matricula: string): Promise<RouteModel[]>;
+    getRoutesUsingPOI(geohash: Geohash): Promise<RouteModel[]>;
 }

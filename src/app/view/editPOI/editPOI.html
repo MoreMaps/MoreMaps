@@ -1,74 +1,45 @@
-<div class="menu-container">
-    <!-- Estado de edición -->
-    <div class="edit-mode">
-        <div class="header">
-            <h2>Editar punto de interés</h2>
-        </div>
-
-        <form [formGroup]="editForm" class="edit-form">
-            <div class="form-group">
-                <label>Alias</label>
-                <div class="input-wrapper">
-                    <input
-                        type="text"
-                        formControlName="alias"
-                        placeholder="Texto"
-                    />
-                    @if (editForm.get('alias')?.value) {
-                        <button
-                            type="button"
-                            class="clear-btn"
-                            (click)="clearField('alias')"
-                        >
-                            ⊗
-                        </button>
-                    }
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Descripción</label>
-                <div class="input-wrapper">
-            <textarea
-              formControlName="description"
-              placeholder="Texto"
-              rows="4"
-            ></textarea>
-                    @if (editForm.get('description')?.value) {
-                        <button
-                            type="button"
-                            class="clear-btn"
-                            (click)="clearField('description')"
-                        >
-                            ⊗
-                        </button>
-                    }
-                </div>
-                <!-- Contador de caracteres, opcional -->
-                <small class="char-count">{{ descriptionLength }}/150 caracteres</small>
-                @if (editForm.get('description')?.errors?.['maxLength']) {
-                    La descripción no puede superar los 150 caracteres
-                }
-            </div>
-
-            <div class="form-actions">
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    (click)="onSave()"
-                    [disabled]="!editForm.valid"
-                >
-                    GUARDAR
-                </button>
-
-                <button
-                    type="button"
-                    class="btn btn-cancel"
-                    (click)="onCancel()"
-                >
-                    CANCELAR
-                </button>
-            </div>
-        </form>
+<div class="form-group">
+    <label>Alias</label>
+    <div class="input-wrapper">
+        <input type="text" formControlName="alias" placeholder="Texto" />
+        @if (editForm.get('alias')?.value) {
+            <button type="button" class="clear-btn" (click)="clearField('alias')">⊗</button>
+        }
     </div>
+
+    @if (editForm.get('alias')?.touched) {
+        @if (editForm.get('alias')?.hasError('maxlength')) {
+            <span class="error-msg">
+            Máximo 50 caracteres (actual: {{ editForm.get('alias')?.errors?.['maxlength']?.actualLength }})
+            </span>
+        }
+        @if (editForm.get('alias')?.hasError('onlyWhitespace')) {
+            <span class="error-msg">El alias no puede estar formado solo por espacios</span>
+        }
+    }
+</div>
+
+<div class="form-group">
+    <label>Descripción</label>
+    <div class="input-wrapper">
+        <textarea formControlName="description" placeholder="Texto" rows="4"></textarea>
+        @if (editForm.get('description')?.value) {
+            <button type="button" class="clear-btn" (click)="clearField('description')">⊗</button>
+        }
+    </div>
+
+    <small class="char-count">
+        {{ editForm.get('description')?.value?.length || 0 }}/150 caracteres
+    </small>
+
+    @if (editForm.get('description')?.touched) {
+        @if (editForm.get('description')?.hasError('maxlength')) {
+            <span class="error-msg">
+                            La descripción no puede superar los 150 caracteres
+                        </span>
+        }
+        @if (editForm.get('description')?.hasError('onlyWhitespace')) {
+            <span class="error-msg">La descripción no puede ser solo espacios</span>
+        }
+    }
 </div>

@@ -1,6 +1,5 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {Auth} from '@angular/fire/auth'; // Importar Auth
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleDB} from '../../services/Vehicle/VehicleDB';
@@ -16,7 +15,6 @@ import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 export class DeleteConfirmationVehiclePopupComponent {
     @Input() matricula: string = ""; // Cambiado a string simple o Geohash
     @Input() alias: string = '';
-    @Input() auth: Auth | null = null; // AÑADIDO: Input para Auth
 
     @Output() success = new EventEmitter<boolean>();
     @Output() close = new EventEmitter<void>();
@@ -24,8 +22,8 @@ export class DeleteConfirmationVehiclePopupComponent {
     constructor(private service: VehicleService) {}
 
     async onConfirm(): Promise<void> {
-        if (this.auth && this.matricula) {
-            // Pasamos auth y matrícula al servicio
+        if (this.matricula) {
+            // Pasamos matrícula al servicio
             const result = await this.service.deleteVehicle(this.matricula);
             this.success.emit(result);
             this.close.emit();

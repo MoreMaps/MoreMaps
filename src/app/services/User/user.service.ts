@@ -6,7 +6,6 @@ import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatErr
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongParamsError} from '../../errors/WrongParamsError';
-import {MissingParamsError} from '../../errors/MissingParamsError';
 import {SessionAlreadyActiveError} from '../../errors/User/SessionAlreadyActiveError';
 import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
 
@@ -20,15 +19,11 @@ export class UserService {
      * @throws UserAlreadyExistsError si ya existe el usuario.
      * @throws WrongPasswordFormatError si la contraseña no cumple con los criterios mínimos.
      */
+    // TODO: se debería utilizar RegisterModel??
     async signUp(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
         // Comprobar si hay algún parámetro vacío
         if (!email || !pwd || !nombre || !apellidos) {
-            throw new MissingParamsError();
-        }
-
-        // Comprobar si las credenciales son válidas
-        if (!await this.userDb.passwordValid(pwd)) {
-            throw new WrongPasswordFormatError();
+            throw new WrongParamsError('usuario');
         }
 
         // Comprobar si el usuario existe
@@ -36,8 +31,12 @@ export class UserService {
             throw new UserAlreadyExistsError();
         }
 
+        // Comprobar si las credenciales son válidas
+        if (!await this.userDb.passwordValid(pwd)) {
+            throw new WrongPasswordFormatError();
+        }
+
         // Crea un nuevo usuario
-        // TODO: se debería utilizar RegisterModel??
         return await this.userDb.createUser(email, pwd, nombre, apellidos);
     }
 
@@ -77,11 +76,18 @@ export class UserService {
     /**
      * Cierra la sesión actual.
      * @throws SessionNotActiveError si la sesión no está activa
+     * @throws UserNotFoundError si el usuario no existe
      */
     async logout(): Promise<boolean> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
+        }
+
+        // Comprueba que el usuario actual todavía existe
+        const curr = await this.userDb.getCurrentUser();
+        if (!await this.userDb.userExists(curr.email)) {
+            throw new UserNotFoundError();
         }
 
         // Cierra sesión
@@ -91,10 +97,32 @@ export class UserService {
     // HU106 Eliminar cuenta
     /**
      * Borra al usuario con la sesión activa.
-     * @throws UserNotFoundError si el usuario no se encuentra
      * @throws SessionNotActiveError si la sesión no está activa
+     * @throws UserNotFoundError si el usuario no se encuentra
      */
     async deleteUser(): Promise<boolean> {
+        // Comprueba que la sesión está activa
+        if (!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Comprueba que el usuario actual todavía existe
+        const curr = await this.userDb.getCurrentUser();
+        if (!await this.userDb.userExists(curr.email)) {
+            throw new UserNotFoundError();
+        }
+
+        // Borramos el perfil de Auth, el documento de 'users' y los items del usuario
+        return this.userDb.deleteAuthUser();
+    }
+
+    /**
+     * Devuelve el usuario actual.
+     * @returns UserModel del usuario actual.
+     * @throws SessionNotActiveError si la sesión no está activa
+     * @throws UserNotFoundError si el usuario no se encuentra
+     */
+    async getCurrentUser(): Promise<UserModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();
@@ -106,8 +134,7 @@ export class UserService {
             throw new UserNotFoundError();
         }
 
-        // Borramos el perfil de Auth y el documento de 'users'
-        // TODO:  en it06 - borrar /items
-        return this.userDb.deleteAuthUser();
+        // Devuelve el usuario
+        return curr;
     }
 }

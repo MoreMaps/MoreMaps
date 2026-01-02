@@ -5,7 +5,6 @@ import {VehicleModel} from '../../data/VehicleModel';
 import {DBAccessError} from '../../errors/DBAccessError';
 import {
     collection,
-    deleteDoc,
     doc,
     Firestore,
     getDoc,
@@ -15,6 +14,8 @@ import {
     updateDoc,
     writeBatch
 } from '@angular/fire/firestore';
+import {ROUTE_REPOSITORY, RouteRepository} from '../Route/RouteRepository';
+import {RouteModel} from '../../data/RouteModel';
 
 
 @Injectable({
@@ -23,6 +24,7 @@ import {
 export class VehicleDB implements VehicleRepository {
     private firestore = inject(Firestore);
     private auth = inject(Auth);
+    private routeDb: RouteRepository = inject(ROUTE_REPOSITORY);
 
     /**
      * Registra un vehículo en la base de datos.
@@ -128,14 +130,47 @@ export class VehicleDB implements VehicleRepository {
             const vehicleRef = doc(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`);
 
             // Borrar documento
-            // TODO: PROPAGAR A RUTAS
-            await deleteDoc(vehicleRef);
+            // Borrar todas las rutas que utilizan el POI Y el documento
+            const routesWithVehicle = await this.routeDb.getRoutesUsingVehicle(matricula);
+            const batch = writeBatch(this.firestore);
+            for (const route of routesWithVehicle) {
+                const path = `items/${this.auth.currentUser!.uid}/routes/` + RouteModel.buildId(route.geohash_origen, route.geohash_destino, route.transporte, route?.matricula);
+                batch.delete(doc(this.firestore, path));
+            }
+            batch.delete(vehicleRef);
+
+            // Fin de la transacción
+            await batch.commit();
             return true;
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
+            console.error('VEHICLE DB Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
+        }
+    }
+
+    /**
+     * Borra todos los vehículos del usuario actual de forma atómica.
+     */
+    async clear(): Promise<boolean> {
+        const vehicleSnap = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles`)));
+
+        try {
+            // Transacción
+            const batch = writeBatch(this.firestore);
+            vehicleSnap.forEach(vehicle => {
+                batch.delete(vehicle.ref);
+            });
+
+            // Fin de la transacción
+            await batch.commit();
+            return true;
+        }
+            // Ha ocurrido un error inesperado en Firebase.
+        catch (error: any) {
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            return false;
         }
     }
 
@@ -143,7 +178,7 @@ export class VehicleDB implements VehicleRepository {
      * Lee los datos de la base de datos correspondientes al vehículo con la matrícula especificada.
      * @param matricula matricula del vehículo
      */
-    async readVehicle(matricula: string): Promise<VehicleModel> {
+    async getVehicle(matricula: string): Promise<VehicleModel> {
         const path: string = `items/${this.auth.currentUser?.uid}/vehicles/${matricula}`;
 
         // Obtener datos de Firebase
@@ -166,7 +201,7 @@ export class VehicleDB implements VehicleRepository {
      */
     async pinVehicle(matricula: string): Promise<boolean> {
         // Lectura del vehículo registrado.
-        const vehicle: VehicleModel = await this.readVehicle(matricula);
+        const vehicle: VehicleModel = await this.getVehicle(matricula);
 
         // Ruta para actualizar el vehículo
         const path: string = `/items/${this.auth.currentUser!.uid}/vehicles/${matricula}`;

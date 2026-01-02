@@ -99,6 +99,16 @@
                                 </button>
                             }
                         </div>
+                        @if (editForm.get('alias')?.touched) {
+                            @if (editForm.get('alias')?.hasError('maxlength')) {
+                                <span class="error-msg">
+                                    Máximo 50 caracteres (actual: {{ editForm.get('alias')?.errors?.['maxlength']?.actualLength }})
+                                    </span>
+                            }
+                            @if (editForm.get('alias')?.hasError('onlyWhitespace')) {
+                                <span class="error-msg">El alias no puede estar formado solo por espacios</span>
+                            }
+                        }
                     </div>
 
                     <div class="form-group">
@@ -114,6 +124,11 @@
                         <div class="char-count-wrapper">
                             <small class="char-count">{{ descriptionLength }}/150</small>
                         </div>
+                        @if (editForm.get('description')?.touched) {
+                            @if (editForm.get('description')?.hasError('onlyWhitespace')) {
+                                <span class="error-msg">La descripción no puede ser solo espacios</span>
+                            }
+                        }
                     </div>
 
                     <div class="edit-actions">
@@ -133,7 +148,6 @@
         <app-delete-confirmation-popup
             [geohash]="displayData.item.geohash"
             [poiName]="displayData.displayName"
-            [auth]="auth"
             (close)="onCancelDelete()"
             (success)="onDeleteSuccess($event)">
         </app-delete-confirmation-popup>

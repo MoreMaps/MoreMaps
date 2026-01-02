@@ -33,13 +33,11 @@
                     formControlName="email"
                     placeholder="email@ejemplo.com"
                     autocomplete="email">
-                @if (!loginForm.get('email')?.disabled) {
-                    @if (loginForm.get('email')?.hasError('required')) {
-                        <mat-error>Requerido</mat-error>
-                    }
-                    @if (loginForm.get('email')?.hasError('email')) {
-                        <mat-error>Email inválido</mat-error>
-                    }
+                @if (loginForm.get('email')?.hasError('required')) {
+                    <mat-error>Requerido</mat-error>
+                }
+                @if (loginForm.get('email')?.hasError('email')) {
+                    <mat-error>Mínimo 8 caracteres</mat-error>
                 }
             </mat-form-field>
         </div>

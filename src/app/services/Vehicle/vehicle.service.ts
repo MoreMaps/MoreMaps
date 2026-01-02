@@ -81,8 +81,8 @@ export class VehicleService {
             throw new MissingVehicleError();
         }
 
-        // Comprueba que el nuevo vehículo NO exista
-        if (update.matricula && await this.vehicleDb.vehicleExists(update.matricula)) {
+        // Comprueba que el nuevo vehículo NO exista (siempre que se cambie la matrícula)
+        if (update.matricula && update.matricula != matricula && await this.vehicleDb.vehicleExists(update.matricula)) {
             throw new VehicleAlreadyExistsError();
         }
 
@@ -115,6 +115,14 @@ export class VehicleService {
         return this.vehicleDb.deleteVehicle(matricula);
     }
 
+    /**
+     * Elimina todos los vehículos del usuario de forma atómica.
+     * @returns Promise con true si se han borrado, o false si no se han borrado.
+     */
+    async clear(): Promise<boolean> {
+        return await this.vehicleDb.clear();
+    }
+
     // HU305 Consultar vehículo
     async readVehicle(matricula: string): Promise<VehicleModel> {
         // Comprueba que la sesión está activa
@@ -128,7 +136,7 @@ export class VehicleService {
         }
 
         // Devuelve el vehículo leído
-        return this.vehicleDb.readVehicle(matricula);
+        return this.vehicleDb.getVehicle(matricula);
     }
 
     // HU502 Fijar vehículo
@@ -164,11 +172,14 @@ export class VehicleService {
         // MATRÍCULA
         // Debe ser una cadena
         if (typeof vehiculo.matricula !== 'string') {
-            throw new Error(`El campo 'matrícula' es obligatorio.`);
+            if (creating)
+                throw new Error(`El campo 'matrícula' es obligatorio.`);
         }
-        // No debe contener vocales
-        if (/[aeiou]/i.test(vehiculo.matricula)) {
-            throw new Error(`Una matrícula no debe contener vocales.`);
+        else {
+            // No debe contener vocales
+            if (/[AEIOU]/i.test(vehiculo.matricula)) {
+                throw new Error(`Una matrícula no debe contener vocales.`);
+            }
         }
 
         // AÑO

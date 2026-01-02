@@ -3,12 +3,13 @@ import {firstValueFrom} from 'rxjs';
 import {GeoJSON} from 'leaflet';
 import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import {MapSearchRepository} from './MapSearchRepository';
-import {POISearchModel} from "../../data/POISearchModel";
-import {environment} from '../../../environments/environment';
-import {APIAccessError} from '../../errors/APIAccessError';
-import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {RouteResultModel} from '../../data/RouteResultModel';
+import {POISearchModel} from "../../../data/POISearchModel";
+import {environment} from '../../../../environments/environment';
+import {APIAccessError} from '../../../errors/APIAccessError';
+import {PREFERENCIA, TIPO_TRANSPORTE} from '../../../data/RouteModel';
+import {RouteResultModel} from '../../../data/RouteResultModel';
 import {coords} from './map-search.service';
+import {ImpossibleRouteError} from '../../../errors/Route/ImpossibleRouteError';
 
 @Injectable({
     providedIn: 'root',
@@ -129,7 +130,7 @@ export class MapSearchAPI implements MapSearchRepository {
             // Si la ruta es imposible, devolver un resultado inválido.
             if (error.status === 400) {
                 console.warn('Ruta imposible detectada por el API');
-                return null;
+                throw new ImpossibleRouteError();
             }
 
             // Ha ocurrido un error inesperado en ORS.
@@ -173,9 +174,8 @@ export class MapSearchAPI implements MapSearchRepository {
             const country = feature.properties?.country;
             const coords = feature.geometry?.coordinates; // (coords[1] = lat, coords[0] = lon)
 
-            // Construir nombre completo (nombre + localidad + país)
-            const placeName = [name, locality, country]
-                /* .filter((str) => str != null) // quita nulls y undefined, pero no cadena vacía */
+            // Construir nombre completo (nombre + localidad + país), evitando duplicados
+            const placeName = [...new Set([name, locality, country])]
                 .filter((str): str is string => !!str) // quita nulls, undefined y cadena vacía
                 .join(', ');
 

@@ -155,6 +155,14 @@ export class POIService {
         return this.poiDb.deletePOI(geohash);
     }
 
+    /**
+     * Elimina todos los POI del usuario de forma atómica.
+     * @returns Promise con true si se han borrado, o false si no se han borrado.
+     */
+    async clear(): Promise<boolean> {
+        return await this.poiDb.clear();
+    }
+
     // HU501 Fijar POI
     /**
      * Fija un POI específico.

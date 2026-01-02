@@ -16,7 +16,6 @@ import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {Auth} from '@angular/fire/auth';
 import {DeleteConfirmationVehiclePopupComponent} from '../../deleteVehicle/deleteVehicle';
 import {VehicleModel} from '../../../data/VehicleModel';
 import {EditVehicleComponent} from '../../editVehicle/editVehicle';
@@ -36,7 +35,6 @@ export interface SavedVehicleDialogData {
         MatIconModule,
         DeleteConfirmationVehiclePopupComponent,
         EditVehicleComponent,
-        DeleteConfirmationVehiclePopupComponent,
         NgOptimizedImage
     ],
     templateUrl: './saved-vehicle-dialog.html',
@@ -51,7 +49,6 @@ export class SavedVehicleDialog implements OnInit {
 
     public displayData!: SavedVehicleDialogData;
     public snackBar = inject(MatSnackBar);
-    public auth = inject(Auth);
 
     isEditing: WritableSignal<Boolean> = signal(false);
     isDeleting: WritableSignal<Boolean> = signal(false);
@@ -59,8 +56,7 @@ export class SavedVehicleDialog implements OnInit {
     constructor(
         @Optional() public dialogRef: MatDialogRef<SavedVehicleDialog>,
         @Optional() @Inject(MAT_DIALOG_DATA) public dialogData: SavedVehicleDialogData
-    ) {
-    }
+    ) {}
 
     ngOnInit(): void {
         this.updateDisplayData();

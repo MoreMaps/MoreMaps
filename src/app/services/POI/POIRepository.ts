@@ -17,6 +17,9 @@ export interface POIRepository {
 
     getPOIList(): Promise<POIModel[]>;
 
+    // Borra todos los POI
+    clear(): Promise<boolean>;
+
     // Fijar POI
     pinPOI(poi: POIModel): Promise<boolean>;
 

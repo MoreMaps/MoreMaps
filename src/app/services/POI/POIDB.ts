@@ -5,15 +5,16 @@ import {Auth} from '@angular/fire/auth';
 import {Geohash} from 'geofire-common';
 import {
     collection,
-    deleteDoc,
     doc,
     Firestore,
     getDoc,
-    getDocs,
+    getDocs, query,
     setDoc,
-    updateDoc
+    updateDoc, writeBatch
 } from '@angular/fire/firestore';
 import {DBAccessError} from '../../errors/DBAccessError';
+import {ROUTE_REPOSITORY, RouteRepository} from '../Route/RouteRepository';
+import {RouteModel} from '../../data/RouteModel';
 
 @Injectable({
     providedIn: 'root'
@@ -21,6 +22,7 @@ import {DBAccessError} from '../../errors/DBAccessError';
 export class POIDB implements POIRepository {
     private auth = inject(Auth);
     private firestore = inject(Firestore);
+    private routeDb: RouteRepository = inject(ROUTE_REPOSITORY);
 
     /**
      * Registra un punto de interés (POI) en la base de datos.
@@ -93,9 +95,18 @@ export class POIDB implements POIRepository {
             // Obtener los datos del POI que se va a borrar
             const poiRef = doc(this.firestore, `items/${this.auth.currentUser!.uid}/pois/${geohash}`);
 
-            // Borrar documento
-            // TODO: PROPAGAR A RUTAS EN IT06
-            await deleteDoc(poiRef);
+            // Borrar todas las rutas que utilizan el POI Y el documento
+            const routes = await this.routeDb.getRoutesUsingPOI(geohash);
+            const batch = writeBatch(this.firestore);
+            for (const route of routes) {
+                const path = `items/${this.auth.currentUser!.uid}/routes/` + RouteModel.buildId(route.geohash_origen, route.geohash_destino, route.transporte, route.matricula);
+                console.log(path);
+                batch.delete(doc(this.firestore, path));
+            }
+            batch.delete(poiRef);
+
+            // Fin de la transacción
+            await batch.commit();
             return true;
         }
         catch (error: any) {
@@ -104,6 +115,31 @@ export class POIDB implements POIRepository {
             throw new DBAccessError();
         }
     }
+
+    /**
+     * Borra todos los POI del usuario actual de forma atómica.
+     */
+    async clear(): Promise<boolean> {
+        const pois = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/pois`)));
+
+        try {
+            // Transacción
+            const batch = writeBatch(this.firestore);
+            pois.forEach(poi => {
+                batch.delete(poi.ref);
+            });
+
+            // Fin de la transacción
+            await batch.commit();
+            return true;
+        }
+            // Ha ocurrido un error inesperado en Firebase.
+        catch (error: any) {
+            console.error('Error al obtener respuesta de Firebase: ' + error);
+            return false;
+        }
+    }
+
 
     /**
      * Devuelve una lista con todos los puntos de interés (POI) del usuario actual.

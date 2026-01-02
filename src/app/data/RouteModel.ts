@@ -6,40 +6,48 @@ export enum TIPO_TRANSPORTE {
     BICICLETA = 'cycling-regular',
 }
 
+export const mapaTransporte: Record<TIPO_TRANSPORTE, string> = {
+    [TIPO_TRANSPORTE.VEHICULO]: 'en coche',
+    [TIPO_TRANSPORTE.BICICLETA]: 'en bici',
+    [TIPO_TRANSPORTE.A_PIE]: 'a pie',
+};
+
 export enum PREFERENCIA {
     RAPIDA = 'fastest',
     CORTA = 'shortest',
     RECOMENDADA = 'recommended',
 }
 
+export const mapaPreferencia: Record<PREFERENCIA, string> = {
+    [PREFERENCIA.RAPIDA]: 'más rápida',
+    [PREFERENCIA.CORTA]: 'más corta',
+    [PREFERENCIA.RECOMENDADA]: 'recomendada',
+};
+
 export class RouteModel {
     geohash_origen: Geohash;
     geohash_destino: Geohash;
+    alias: string;
     transporte: TIPO_TRANSPORTE;
+    nombre_origen: string;
+    nombre_destino: string;
     preferencia: PREFERENCIA;
-    distancia?: number;
-    tiempo?: number;
-    alias?: string;
+    distancia: number;
+    tiempo: number;
     pinned?: boolean;
     matricula?: string;
 
-    constructor(geohash_origen: Geohash, geohash_destino: Geohash,
-                transporte: TIPO_TRANSPORTE, preferencia: PREFERENCIA,
-                distancia?: number, tiempo?: number,
-                alias?: string, pinned?: boolean, matricula?: string) {
+    constructor(geohash_origen: Geohash, geohash_destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE, nombre_origen: string, nombre_destino: string,
+                preferencia: PREFERENCIA, distancia: number, tiempo: number, pinned?: boolean, matricula?: string) {
         this.geohash_origen = geohash_origen;
         this.geohash_destino = geohash_destino;
+        this.alias = alias;
         this.transporte = transporte;
+        this.nombre_origen = nombre_origen;
+        this.nombre_destino = nombre_destino;
         this.preferencia = preferencia;
-        if (distancia !== undefined) {
-            this.distancia = distancia;
-        }
-        if (tiempo !== undefined) {
-            this.tiempo = tiempo;
-        }
-        if (alias !== undefined) {
-            this.alias = alias;
-        }
+        this.distancia = distancia;
+        this.tiempo = tiempo;
         if (pinned !== undefined) {
             this.pinned = pinned;
         } else this.pinned = false;
@@ -52,19 +60,39 @@ export class RouteModel {
         return {
             geohash_origen: this.geohash_origen,
             geohash_destino: this.geohash_destino,
+            alias: this.alias,
             transporte: this.transporte,
+            nombre_origen: this.nombre_origen,
+            nombre_destino: this.nombre_destino,
             preferencia: this.preferencia,
             distancia: this.distancia,
             tiempo: this.tiempo,
-            ...(this.alias !== undefined ? {alias: this.alias} : {}),
             ...(this.pinned !== undefined ? {pinned: this.pinned} : {pinned: false}),
             ...(this.matricula !== undefined ? {matricula: this.matricula} : {}),
         }
     }
 
     static fromJSON(json: any): RouteModel {
-        return new RouteModel(json.geohash_origen, json.geohash_destino, json.transporte, json.preferencia,
-            json.distancia, json.tiempo, json.alias, json.pinned, json.matricula);
+        return new RouteModel(json.geohash_origen, json.geohash_destino, json.alias, json.transporte,
+            json.nombre_origen, json.nombre_destino, json.preferencia, json.distancia, json.tiempo, json.pinned, json.matricula);
+    }
+
+    static buildId(origen: string, destino: string, transporte: string, matricula?: string): string {
+        return `${origen}-${destino}-${transporte === TIPO_TRANSPORTE.VEHICULO && matricula ? matricula : transporte}`;
+    }
+
+    id(): string {
+        return RouteModel.buildId(this.geohash_origen, this.geohash_destino, this.transporte, this.matricula);
+    }
+
+    // Devuelve la etiqueta equivalente del transporte de la ruta
+    transportLabel() {
+        return mapaTransporte[this.transporte];
+    }
+
+    // Devuelve la etiqueta equivalente a la preferencia de la ruta
+    preferenceLabel() {
+        return mapaPreferencia[this.preferencia];
     }
 }
 

@@ -367,3 +367,24 @@
 /* Nota: Los navegadores modernos gestionarán automáticamente la salida
    (desaparición instantánea) cuando se retire el elemento del DOM.
    La animación se aplicará justo al ingresar al DOM. */
+
+
+/* Estilo del texto de error */
+.error-msg {
+    color: var(--color-orange);
+    font-size: 0.75rem;
+    margin-top: 4px;
+    margin-left: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: fadeIn 0.3s ease-in;
+    font-weight: 500;
+}
+
+/* Input/Textarea con error (Borde rojo) */
+.input-wrapper input.ng-invalid.ng-touched,
+.input-wrapper textarea.ng-invalid.ng-touched {
+    border-color: var(--color-orange) !important;
+    background-color: rgba(255, 149, 57, 0.05);
+}

@@ -83,7 +83,7 @@ export class EditRouteComponent implements OnInit, OnChanges, OnDestroy {
 
     initFormStructure() {
         this.editForm = this.fb.group({
-            alias: ['', [Validators.required, Validators.maxLength(50), notOnlyWhitespaceValidator()]],
+            alias: ['', [Validators.required, Validators.maxLength(100), notOnlyWhitespaceValidator()]],
             transporte: ['', [Validators.required]],
             preferencia: ['', [Validators.required]],
             matricula: [''] // Validadores dinámicos

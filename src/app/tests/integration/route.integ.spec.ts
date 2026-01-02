@@ -375,7 +375,17 @@ describe('Pruebas de integración sobre rutas', () => {
                 0, 0, false, rutaC.matricula);
 
             mockUserRepository.sessionActive.and.resolveTo(true);
-            mockRouteRepository.routeExists.and.resolveTo(true);
+
+            // Configuramos el mock para que responda según los parámetros
+            mockRouteRepository.routeExists.and.callFake((origen, destino, transporte, matricula) => {
+                // Si preguntan por la ruta original (transporte inicial), existe
+                if (transporte === rutaC.transporte) {
+                    return Promise.resolve(true);
+                }
+                // Si preguntan por la nueva ruta (transporte modificado), NO existe aún
+                return Promise.resolve(false);
+            });
+
             mockRouteRepository.getRoute.and.resolveTo(mockRouteModel);
             mockMapService.searchRoute.and.resolveTo(mockRouteResultModel);
             mockRouteRepository.updateRoute.and.resolveTo(mockNewRouteModel);

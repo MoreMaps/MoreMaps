@@ -154,7 +154,7 @@ export class EditRouteComponent implements OnInit, OnChanges, OnDestroy {
             transporte: f.transporte,
             preferencia: f.preferencia,
             // Si es vehículo, guardamos la matrícula seleccionada, si no, undefined
-            matricula: (f.transporte === TIPO_TRANSPORTE.VEHICULO) ? f.matricula : undefined
+            ...(f.transporte === TIPO_TRANSPORTE.VEHICULO ? { matricula: f.matricula } : {})
         };
 
         try {
@@ -164,7 +164,8 @@ export class EditRouteComponent implements OnInit, OnChanges, OnDestroy {
                 this.route.geohash_origen,
                 this.route.geohash_destino,
                 this.route.transporte, // Pasamos el transporte original para encontrar la ruta vieja
-                updateData
+                updateData,
+                this.route.matricula
             );
 
             this.update.emit(updatedRoute);

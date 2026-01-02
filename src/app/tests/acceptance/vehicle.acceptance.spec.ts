@@ -215,7 +215,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
             const vehiculoAudi = await vehicleService.createVehicle(audi);
 
-            // Lista de rutas registradas es ["A-B"], pero con el Audi A6.
+            // Lista de rutas registradas es ["A-B"], con Audi A6 como vehículo.
             // Simulamos el coste para no llamar a la API.
             const result = new RouteResultModel(rutaC.distancia, rutaC.tiempo, undefined as any);
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
@@ -230,17 +230,17 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             // No se lanza ningún error. Se elimina el vehículo de la lista.
             expect(resultado).toBeTrue();
 
-            // Se elimina la ruta "A-B"
+            // Se elimina la ruta "A-B" de la lista.
             const routes = await routeService.getRouteList();
             expect(routes.length).toBe(0);
         }, 10000);
 
         it('HU304-EI01: Eliminar vehículo no registrado', async () => {
             // GIVEN
-            // Lista de vehículos registrados  →  [“Ford Fiesta”].
+            // Lista de vehículos registrados → ["Ford Fiesta"].
 
             // WHEN
-            // El usuario trata de eliminar el vehículo "Ford Fiesta" (que no existe).
+            // El usuario trata de eliminar el vehículo "Audi A6" (no registrado).
             await expectAsync(vehicleService.deleteVehicle(audi.matricula))
                 .toBeRejectedWith(new MissingVehicleError());
 
@@ -291,7 +291,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU502-EV01: Fijar un vehículo registrado', async () => {
             // GIVEN
-            // Lista de vehículos registrados  → ["Ford Fiesta", "Audi A6"].
+            // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"].
             const vehiculoAudi: VehicleModel = await vehicleService.createVehicle(audi);
 
             // Ambos vehículos no son fijados, una consulta de vehículos devuelve ["Audi A6", "Ford Fiesta"].

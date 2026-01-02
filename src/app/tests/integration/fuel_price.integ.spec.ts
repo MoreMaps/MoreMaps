@@ -59,14 +59,14 @@ describe('Pruebas de integración sobre el servicio de obtención del coste del 
             mockFuelPriceRepository.getPrice.and.resolveTo(-1);
 
             // WHEN
-            // Se busca el precio del tipo de combustible "Tomate" (que no existe)
-            await expectAsync(fuelPriceService.getPrice("Tomate" as FUEL_TYPE)).toBeRejectedWith(new FuelPriceNotFoundError());
+            // Se busca el precio del tipo de combustible vacío (que no existe)
+            await expectAsync(fuelPriceService.getPrice("" as FUEL_TYPE)).toBeRejectedWith(new FuelPriceNotFoundError());
 
             // THEN
             // Se lanza la excepción FuelPriceNotFoundError
 
             // Se llama a la función "getPrice" con los parámetros pertinentes
-            expect(mockFuelPriceRepository.getPrice).toHaveBeenCalledWith("Tomate" as FUEL_TYPE, new Map());
+            expect(mockFuelPriceRepository.getPrice).toHaveBeenCalledWith("" as FUEL_TYPE, new Map());
         });
     });
 });

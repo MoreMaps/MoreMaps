@@ -1,21 +1,15 @@
 import {TestBed} from '@angular/core/testing'
 import {POI_TEST_DATA, USER_TEST_DATA} from '../test-data';
-import {USER_REPOSITORY} from '../../services/User/UserRepository';
 import {UserService} from '../../services/User/user.service';
-import {UserDB} from '../../services/User/UserDB';
 import {appConfig} from '../../app.config';
 import {Auth} from '@angular/fire/auth';
 import {POIService} from '../../services/POI/poi.service';
 import {POIModel} from '../../data/POIModel';
-import {POI_REPOSITORY} from '../../services/POI/POIRepository';
-import {POIDB} from '../../services/POI/POIDB';
 import {LongitudeRangeError} from '../../errors/POI/LongitudeRangeError';
 import {MissingPOIError} from '../../errors/POI/MissingPOIError';
 import {PlaceNameNotFoundError} from '../../errors/POI/PlaceNameNotFoundError';
 import {DescriptionLengthError} from '../../errors/POI/DescriptionLengthError';
 import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
-import {MAP_SEARCH_REPOSITORY} from '../../services/map/map-search-service/MapSearchRepository';
-import {MapSearchAPI} from '../../services/map/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
 
@@ -39,14 +33,7 @@ describe('Pruebas de aceptación sobre POI', () => {
 
     beforeAll(async () => {
         await TestBed.configureTestingModule({
-            providers: [
-                UserService,
-                POIService,
-                MapSearchService,
-                {provide: USER_REPOSITORY, useClass: UserDB},
-                {provide: POI_REPOSITORY, useClass: POIDB},
-                {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
-                appConfig.providers],
+            providers: [appConfig.providers],
 
             // This prevents Angular from destroying the injector after the first test.
             teardown: {destroyAfterEach: false}
@@ -61,7 +48,14 @@ describe('Pruebas de aceptación sobre POI', () => {
         auth = TestBed.inject(Auth);
 
         // Iniciar sesión con ramón para todos los test
-        await userService.login(ramon.email, ramon.pwd);
+        // Puede que la sesión haya quedado activa...
+        try {
+            await userService.login(ramon.email, ramon.pwd);
+        }
+        catch (error) {}
+
+        // Borrar todos los POI del usuario (si hubiere)
+        await poiService.clear();
     });
 
     // Se comprueba si el POI A existe en la base de datos y se crea en caso contrario.
@@ -200,6 +194,7 @@ describe('Pruebas de aceptación sobre POI', () => {
                 // CLEANUP
                 // borrar a maria
                 await userService.deleteUser();
+
                 // volver a ramon
                 await userService.login(ramon.email, ramon.pwd);
             }
@@ -245,7 +240,6 @@ describe('Pruebas de aceptación sobre POI', () => {
                     lon: poiA.lon,
                     geohash: poiA.geohash,
                     placeName: poiA.placeName,
-                    alias: poiA.alias,
                     pinned: false
                 })
             );

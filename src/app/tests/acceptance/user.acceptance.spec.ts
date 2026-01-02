@@ -1,9 +1,7 @@
 import {TestBed} from '@angular/core/testing'
 import {USER_TEST_DATA} from '../test-data';
-import {USER_REPOSITORY} from '../../services/User/UserRepository';
 import {UserModel} from '../../data/UserModel';
 import {UserService} from '../../services/User/user.service';
-import {UserDB} from '../../services/User/UserDB';
 import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
@@ -23,10 +21,7 @@ describe('Pruebas de aceptación sobre usuarios', () => {
 
     beforeAll(async () => {
         await TestBed.configureTestingModule({
-            providers: [
-                UserService,
-                {provide: USER_REPOSITORY, useClass: UserDB},
-                appConfig.providers]
+            providers: [appConfig.providers]
         }).compileComponents();
 
         // Inyección del servicio

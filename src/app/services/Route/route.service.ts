@@ -11,6 +11,7 @@ import {USER_REPOSITORY, UserRepository} from '../User/UserRepository';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 import {MissingRouteError} from '../../errors/Route/MissingRouteError';
+import {WrongParamsError} from '../../errors/WrongParamsError';
 
 export interface RouteCostResult {
     cost: number;
@@ -58,8 +59,7 @@ export class RouteService {
             case TIPO_TRANSPORTE.VEHICULO:
                 // Si faltan datos, se devuelve 0
                 if (consumoMedio === undefined || consumoMedio < 0 || !tipoCombustible ) {
-                    console.error('Faltan datos para calcular el coste del vehículo.');
-                    throw new InvalidDataError();
+                    throw new WrongParamsError('ruta para calcular el coste del vehículo');
                 }
 
                 const cantidadEnergia = (distanciaKm / 100) * consumoMedio; // en l o kW

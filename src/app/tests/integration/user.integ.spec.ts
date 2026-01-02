@@ -15,7 +15,7 @@ import {UserAlreadyExistsError} from '../../errors/User/UserAlreadyExistsError';
 // Pruebas de integración sobre usuarios
 // HU101, HU102, HU105, HU106
 // Se excluye HU603 por ser sobre el guardado y recuperación de datos en la BBDD
-fdescribe('Pruebas de integración sobre usuarios', () => {
+describe('Pruebas de integración sobre usuarios', () => {
     // SUT
     let userService: UserService;
 

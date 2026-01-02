@@ -2,12 +2,8 @@ import {TestBed} from '@angular/core/testing';
 import {appConfig} from '../../app.config';
 import {Auth} from '@angular/fire/auth';
 import {USER_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
-import {USER_REPOSITORY} from '../../services/User/UserRepository';
 import {UserService} from '../../services/User/user.service';
-import {UserDB} from '../../services/User/UserDB';
-import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
-import {VehicleDB} from '../../services/Vehicle/VehicleDB';
 import {VehicleModel} from '../../data/VehicleModel';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
@@ -24,19 +20,14 @@ describe('Pruebas de aceptación sobre vehículos', () => {
     const ramon = USER_TEST_DATA[0];
     const maria = USER_TEST_DATA[1];
 
-    const datosFord: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
-    const datosAudi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
+    const ford: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
+    const audi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
 
     let vehiculoRegistrado: VehicleModel;
 
     beforeAll(async () => {
         await TestBed.configureTestingModule({
-            providers: [
-                UserService,
-                VehicleService,
-                {provide: USER_REPOSITORY, useClass: UserDB},
-                {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
-                appConfig.providers],
+            providers: [appConfig.providers],
             teardown: {destroyAfterEach: false}
         }).compileComponents();
 
@@ -48,7 +39,12 @@ describe('Pruebas de aceptación sobre vehículos', () => {
         auth = TestBed.inject(Auth);
 
         // Iniciar sesión con ramón para todos los test
-        await userService.login(ramon.email, ramon.pwd);
+        // Puede que la sesión haya quedado activa...
+        try {
+            await userService.login(ramon.email, ramon.pwd);
+
+        }
+        catch (error) {}
 
         // Borrar todos los vehículos del usuario (si hubiere)
         await vehicleService.clear();
@@ -57,11 +53,11 @@ describe('Pruebas de aceptación sobre vehículos', () => {
     beforeEach(async () => {
         // Registrar vehículo inicial "Ford Fiesta" para tener estado base en algunos tests
         try {
-            vehiculoRegistrado = await vehicleService.readVehicle(datosFord.matricula);
+            vehiculoRegistrado = await vehicleService.readVehicle(ford.matricula);
         }
         // Lanza un error si no existe, entonces se crea
         catch (error) {
-            vehiculoRegistrado = await vehicleService.createVehicle(datosFord);
+            vehiculoRegistrado = await vehicleService.createVehicle(ford);
         }
     })
 
@@ -87,19 +83,19 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // WHEN
             // El usuario intenta registrar el vehículo
-            const vehiculoCreado = await vehicleService.createVehicle(datosAudi);
+            const vehiculoCreado = await vehicleService.createVehicle(audi);
             // THEN
             // No se lanza ningún error
             // Se da de alta el vehículo
             expect(vehiculoCreado).toEqual(jasmine.objectContaining({
-                alias: datosAudi.alias,
-                matricula: datosAudi.matricula,
-                marca: datosAudi.marca,
-                modelo: datosAudi.modelo,
-                anyo: datosAudi.anyo,
-                tipoCombustible: datosAudi.tipoCombustible,
-                consumoMedio: datosAudi.consumoMedio,
-                pinned: datosAudi.pinned,
+                alias: audi.alias,
+                matricula: audi.matricula,
+                marca: audi.marca,
+                modelo: audi.modelo,
+                anyo: audi.anyo,
+                tipoCombustible: audi.tipoCombustible,
+                consumoMedio: audi.consumoMedio,
+                pinned: audi.pinned,
                 }));
 
             // CLEANUP
@@ -113,7 +109,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // WHEN
             // El usuario intenta registrar el vehículo "Ford Fiesta" nuevamente.
-            await expectAsync(vehicleService.createVehicle(datosFord))
+            await expectAsync(vehicleService.createVehicle(ford))
                 .toBeRejectedWith(new VehicleAlreadyExistsError());
 
             // THEN
@@ -182,18 +178,18 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             } finally {
                 // CLEANUP
                 // Restaurar matrícula original.
-                await vehicleService.updateVehicle(nuevaMatricula, {matricula: datosFord.matricula});
+                await vehicleService.updateVehicle(nuevaMatricula, {matricula: ford.matricula});
             }
         });
 
         it('HU303-EI01: Modificar matrícula de un vehículo para que coincida con la de otro', async () => {
             // GIVEN
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
-            const vehiculoAudi = await vehicleService.createVehicle(datosAudi);
+            const vehiculoAudi = await vehicleService.createVehicle(audi);
             try {
                 // WHEN
                 // El usuario trata de modificar la matrícula del vehículo Audi (4321XYZ) a la del "Ford Fiesta" (1234XYZ)
-                await expectAsync(vehicleService.updateVehicle(vehiculoAudi.matricula, {matricula: datosFord.matricula}))
+                await expectAsync(vehicleService.updateVehicle(vehiculoAudi.matricula, {matricula: ford.matricula}))
                     .toBeRejectedWith(new VehicleAlreadyExistsError());
 
                 // THEN
@@ -211,7 +207,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
         it('HU304-EV01: Eliminar vehículo registrado', async () => {
             // GIVEN
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
-            const vehiculoAudi = await vehicleService.createVehicle(datosAudi);
+            const vehiculoAudi = await vehicleService.createVehicle(audi);
 
             // WHEN
             // El usuario trata de eliminar el vehículo.
@@ -228,7 +224,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // WHEN
             // El usuario trata de eliminar el vehículo "Ford Fiesta" (que no existe).
-            await expectAsync(vehicleService.deleteVehicle(datosAudi.matricula))
+            await expectAsync(vehicleService.deleteVehicle(audi.matricula))
                 .toBeRejectedWith(new MissingVehicleError());
 
             // THEN
@@ -244,19 +240,19 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // WHEN
             // El usuario consulta los datos del vehículo "Ford Fiesta".
-            const datosVehiculo = await vehicleService.readVehicle(datosFord.matricula);
+            const datosVehiculo = await vehicleService.readVehicle(ford.matricula);
 
             // THEN
             // Se muestran los datos del vehículo.
             expect(datosVehiculo).toEqual(jasmine.objectContaining({
-                alias: datosFord.alias,
-                matricula: datosFord.matricula,
-                marca: datosFord.marca,
-                modelo: datosFord.modelo,
-                anyo: datosFord.anyo,
-                tipoCombustible: datosFord.tipoCombustible,
-                consumoMedio: datosFord.consumoMedio,
-                pinned: datosFord.pinned,
+                alias: ford.alias,
+                matricula: ford.matricula,
+                marca: ford.marca,
+                modelo: ford.modelo,
+                anyo: ford.anyo,
+                tipoCombustible: ford.tipoCombustible,
+                consumoMedio: ford.consumoMedio,
+                pinned: ford.pinned,
             }));
         });
 
@@ -266,7 +262,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // WHEN
             // El usuario consulta los datos del vehículo “Audi A6” (no registrado).
-            await expectAsync(vehicleService.readVehicle(datosAudi.matricula))
+            await expectAsync(vehicleService.readVehicle(audi.matricula))
                 .toBeRejectedWith(new MissingVehicleError());
 
             // THEN
@@ -279,7 +275,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
         it('HU502-EV01: Fijar un vehículo registrado', async () => {
             // GIVEN
             // Lista de vehículos registrados  → ["Ford Fiesta", "Audi A6"].
-            const vehiculoAudi: VehicleModel = await vehicleService.createVehicle(datosAudi);
+            const vehiculoAudi: VehicleModel = await vehicleService.createVehicle(audi);
 
             // Ambos vehículos no son fijados, una consulta de vehículos devuelve ["Audi A6", "Ford Fiesta"].
             let list = await vehicleService.getVehicleList();
@@ -287,7 +283,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // WHEN
             // El usuario trata de fijar el vehículo "Ford Fiesta".
-            const vehiculoFijado = await vehicleService.pinVehicle(datosFord.matricula);
+            const vehiculoFijado = await vehicleService.pinVehicle(ford.matricula);
 
             // THEN
             // El vehículo "Ford Fiesta" pasa a estar fijado (pinned = true).
@@ -299,7 +295,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // CLEANUP
             // Quitar el fijado de "Ford Fiesta".
-            await vehicleService.pinVehicle(datosFord.matricula);
+            await vehicleService.pinVehicle(ford.matricula);
 
             // Borrar el vehículo "Audi".
             await vehicleService.deleteVehicle(vehiculoAudi.matricula);
@@ -311,7 +307,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // WHEN
             // El usuario trata de fijar un vehículo no registrado.
-            await expectAsync(vehicleService.pinVehicle(datosAudi.matricula))
+            await expectAsync(vehicleService.pinVehicle(audi.matricula))
                 .toBeRejectedWith(new MissingVehicleError());
 
             // THEN

@@ -56,6 +56,7 @@ describe('Pruebas de integración sobre POI', () => {
 
 
     // Las pruebas empiezan a partir de AQUÍ
+    // Se asume que la sesión está activa en todos los tests.
 
     describe('HU201: Registrar POI por coordenadas', () => {
 

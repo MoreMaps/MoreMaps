@@ -32,7 +32,7 @@ import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
 import {Subscription} from 'rxjs';
-import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
+import {RouteModel} from '../../data/RouteModel';
 import {geohashForLocation} from 'geofire-common';
 import {RouteService} from '../../services/Route/route.service';
 import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
@@ -44,8 +44,9 @@ import {ElectricityPriceService} from '../../services/electricity-price-service/
 import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
 import {FUEL_PRICE_REPOSITORY} from '../../services/fuel-price-service/FuelPriceRepository';
 import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
-import {FlowPoint, RouteFlowService} from '../../services/map/route-flow-service';
+import {RouteFlowService} from '../../services/map/route-flow-service';
 import {SpinnerSnackComponent} from '../../utils/map-widgets';
+import {FlowPoint, RouteFlowConfig} from '../../services/map/route-flow-state';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -450,137 +451,51 @@ export class SavedItemsComponent implements OnDestroy {
      * Inicia el flujo de cálculo de ruta saltando pasos si hay datos fijos.
      */
     async initRouteFlow(prefilled: { fixedOrigin?: any, fixedDest?: any, fixedVehicle?: any }) {
-        let step = 1;
-        const totalSteps = 4;
 
-        let originData: FlowPoint | null = prefilled.fixedOrigin ? {
-            name: this.getDisplayName(prefilled.fixedOrigin),
-            hash: prefilled.fixedOrigin.geohash,
-            lat: prefilled.fixedOrigin.lat,
-            lon: prefilled.fixedOrigin.lon,
-        } : null;
+        // Configurar
+        const config: RouteFlowConfig = {
+            fixedOrigin: prefilled.fixedOrigin ? this.mapToFlowPoint(prefilled.fixedOrigin) : undefined,
+            fixedDest: prefilled.fixedDest ? this.mapToFlowPoint(prefilled.fixedDest) : undefined,
+            fixedVehicle: prefilled.fixedVehicle
+        };
 
-        let destData: FlowPoint | null = prefilled.fixedDest ? {
-            name: this.getDisplayName(prefilled.fixedDest),
-            hash: prefilled.fixedDest.geohash,
-            lat: prefilled.fixedDest.lat,
-            lon: prefilled.fixedDest.lon,
-        } : null;
+        //
+        // ¡Ejecutar una sola línea de lógica!
+        const result = await this.routeFlowService.startRouteFlow(config);
 
-        let transporte: TIPO_TRANSPORTE | null = prefilled.fixedVehicle ? TIPO_TRANSPORTE.VEHICULO : null;
-        let selectedVehicleMatricula: string | undefined = prefilled.fixedVehicle?.matricula;
-        let preferencia: PREFERENCIA | null = null;
-
-        while (step <= totalSteps && step > 0) {
-            switch (step) {
-                case 1: // Origen
-                    if (prefilled.fixedOrigin) {
-                        step++;
-                        break;
-                    } // Saltar si ya tenemos origen
-                    const resO = await this.routeFlowService.getPointFromUser('Punto de Origen', '¿Desde dónde quieres salir?', 1, 4, true); // showBack true para cancelar
-                    if (!resO || resO === 'BACK') return;
-                    originData = resO as FlowPoint;
-                    if (destData && destData.hash === originData?.hash) {
-                        this.showSnackbar('El origen y el destino son el mismo lugar.');
-                        break;
-                    }
-                    step++;
-                    break;
-
-                case 2: // Destino
-                    if (prefilled.fixedDest) {
-                        step++;
-                        break;
-                    } // Saltar si ya tenemos destino
-                    const resD = await this.routeFlowService.getPointFromUser('Punto de Destino', '¿A dónde quieres ir?', 2, 4, true);
-                    if (resD === 'BACK') {
-                        // Si retrocedemos y el origen estaba fijado, cancelamos
-                        if (prefilled.fixedOrigin) return;
-                        step--;
-                        break;
-                    }
-                    if (!resD) return;
-                    destData = resD as FlowPoint;
-                    if (originData && originData.hash === destData?.hash) {
-                        this.showSnackbar('El origen y el destino son el mismo lugar.');
-                        break;
-                    }
-                    step++;
-                    break;
-
-                case 3: // Transporte
-                    if (prefilled.fixedVehicle) {
-                        step++;
-                        break;
-                    } // Saltar si ya tenemos vehículo
-
-                    const resT = await this.routeFlowService.getRouteOption<TIPO_TRANSPORTE | 'BACK'>('transport', step, totalSteps);
-                    if (resT === 'BACK') {
-                        if (prefilled.fixedDest) {
-                            // Si el destino estaba fijado, al dar atrás en paso 3 vamos al 1 (origen)
-                            step = 1;
-                            originData = null; // Limpiamos origen manual para volver a pedirlo
-                        } else {
-                            step--;
-                        }
-                        break;
-                    }
-                    if (!resT) return;
-                    transporte = resT as TIPO_TRANSPORTE;
-
-                    if (transporte === TIPO_TRANSPORTE.VEHICULO) {
-                        const savedVehicle = await this.routeFlowService.selectSavedItem('vehiculos', 'Selecciona tu vehículo', true);
-                        if (savedVehicle === 'BACK') break; // Reintentar transporte
-                        if (!savedVehicle) return;
-                        selectedVehicleMatricula = savedVehicle.matricula;
-                    } else {
-                        selectedVehicleMatricula = undefined;
-                    }
-                    step++;
-                    break;
-
-                case 4: // Preferencia
-                    const resP = await this.routeFlowService.getRouteOption<PREFERENCIA | 'BACK'>('preference', step, totalSteps);
-                    if (resP === 'BACK') {
-                        // Si teníamos vehículo fijo, al dar atrás en pref, volvemos a destino (paso 2)
-                        // porque el paso 3 (transporte) se salta automáticamente.
-                        if (prefilled.fixedVehicle) {
-                            step = 2;
-                            destData = null; // Limpiamos destino manual
-                            // Si ADEMÁS el destino fuera fijo...
-                            if (prefilled.fixedDest) {
-                                step = 1; // Vamos al origen
-                            }
-                        } else {
-                            step--;
-                        }
-                        break;
-                    }
-                    if (!resP) return;
-                    preferencia = resP as PREFERENCIA;
-                    step++;
-                    break;
-            }
-        }
-
-        // Navegar al mapa
-        if (step > totalSteps) {
-            const startHash = originData!.hash || geohashForLocation([originData!.lat, originData!.lon], 7);
-            const endHash = destData!.hash || geohashForLocation([destData!.lat, destData!.lon], 7);
+        // Navegar
+        if (result) {
+            const startHash = result.origin!.hash || geohashForLocation([result.origin!.lat, result.origin!.lon], 7);
+            const endHash = result.destination!.hash || geohashForLocation([result.destination!.lat, result.destination!.lon], 7);
 
             const routeParams = {
                 mode: 'route',
                 start: startHash,
-                startName: originData!.name,
+                startName: result.origin!.name,
                 end: endHash,
-                endName: destData!.name,
-                transport: transporte,
-                preference: preferencia,
-                matricula: selectedVehicleMatricula
+                endName: result.destination!.name,
+                transport: result.transport,
+                preference: result.preference,
+                matricula: result.matricula
             };
             const cleanParams = JSON.parse(JSON.stringify(routeParams));
             await this.router.navigate(['/map'], {queryParams: cleanParams});
         }
+    }
+
+    /**
+     * Convierte un ítem guardado (POI, Vehículo, etc.) al formato FlowPoint
+     * que necesita el servicio de rutas.
+     */
+    private mapToFlowPoint(item: any): FlowPoint {
+        // Usamos tu estrategia existente para obtener el nombre correcto (alias o placeName)
+        const name = this.getDisplayName(item);
+
+        return {
+            name: name,
+            lat: item.lat,
+            lon: item.lon,
+            hash: item.geohash // Algunos ítems como vehículos pueden no tener geohash, será undefined
+        };
     }
 }

@@ -1,11 +1,10 @@
-import {Injectable, inject} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {firstValueFrom} from 'rxjs';
 import {geohashForLocation} from 'geofire-common';
 
 // Componentes
-
 import {RouteOriginDialog, RouteOriginMethod} from '../../view/route/route-origin-dialog/route-origin-dialog';
 import {AddPoiDialogComponent, AddPoiMethod} from '../../view/navbar/add-poi-dialog/add-poi-dialog';
 import {SavedItemSelector} from '../saved-items/saved-item-selector-dialog/savedSelectorData';
@@ -17,13 +16,9 @@ import {RouteOptionsDialogComponent} from '../../view/route/route-options-dialog
 // Modelos y Servicios necesarios para la búsqueda interna del flujo
 import {MapSearchService} from './map-search-service/map-search.service';
 import {POISearchModel} from '../../data/POISearchModel';
+import {FlowPoint, FlowState, RouteFlowConfig, RouteFlowContext, RouteFlowData} from './route-flow-state';
+import {OriginState} from './route-flow-steps';
 
-export interface FlowPoint {
-    hash?: string;
-    name: string;
-    lat: number;
-    lon: number;
-}
 
 @Injectable({
     providedIn: 'root'
@@ -39,7 +34,7 @@ export class RouteFlowService {
      * 2) En caso de ser uno nuevo, ¿qué tipo de búsqueda es (topónimo / coordenadas)?
      * 3) Confirmar el resultado
      */
-    async getPointFromUser(
+    public async getPointFromUser(
         title: string,
         subtitle: string,
         currentStep: number,
@@ -100,7 +95,7 @@ export class RouteFlowService {
     /**
      * Abre un selector genérico de ítems guardados (Lugares, Vehículos, Resultados).
      */
-    async selectSavedItem(
+    public async selectSavedItem(
         type: 'lugares' | 'vehiculos' | 'search-results',
         title?: string,
         showBack: boolean = false,
@@ -117,7 +112,7 @@ export class RouteFlowService {
     /**
      * Abre el diálogo para opciones de ruta (Transporte o Preferencia).
      */
-    async getRouteOption<T>(
+    public async getRouteOption<T>(
         type: 'transport' | 'preference',
         currentStep: number,
         totalSteps: number
@@ -226,4 +221,36 @@ export class RouteFlowService {
         }
         return null;
     }
+
+    /** Inicia el Wizard completo del flujo de rutas
+     *  */
+    async startRouteFlow(config: RouteFlowConfig = {}): Promise<RouteFlowData | null> {
+        // 1. Crear contexto
+        const context = new RouteFlowContext(config, this);
+
+        // 2. Definir estado inicial
+        let currentState: FlowState | null = new OriginState();
+
+        // 3. Bucle de la Máquina de Estados
+        while (currentState !== null) {
+            // Delegamos la lógica al estado actual
+            currentState = await currentState.execute(context);
+
+            // Si el estado actual se vuelve null, significa que:
+            // a) Terminó con éxito (verificamos si tenemos datos completos)
+            // b) Canceló el usuario
+        }
+
+        // 4. Verificación final
+        if (this.isDataComplete(context.data)) {
+            return context.data;
+        }
+
+        return null; // Cancelado o incompleto
+    }
+
+    private isDataComplete(data: RouteFlowData): boolean {
+        return !!(data.origin && data.destination && data.transport && data.preference);
+    }
 }
+

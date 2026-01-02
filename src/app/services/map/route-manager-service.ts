@@ -19,7 +19,8 @@ import {geohashForLocation} from 'geofire-common';
 
 // Imports de UI (Dialogs)
 import {RouteDetailsDialog} from '../../view/route/route-details-dialog/routeDetailsDialog';
-import {RouteFlowService, FlowPoint} from './route-flow-service';
+import {RouteFlowService} from './route-flow-service';
+import {FlowPoint} from './route-flow-state';
 import {LoadingRouteDialogComponent} from '../../utils/map-widgets';
 
 // Tipos

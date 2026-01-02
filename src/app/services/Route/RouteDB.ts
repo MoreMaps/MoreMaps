@@ -16,6 +16,8 @@ import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {DBAccessError} from '../../errors/DBAccessError';
+import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
+import {MissingRouteError} from '../../errors/Route/MissingRouteError';
 
 @Injectable({
     providedIn: 'root'
@@ -90,7 +92,59 @@ export class RouteDB implements RouteRepository {
      * @param update Partial con los datos a actualizar.
      */
     async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>): Promise<RouteModel> {
-        throw new Error("Method not implemented.");
+        const oldId = `${origen}-${destino}-${transporte}`;
+        const oldPath = `items/${this.auth.currentUser!.uid}/routes/${oldId}`;
+
+        try {
+            // Obtenemos el doc. actual para tener los datos completos
+            const oldDocRef = doc(this.firestore, oldPath);
+            const snapshot = await getDoc(oldDocRef);
+
+            if (!snapshot.exists()) {
+                throw new MissingRouteError();
+            }
+
+            const currentRoute = RouteModel.fromJSON(snapshot.data());
+
+            // Preparamos el nuevo objeto fusionando los datos
+            const updatedRoute = new RouteModel(
+                currentRoute.geohash_origen,
+                currentRoute.geohash_destino,
+                update.alias ?? currentRoute.alias,
+                update.transporte ?? currentRoute.transporte,
+                currentRoute.nombre_origen,
+                currentRoute.nombre_destino,
+                update.preferencia ?? currentRoute.preferencia,
+                update.distancia ?? currentRoute.distancia,
+                update.tiempo ?? currentRoute.tiempo,
+                currentRoute.pinned, // pinned va por separado, se mantiene
+                update.matricula ?? currentRoute.matricula
+            );
+
+            // Verificamos si cambia el ID (transporte)
+            if (update.transporte && update.transporte !== transporte) {
+                const newId = `${origen}-${destino}-${updatedRoute.transporte}`;
+                const newPath = `items/${this.auth.currentUser!.uid}/routes/${newId}`;
+
+                // Comprobar que no existe ya el nuevo path
+                if (await this.routeExists(origen, destino, updatedRoute.transporte)) throw new RouteAlreadyExistsError();
+
+                // Usamos un batch para que sea una operación atómica
+                const batch = writeBatch(this.firestore);
+                batch.delete(oldDocRef);
+                batch.set(doc(this.firestore, newPath), updatedRoute.toJSON());
+                await batch.commit();
+            } else {
+                // Si el ID no cambia, es un update normal
+                await updateDoc(oldDocRef, update);
+            }
+
+            return updatedRoute;
+        } catch (error: any) {
+            if (error instanceof RouteAlreadyExistsError) throw error;
+            console.error('Error al actualizar ruta en Firebase: ' + error);
+            throw new DBAccessError();
+        }
     }
 
     /**

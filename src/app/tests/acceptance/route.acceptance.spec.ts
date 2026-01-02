@@ -609,6 +609,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
                 rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+            let transporteParaBorrar = rutaC.transporte;
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B" y modifica el modo de
@@ -620,6 +621,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                     rutaC.transporte,
                     {transporte: rutaP.transporte},
                 );
+                transporteParaBorrar = rutaModificada.transporte;
 
                 // THEN
                 // No se lanza ningún error. El transporte de "A-B" se modifica a "A pie".
@@ -628,7 +630,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 expect(rutaModificada.tiempo).toBeGreaterThan(rutaC.tiempo!);
             } finally {
                 // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte);
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, transporteParaBorrar);
             }
         },30000);
 

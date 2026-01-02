@@ -11,6 +11,8 @@ import {USER_REPOSITORY, UserRepository} from '../User/UserRepository';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 import {MissingRouteError} from '../../errors/Route/MissingRouteError';
+import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
+import {MapSearchService} from '../map/map-search-service/map-search.service';
 
 export interface RouteCostResult {
     cost: number;
@@ -23,6 +25,7 @@ export class RouteService {
     private userDb: UserRepository = inject(USER_REPOSITORY);
     private electricityPriceService: ElectricityPriceService = inject(ElectricityPriceService);
     private fuelPriceService: FuelPriceService = inject(FuelPriceService);
+    private mapService: MapSearchService = inject(MapSearchService);
 
     // HU402-403: Obtener coste asociado a ruta
     /**
@@ -213,7 +216,60 @@ export class RouteService {
      * @throws MissingRouteError si la ruta no existe.
      */
     async updateRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, update: Partial<RouteModel>): Promise<RouteModel> {
-        return new RouteModel('', '', '', transporte, '', '', PREFERENCIA.RECOMENDADA, 0, 0);
+        // Comprueba que la sesión está activa
+        if(!await this.userDb.sessionActive()) {
+            throw new SessionNotActiveError();
+        }
+
+        // Comprueba que la ruta original existe
+        if(!await this.routeDb.routeExists(origen, destino, transporte)) {
+            throw new MissingRouteError();
+        }
+
+        // Obtenemos la ruta original ANTES de hacer nada para comparar
+        const rutaOriginal = await this.routeDb.getRoute(origen, destino, transporte);
+
+        // Comprobamos si hay cambios reales
+        const aliasCambia = update.alias && update.alias !== rutaOriginal.alias;
+        const transporteCambia = update.transporte && update.transporte !== rutaOriginal.transporte;
+        const preferenciaCambia = update.preferencia && update.preferencia !== rutaOriginal.preferencia;
+
+        // La matrícula requiere cuidado: puede venir undefined si cambiamos a "A PIE", o ser igual
+        // Comparamos solo si update trae la propiedad (aunque sea undefined)
+        const matriculaCambia = update.matricula !== rutaOriginal.matricula &&
+            (update.matricula !== undefined || rutaOriginal.matricula !== undefined);
+
+        if (!aliasCambia && !transporteCambia && !preferenciaCambia && !matriculaCambia) {
+            // No hay ningún cambio efectivo
+            throw new InvalidDataError();
+        }
+
+        // Si se actualizan el transporte o la preferencia, el tiempo y la distancia pueden cambiar
+        if (transporteCambia || preferenciaCambia) {
+            // Obtenemos la ruta original para sacar los defaults
+            const nuevoTransporte = update.transporte ?? rutaOriginal.transporte;
+            const nuevaPreferencia = update.preferencia ?? rutaOriginal.preferencia;
+
+            // Recalculamos usando el MapService (API Externa)
+            try {
+                const nuevoCalculo = await this.mapService.searchRoute(
+                    origen,
+                    destino,
+                    nuevoTransporte,
+                    nuevaPreferencia,
+                );
+
+                // Actualizamos los campos de cálculo
+                update.distancia = nuevoCalculo.distancia;
+                update.tiempo = nuevoCalculo.tiempo;
+            } catch (e) {
+                if (e instanceof ImpossibleRouteError) throw ImpossibleRouteError;
+                console.error("Error recalculando la ruta al actualizar: ", e);
+                throw new InvalidDataError();
+            }
+        }
+        // Llamada al repositorio
+        return this.routeDb.updateRoute(origen, destino, transporte, update);
     }
 
     // HU503 Fijar ruta

@@ -9,7 +9,7 @@ export interface RouteRepository {
     // Operaciones CRUDE
     createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
                 nombreOrigen: string, nombreDestino: string,
-                preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel>;
+                preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel>;
 
     getRoute(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<RouteModel>;
 
@@ -27,5 +27,7 @@ export interface RouteRepository {
     pinRoute(ruta: RouteModel): Promise<boolean>;
 
     // Métodos auxiliares
-    routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE, matricula?: string): Promise<boolean>;
+    routeExists(origen: Geohash, destino: Geohash, transporte: TIPO_TRANSPORTE): Promise<boolean>;
+    getRoutesUsingVehicle(matricula: string): Promise<RouteModel[]>;
+    getRoutesUsingPOI(geohash: Geohash): Promise<RouteModel[]>;
 }

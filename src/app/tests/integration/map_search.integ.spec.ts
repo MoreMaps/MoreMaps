@@ -9,7 +9,6 @@ import {POISearchModel} from '../../data/POISearchModel';
 import {createMockRepository} from '../helpers/test-helpers';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {Geometry} from 'geojson';
 import {GeohashDecoder} from '../../utils/geohashDecoder';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
 import {geohashForLocation} from 'geofire-common';
@@ -150,12 +149,12 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
         });
     });
 
-    // Corresponde a más de una HU, puesto que utilizan el mismo method
+    // Corresponde a más de una HU, puesto que utilizan la misma función
     describe('HU401, HU404-406: Obtener una ruta entre dos puntos según preferencia', () => {
 
         it('EV01: Obtener ruta válida', async () => {
             // GIVEN
-            const mockRoute: RouteResultModel = new RouteResultModel(rutaC.tiempo, rutaC.distancia, undefined as unknown as Geometry);
+            const mockRoute: RouteResultModel = new RouteResultModel(rutaC.tiempo, rutaC.distancia, undefined as any);
             const coordsOrigen: coords = GeohashDecoder.decodeGeohash(rutaC.geohash_origen);
             const coordsDestino: coords = GeohashDecoder.decodeGeohash(rutaC.geohash_destino);
             mockMapSearchRepository.searchRoute.and.resolveTo(mockRoute);
@@ -183,14 +182,17 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
                 undefined as unknown as TIPO_TRANSPORTE,
                 rutaC.preferencia,
             )).toBeRejectedWith(new WrongParamsError('ruta'));
-
             // THEN
             // Se lanza el error ImpossibleRouteError.
+
+            expect()
         });
 
         it('EI02: Obtener una ruta imposible entre dos puntos.', async () => {
             // GIVEN
             mockMapSearchRepository.searchRoute.and.resolveTo(undefined);
+            const coordsOrigen: coords = GeohashDecoder.decodeGeohash(rutaC.geohash_origen);
+            const coordsDestino: coords = GeohashDecoder.decodeGeohash(geohashAmerica);
 
             // WHEN
             // El usuario pide una ruta en vehículo, seleccionando el POI "A" como origen y las
@@ -201,27 +203,32 @@ describe('Pruebas de integración sobre el servicio de búsqueda de rutas', () =
                 rutaC.transporte,
                 rutaC.preferencia,
             )).toBeRejectedWith(new ImpossibleRouteError());
-
             // THEN
             // Se lanza el error ImpossibleRouteError.
+
+            expect(mockMapSearchRepository.searchRoute).toHaveBeenCalledWith(coordsOrigen, coordsDestino, rutaC.transporte, rutaC.preferencia);
         });
 
-        it('EI03: Obtener una ruta de coste nulo.', async () => {
+        it('EI03: Obtener una ruta de coste inválido.', async () => {
             // GIVEN
-            const mockRoute: RouteResultModel = new RouteResultModel(0, rutaC.distancia, undefined as unknown as Geometry);
+            const mockRoute: RouteResultModel = new RouteResultModel(-1, rutaC.distancia, undefined as any);
+            const coordsOrigen: coords = GeohashDecoder.decodeGeohash(rutaC.geohash_origen);
+            const coordsDestino: coords = GeohashDecoder.decodeGeohash(rutaC.geohash_destino);
             mockMapSearchRepository.searchRoute.and.resolveTo(mockRoute);
 
             // WHEN
-            // El usuario pide una ruta de coste nulo (entre 2 POI muy juntos).
+            // El usuario pide una ruta de coste nulo.
             await expectAsync(mapSearchService.searchRoute(
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
                 rutaC.transporte,
                 rutaC.preferencia,
             )).toBeRejectedWith(new InvalidDataError());
-
             // THEN
             // Se lanza el error InvalidDataError.
+
+            // Se llama a la función "searchRoute" con los parámetros pertinentes
+            expect(mockMapSearchRepository.searchRoute).toHaveBeenCalledWith(coordsOrigen, coordsDestino, rutaC.transporte, rutaC.preferencia);
         });
     });
 });

@@ -6,6 +6,8 @@ import {RouteRepository} from '../../services/Route/RouteRepository';
 import {MapSearchRepository} from '../../services/map/map-search-service/MapSearchRepository';
 import {FuelPriceRepository} from '../../services/fuel-price-service/FuelPriceRepository';
 import {ElectricityPriceRepository} from '../../services/electricity-price-service/ElectricityPriceRepository';
+import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
+import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
 
 export function createMockRepository(type: string): jasmine.SpyObj<any> | null {
     switch (type) {
@@ -72,6 +74,16 @@ export function createMockRepository(type: string): jasmine.SpyObj<any> | null {
         }
         case 'electricityPrice': {
             return jasmine.createSpyObj<ElectricityPriceRepository>('ElectricityPriceRepository', [
+                'getPrice',
+            ]);
+        }
+        case 'fuel': {
+            return jasmine.createSpyObj<FuelPriceService>('FuelPriceService', [
+                'getPrice'
+            ]);
+        }
+        case 'electricity': {
+            return jasmine.createSpyObj<ElectricityPriceService>('ElectricityPriceServicio', [
                 'getPrice',
             ]);
         }

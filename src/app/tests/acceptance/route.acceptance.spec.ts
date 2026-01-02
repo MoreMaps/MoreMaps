@@ -3,22 +3,12 @@ import {appConfig} from '../../app.config';
 import {geohashForLocation} from 'geofire-common';
 import {Auth} from '@angular/fire/auth';
 import {POI_TEST_DATA, ROUTE_TEST_DATA, USER_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
-import {USER_REPOSITORY} from '../../services/User/UserRepository';
 import {UserService} from '../../services/User/user.service';
-import {UserDB} from '../../services/User/UserDB';
-import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
-import {VehicleDB} from '../../services/Vehicle/VehicleDB';
-import {POI_REPOSITORY} from '../../services/POI/POIRepository';
-import {POIDB} from '../../services/POI/POIDB';
 import {POIService} from '../../services/POI/poi.service';
-import {MAP_SEARCH_REPOSITORY} from '../../services/map/map-search-service/MapSearchRepository';
-import {MapSearchAPI} from '../../services/map/map-search-service/MapSearchAPI';
 import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
 import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {RouteService} from '../../services/Route/route.service';
-import {ROUTE_REPOSITORY} from '../../services/Route/RouteRepository';
-import {RouteDB} from '../../services/Route/RouteDB';
 import {FUEL_TYPE} from '../../data/VehicleModel';
 import {WrongParamsError} from '../../errors/WrongParamsError';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
@@ -26,15 +16,6 @@ import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsErro
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {InvalidDataError} from '../../errors/InvalidDataError';
 import {MissingRouteError} from '../../errors/Route/MissingRouteError';
-import {
-    ELECTRICITY_PRICE_REPOSITORY,
-    ELECTRICITY_PRICE_SOURCE
-} from '../../services/electricity-price-service/ElectricityPriceRepository';
-import {ElectricityPriceCache} from '../../services/electricity-price-service/ElectricityPriceCache';
-import {ElectricityPriceAPI} from '../../services/electricity-price-service/ElectricityPriceAPI';
-import {FUEL_PRICE_REPOSITORY, FUEL_PRICE_SOURCE} from '../../services/fuel-price-service/FuelPriceRepository';
-import {FuelPriceCache} from '../../services/fuel-price-service/FuelPriceCache';
-import {FuelPriceAPI} from '../../services/fuel-price-service/FuelPriceAPI';
 
 
 // Pruebas de aceptación sobre rutas
@@ -52,12 +33,12 @@ describe('Pruebas de aceptación sobre rutas', () => {
     let rutaABCBuscada: RouteResultModel;
 
     // Datos de prueba
-    const datosRamon = USER_TEST_DATA[0];
+    const ramon = USER_TEST_DATA[0];
 
-    const datosPoiA = POI_TEST_DATA[0];
-    const datosPoiB = POI_TEST_DATA[1];
+    const poiA = POI_TEST_DATA[0];
+    const poiB = POI_TEST_DATA[1];
 
-    const datosFord = VEHICLE_TEST_DATA[0];
+    const ford = VEHICLE_TEST_DATA[0];
 
     // Geohash en América. Sirve para crear rutas imposibles.
     const geohashAmerica = geohashForLocation([12.266670, -68.333330], 7);
@@ -67,22 +48,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
 
     beforeAll(async () => {
         await TestBed.configureTestingModule({
-            providers: [
-                UserService,
-                POIService,
-                MapSearchService,
-                VehicleService,
-                RouteService,
-                {provide: USER_REPOSITORY, useClass: UserDB},
-                {provide: POI_REPOSITORY, useClass: POIDB},
-                {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
-                {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
-                {provide: ROUTE_REPOSITORY, useClass: RouteDB},
-                {provide: ELECTRICITY_PRICE_REPOSITORY, useClass: ElectricityPriceCache},
-                {provide: ELECTRICITY_PRICE_SOURCE, useClass: ElectricityPriceAPI},
-                {provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceCache},
-                {provide: FUEL_PRICE_SOURCE, useClass: FuelPriceAPI},
-                appConfig.providers],
+            providers: [appConfig.providers],
             teardown: {destroyAfterEach: false}
         }).compileComponents();
 
@@ -94,29 +60,32 @@ describe('Pruebas de aceptación sobre rutas', () => {
         mapSearchService = TestBed.inject(MapSearchService);
         auth = TestBed.inject(Auth);
 
-        // Iniciar sesión
-        await userService.login(datosRamon.email, datosRamon.pwd);
-
+        // Iniciar sesión con ramón para todos los test
+        // Puede que la sesión haya quedado activa...
+        try {
+            await userService.login(ramon.email, ramon.pwd);
+        }
+        catch (error) {}
 
         // Borrar todas las rutas del usuario (si hubiere)
         await routeService.clear();
 
         // Registrar Vehículo "Ford Fiesta"
         try {
-            await vehicleService.createVehicle(datosFord);
+            await vehicleService.createVehicle(ford);
         } catch (e) {
             console.info("Error al crear vehículo: " + e);
         }
 
         // Registrar POI A y POI B usando POIService
         try {
-            await poiService.createPOI(datosPoiA);
+            await poiService.createPOI(poiA);
         } catch (e) {
             console.info("Error al crear POI A: " + e);
         }
 
         try {
-            await poiService.createPOI(datosPoiB);
+            await poiService.createPOI(poiB);
         } catch (e) {
             console.error("Error al crear POI B: " + e);
         }
@@ -130,7 +99,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
         // Borrar POI B de la BD
         // Evitamos borrar POI A y Transporte Fiesta debido a que son usados en otros test
         try {
-            await poiService.deletePOI(datosPoiB.geohash);
+            await poiService.deletePOI(poiB.geohash);
         } catch (e) {
             console.error("Error al borrar POI B: " + e);
         }
@@ -196,7 +165,6 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 undefined as any,
                 rutaC.preferencia
             )).toBeRejectedWith(new WrongParamsError('ruta'));
-
             // THEN
             // Se lanza el error WrongRouteParamsError.
         }, 30000);
@@ -238,7 +206,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // WHEN
             // El usuario pide el coste (precio) de la ruta "A-B".
             const coste = await routeService.getRouteCost(foundRoute, rutaC.transporte,
-                datosFord.consumoMedio, datosFord.tipoCombustible as FUEL_TYPE);
+                ford.consumoMedio, ford.tipoCombustible as FUEL_TYPE);
 
             // THEN
             // No se lanza ningún error. Se devuelve el coste (en €) de la ruta (superior a 0).
@@ -255,13 +223,11 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // WHEN
             // El usuario pide el coste (precio) de una ruta inválida.
             const falseResult = new RouteResultModel(-1, -1, undefined as any);
-
             await expectAsync(routeService.getRouteCost(falseResult, TIPO_TRANSPORTE.VEHICULO,
-                datosFord.consumoMedio, datosFord.tipoCombustible as FUEL_TYPE ))
+                ford.consumoMedio, ford.tipoCombustible as FUEL_TYPE))
                 .toBeRejectedWith(new InvalidDataError());
-
             // THEN
-            // Se lanza el error MissingRouteError.
+            // Se lanza el error WrongParamsError.
         }, 30000);
     });
 
@@ -298,12 +264,10 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // WHEN
             // El usuario pide el coste (kCal) de una ruta inválida.
             const falseResult = new RouteResultModel(-1, -1, undefined as any);
-
             await expectAsync(routeService.getRouteCost(falseResult, TIPO_TRANSPORTE.A_PIE))
                 .toBeRejectedWith(new InvalidDataError());
-
             // THEN
-            // Se lanza el error InvalidDataError.
+            // Se lanza el error WrongParamsError.
         }, 30000);
     });
 
@@ -351,7 +315,6 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 PREFERENCIA.CORTA
             )).toBeRejectedWith(new ImpossibleRouteError());
-
             // THEN
             // Se lanza el error ImpossibleRouteError.
         }, 30000);
@@ -374,7 +337,6 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 PREFERENCIA.RAPIDA
             );
-
             // THEN
             // No se lanza ningún error. Se devuelve la ruta correspondiente.
             expect(ruta).toBeDefined();
@@ -398,7 +360,6 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 rutaC.preferencia
             )).toBeRejectedWith(new ImpossibleRouteError());
-
             // THEN
             // Se lanza el error ImpossibleRouteError.
         }, 30000);
@@ -483,7 +444,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
 
             // WHEN
             // El usuario consulta su lista de rutas registradas.
@@ -509,7 +470,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B".
@@ -582,8 +543,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // No se lanza ningún error. Se elimina la ruta.
             expect(resultado).toBeTrue();
 
-            // const list = await mapSearchService.getRouteList();
-            // expect(list.length).toBe(0);
+            const list = await routeService.getRouteList();
+            expect(list.length).toBe(0);
         }, 30000);
 
         it('HU410-EI03. Eliminar una ruta no registrada.', async () => {
@@ -598,7 +559,6 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 rutaC.matricula
             )).toBeRejectedWith(new MissingRouteError());
-
             // THEN
             // Se lanza el error MissingRouteError.
         }, 30000);
@@ -660,7 +620,6 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 {transporte: rutaP.transporte}
             )).toBeRejectedWith(new MissingRouteError());
-
             // THEN
             // Se lanza el error MissingRouteError.
         },30000);
@@ -670,7 +629,6 @@ describe('Pruebas de aceptación sobre rutas', () => {
 
         it('HU503-EV01: Fijar una ruta registrada', async () => {
             // GIVEN
-            // El usuario ramon ha iniciado sesión
             // Lista de rutas registradas → ["A-B (a pie)", "A-B (en coche)"].
 
             // Se registra la ruta "A-B" en coche.
@@ -726,9 +684,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.distancia,
                 rutaC.tiempo,
                 ))).toBeRejectedWith(new MissingRouteError());
-
             // THEN
-            // Se lanza el error MissingPOIError
+            // Se lanza el error MissingRouteError
         });
     });
 
@@ -748,7 +705,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
 
             // WHEN
             // El usuario "ramon" vuelve a iniciar sesión
-            await userService.login(datosRamon.email, datosRamon.pwd);
+            await userService.login(ramon.email, ramon.pwd);
 
             // THEN
             // Los datos de rutas de la BD son los mismos que los introducidos previamente

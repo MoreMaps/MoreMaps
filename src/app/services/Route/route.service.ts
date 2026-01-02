@@ -11,8 +11,7 @@ import {USER_REPOSITORY, UserRepository} from '../User/UserRepository';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 import {MissingRouteError} from '../../errors/Route/MissingRouteError';
-import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
-import {MapSearchService} from '../map/map-search-service/map-search.service';
+import {WrongParamsError} from '../../errors/WrongParamsError';
 
 export interface RouteCostResult {
     cost: number;
@@ -60,9 +59,8 @@ export class RouteService {
 
             case TIPO_TRANSPORTE.VEHICULO:
                 // Si faltan datos, se devuelve 0
-                if (consumoMedio === undefined || consumoMedio < 0 || !tipoCombustible) {
-                    console.error('Faltan datos para calcular el coste del vehículo.');
-                    throw new InvalidDataError();
+                if (consumoMedio === undefined || consumoMedio < 0 || !tipoCombustible ) {
+                    throw new WrongParamsError('ruta para calcular el coste del vehículo');
                 }
 
                 const cantidadEnergia = (distanciaKm / 100) * consumoMedio; // en l o kW
@@ -106,7 +104,7 @@ export class RouteService {
      */
     async createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
                       nombreOrigen: string, nombreDestino: string,
-                      preferencia: PREFERENCIA, modelo?: RouteResultModel, matricula?: string): Promise<RouteModel> {
+                      preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
             throw new SessionNotActiveError();

@@ -92,8 +92,8 @@ export class MapSearchService {
         if (!ruta) {
             throw new ImpossibleRouteError();
         }
-        // Si la distancia o el tiempo son cero o negativos, la ruta no es válida porque no tiene coste alguno.
-        if (ruta.distancia <= 0 || ruta.tiempo <= 0) {
+        // Si la distancia o el tiempo son negativos, la ruta no es válida porque su coste tampoco lo es.
+        if (ruta.distancia < 0 || ruta.tiempo < 0) {
             throw new InvalidDataError();
         }
         return ruta;

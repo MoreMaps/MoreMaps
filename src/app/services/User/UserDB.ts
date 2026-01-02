@@ -7,9 +7,21 @@ import {
     signInWithEmailAndPassword,
     updateProfile, validatePassword
 } from '@angular/fire/auth';
-import {collection, deleteDoc, doc, Firestore, getDoc, getDocs, query, setDoc, where} from '@angular/fire/firestore';
+import {
+    collection,
+    deleteDoc,
+    doc,
+    Firestore,
+    getDoc,
+    getDocs,
+    query,
+    setDoc,
+    where,
+    writeBatch
+} from '@angular/fire/firestore';
 import {DBAccessError} from '../../errors/DBAccessError';
 import {ReauthNecessaryError} from '../../errors/User/ReauthNecessaryError';
+import {routes} from '../../app.routes';
 
 @Injectable({
     providedIn: 'root'
@@ -52,15 +64,28 @@ export class UserDB implements UserRepository {
      */
     async deleteAuthUser(): Promise<boolean> {
         const user = this.auth.currentUser;
+        const collections = ['pois', 'vehicles', 'routes'];
 
         try {
-            await deleteUser(user!);
+            // Borra los items del usuario
+            // Una vez las colecciones de items están vacías, su borrado es automático
+            const batch = writeBatch(this.firestore);
+            for (const ref of collections) {
+                const querySnap = await getDocs(query(collection(this.firestore, `items/${user?.uid}/${ref}`)));
+                for (const docSnap of querySnap.docs) {
+                    batch.delete(docSnap.ref);
+                }
+            }
+
+            // Fin de la transacción
+            await batch.commit();
 
             // Borrar de Firestore
             const userDocRef = doc(this.firestore, `users/${user?.uid}`);
             await deleteDoc(userDocRef);
 
             // Borra de Auth y cierra la sesión automáticamente
+            await deleteUser(user!);
             return true;
         }
         catch (error: any) {

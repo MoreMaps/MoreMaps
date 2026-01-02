@@ -8,9 +8,10 @@ import {
     Firestore,
     getDoc,
     getDocs,
+    or,
     query,
-    setDoc,
-    updateDoc, writeBatch
+    setDoc, updateDoc,
+    where, writeBatch
 } from '@angular/fire/firestore';
 import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
@@ -30,10 +31,10 @@ export class RouteDB implements RouteRepository {
      * Crea una ruta nueva.
      * @param origen Geohash del POI de origen.
      * @param destino Geohash del POI de destino.
-     * @param alias Alias de la Ruta.
+     * @param alias Alias de la ruta.
      * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param nombreOrigen Nombre del POI de origen.
-     * @param nombreDestino Nombre del POI de destino.
+     * @param nombreOrigen Topónimo del POI de origen.
+     * @param nombreDestino Topónimo del POI de destino.
      * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.)
      * @param modelo Resultado de la búsqueda (duración, distancia de la ruta)
      * @param matricula Matrícula del vehículo (opcional)
@@ -49,15 +50,15 @@ export class RouteDB implements RouteRepository {
             const routeDocRef = doc(this.firestore, path);
 
             // Crear nuevo RouteModel
-            const route = new RouteModel(origen, destino, alias, transporte,  nombreOrigen, nombreDestino,
-                preferencia, modelo.distancia, modelo.tiempo, false, matricula);
+            const route = new RouteModel(origen, destino, alias, transporte, nombreOrigen, nombreDestino, preferencia, modelo!.distancia,
+                modelo!.tiempo, false, matricula);
 
             await setDoc(routeDocRef, route.toJSON());
             return route;
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
+            console.error('ROUTE DB Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -200,6 +201,7 @@ export class RouteDB implements RouteRepository {
         }
     }
 
+
     /**
      * Elimina una ruta concreta.
      * @param origen Geohash del POI de origen.
@@ -229,8 +231,7 @@ export class RouteDB implements RouteRepository {
      * Borra todas las rutas del usuario actual de forma atómica.
      */
     async clear(): Promise<boolean> {
-        const path = `items/${this.auth.currentUser!.uid}/routes`;
-        const routes = await getDocs(query(collection(this.firestore, path)));
+        const routes = await getDocs(query(collection(this.firestore, `items/${this.auth.currentUser?.uid}/vehicles`)));
 
         try {
             // Transacción
@@ -250,6 +251,7 @@ export class RouteDB implements RouteRepository {
         }
     }
 
+
     /**
      * Comprueba si existe una ruta como la que se va a guardar
      * @param origen Geohash del POI de origen.
@@ -264,5 +266,49 @@ export class RouteDB implements RouteRepository {
         const docRef = doc(this.firestore, path);
         const snap = await getDoc(docRef);
         return snap.exists();
+    }
+
+    /**
+     * Devuelve las rutas que utilizan un POI determinado.
+     * @param geohash El Geohash del POI (origen o destino) elegido
+     */
+    async getRoutesUsingPOI(geohash: Geohash): Promise<RouteModel[]> {
+        // Obtener todas las rutas cuyo origen o destino sea el geohash del POI escogido
+        const routesWithPOI = query(
+            collection(this.firestore, `items/${this.auth.currentUser!.uid}/routes`),
+            or(where('geohash_origen', '==', geohash), where('geohash_destino', '==', geohash))
+        );
+        const querySnapshot = await getDocs(routesWithPOI);
+
+        // Mapear a lista de RouteModel
+        let list: RouteModel[] = [];
+        if (!querySnapshot.empty) {
+            list = querySnapshot.docs.map(doc => {
+                return RouteModel.fromJSON(doc.data());
+            });
+        }
+        return list;
+    }
+
+    /**
+     * Devuelve las rutas que utilizan un vehículo determinado.
+     * @param matricula La matrícula elegida
+     */
+    async getRoutesUsingVehicle(matricula: string): Promise<RouteModel[]> {
+        // Obtener todas las rutas cuyo vehículo
+        const routesWithVehicle = query(
+            collection(this.firestore, `items/${this.auth.currentUser!.uid}/routes`),
+            where('matricula', '==', matricula)
+        );
+        const querySnapshot = await getDocs(routesWithVehicle);
+
+        // Mapear a lista de RouteModel
+        let list: RouteModel[] = [];
+        if (!querySnapshot.empty) {
+            list = querySnapshot.docs.map(doc => {
+                return RouteModel.fromJSON(doc.data());
+            });
+        }
+        return list;
     }
 }

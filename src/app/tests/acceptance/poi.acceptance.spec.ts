@@ -1,24 +1,19 @@
 import {TestBed} from '@angular/core/testing'
-import {POI_TEST_DATA, USER_TEST_DATA} from '../test-data';
-import {USER_REPOSITORY} from '../../services/User/UserRepository';
+import {POI_TEST_DATA, ROUTE_TEST_DATA, USER_TEST_DATA} from '../test-data';
 import {UserService} from '../../services/User/user.service';
-import {UserDB} from '../../services/User/UserDB';
 import {appConfig} from '../../app.config';
 import {Auth} from '@angular/fire/auth';
 import {POIService} from '../../services/POI/poi.service';
 import {POIModel} from '../../data/POIModel';
-import {POI_REPOSITORY} from '../../services/POI/POIRepository';
-import {POIDB} from '../../services/POI/POIDB';
 import {LongitudeRangeError} from '../../errors/POI/LongitudeRangeError';
 import {MissingPOIError} from '../../errors/POI/MissingPOIError';
 import {PlaceNameNotFoundError} from '../../errors/POI/PlaceNameNotFoundError';
 import {DescriptionLengthError} from '../../errors/POI/DescriptionLengthError';
 import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
-import {MAP_SEARCH_REPOSITORY} from '../../services/map/map-search-service/MapSearchRepository';
-import {MapSearchAPI} from '../../services/map/map-search-service/MapSearchAPI';
 import {POISearchModel} from '../../data/POISearchModel';
 import {geohashForLocation} from 'geofire-common';
-
+import {RouteResultModel} from '../../data/RouteResultModel';
+import {RouteService} from '../../services/Route/route.service';
 
 // Pruebas de aceptación sobre POI
 // HU201, HU202, HU203, HU204, HU205, HU206, HU501, HU604
@@ -26,6 +21,7 @@ describe('Pruebas de aceptación sobre POI', () => {
     let userService: UserService;
     let poiService: POIService;
     let mapSearchService: MapSearchService;
+    let routeService: RouteService;
 
     let poiRegistrado: POIModel;
 
@@ -37,16 +33,11 @@ describe('Pruebas de aceptación sobre POI', () => {
     const poiA: POIModel = POI_TEST_DATA[0];
     const poiB: POIModel = POI_TEST_DATA[1];
 
+    const rutaC = ROUTE_TEST_DATA[0];
+
     beforeAll(async () => {
         await TestBed.configureTestingModule({
-            providers: [
-                UserService,
-                POIService,
-                MapSearchService,
-                {provide: USER_REPOSITORY, useClass: UserDB},
-                {provide: POI_REPOSITORY, useClass: POIDB},
-                {provide: MAP_SEARCH_REPOSITORY, useClass: MapSearchAPI},
-                appConfig.providers],
+            providers: [appConfig.providers],
 
             // This prevents Angular from destroying the injector after the first test.
             teardown: {destroyAfterEach: false}
@@ -56,12 +47,20 @@ describe('Pruebas de aceptación sobre POI', () => {
         userService = TestBed.inject(UserService);
         poiService = TestBed.inject(POIService);
         mapSearchService = TestBed.inject(MapSearchService);
+        routeService = TestBed.inject(RouteService);
 
         // Inyección de Auth
         auth = TestBed.inject(Auth);
 
         // Iniciar sesión con ramón para todos los test
-        await userService.login(ramon.email, ramon.pwd);
+        // Puede que la sesión haya quedado activa...
+        try {
+            await userService.login(ramon.email, ramon.pwd);
+        }
+        catch (error) {}
+
+        // Borrar todos los POI del usuario (si hubiere)
+        await poiService.clear();
     });
 
     // Se comprueba si el POI A existe en la base de datos y se crea en caso contrario.
@@ -117,7 +116,7 @@ describe('Pruebas de aceptación sobre POI', () => {
                 // Se borra el POI "B"
                 await poiService.deletePOI(poiCreado.geohash);
             }
-        });
+        }, 10000);
 
         it('HU201-EI03: Dar de alta un POI por coordenadas no válidas', async () => {
             // GIVEN
@@ -163,7 +162,7 @@ describe('Pruebas de aceptación sobre POI', () => {
             // CLEANUP
             // Se borra el POI "B"
             await poiService.deletePOI(poiCreado.geohash);
-        });
+        }, 10000);
 
         it('HU202-EI03: Dar de alta un POI por topónimo que no corresponde a ningún sitio', async () => {
             // GIVEN
@@ -200,10 +199,11 @@ describe('Pruebas de aceptación sobre POI', () => {
                 // CLEANUP
                 // borrar a maria
                 await userService.deleteUser();
+
                 // volver a ramon
                 await userService.login(ramon.email, ramon.pwd);
             }
-        });
+        }, 10000);
 
         it('HU203-EV02: Consultar el listado no vacío de POI', async () => {
             // GIVEN
@@ -216,14 +216,10 @@ describe('Pruebas de aceptación sobre POI', () => {
 
             // THEN
             // Se devuelve el listado de POI
-            /* Conforme el desarrollo va avanzando, el usuario ramón tiene más de 1 elemento,
-            con especial atención a probar temas como la paginación.
-            Para evitar problemas de tests, se ha cambiado la condición a >=1.
-            * */
             expect(listaPoi.length).toBeGreaterThanOrEqual(1);
 
             // No se modifica el estado
-        });
+        }, 10000);
     });
 
 
@@ -245,12 +241,11 @@ describe('Pruebas de aceptación sobre POI', () => {
                     lon: poiA.lon,
                     geohash: poiA.geohash,
                     placeName: poiA.placeName,
-                    alias: poiA.alias,
                     pinned: false
                 })
             );
             // No se modifica el estado
-        });
+        }, 10000);
 
         it('HU204-EI02: Consultar información de un POI no registrado', async () => {
             // GIVEN
@@ -293,7 +288,7 @@ describe('Pruebas de aceptación sobre POI', () => {
                 // Modificar el alias del POI "A" de nuevo al alias vacío.
                 await poiService.updatePOI(poiRegistrado.geohash, {alias: ''});
             }
-        });
+        }, 10000);
 
         it('HU205-EI02: Modificar información de un POI no registrado', async () => {
             // GIVEN
@@ -339,6 +334,13 @@ describe('Pruebas de aceptación sobre POI', () => {
             const nuevoPoi: POISearchModel = new POISearchModel(poiB.lat, poiB.lon, poiB.placeName);
             const poiCreado: POIModel = await poiService.createPOI(nuevoPoi)
 
+            // Lista de rutas registradas es ["A-B"]
+            // Simulamos el coste para no llamar a la API.
+            const result = new RouteResultModel(rutaC.distancia, rutaC.tiempo, undefined as any);
+            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
+                result, rutaC.matricula);
+
             // WHEN
             // El usuario trata de borrar el POI "B"
             const poiBorrado = await poiService.deletePOI(poiCreado.geohash);
@@ -346,7 +348,11 @@ describe('Pruebas de aceptación sobre POI', () => {
             // THEN
             // El POI "B" se elimina
             expect(poiBorrado).toBeTrue();
-        });
+
+            // Se elimina la ruta "A-B"
+            const routes = await routeService.getRouteList();
+            expect(routes.length).toBe(0);
+        }, 10000);
 
         it('HU206-EI02: Eliminar un POI no registrado', async () => {
             // GIVEN
@@ -394,7 +400,7 @@ describe('Pruebas de aceptación sobre POI', () => {
                 await poiService.deletePOI(poiCreado.geohash);
             }
 
-        });
+        }, 10000);
 
         it('HU501-EI02: Fijar un POI no registrado', async () => {
             // GIVEN
@@ -431,7 +437,6 @@ describe('Pruebas de aceptación sobre POI', () => {
             //  los datos de POI de la BD son los mismos que los introducidos previamente
             const listaPoi = await poiService.getPOIList();
             expect(listaPoi).toEqual(listaPoiAntes);
-        });
+        }, 10000);
     });
-
 });

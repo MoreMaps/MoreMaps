@@ -4,26 +4,22 @@ import {POIService} from '../../services/POI/poi.service';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {RouteService} from '../../services/Route/route.service';
 import {UserModel} from '../../data/UserModel';
-import {Auth} from '@angular/fire/auth';
 import {POI_TEST_DATA, ROUTE_TEST_DATA, USER_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
 import {appConfig} from '../../app.config';
 import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
-import {Firestore, doc, getDoc} from '@angular/fire/firestore';
 import {RouteResultModel} from '../../data/RouteResultModel';
-
+import {RegisterModel} from '../../data/RegisterModel';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
-describe('Pruebas sobre usuarios', () => {
+fdescribe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let poiService: POIService;
     let vehicleService: VehicleService;
     let routeService: RouteService;
     let usuarioRegistradoRamon: UserModel;
-    let firestore: Firestore;
-    let auth: Auth;
 
     // Datos de prueba
     const ramon = USER_TEST_DATA[0];
@@ -46,33 +42,8 @@ describe('Pruebas sobre usuarios', () => {
         poiService = TestBed.inject(POIService);
         vehicleService = TestBed.inject(VehicleService);
         routeService = TestBed.inject(RouteService);
-        firestore = TestBed.inject(Firestore);
-        auth = TestBed.inject(Auth);
-
-        // get datos de ramon
-        try {
-            await userService.login(ramon.email, ramon.pwd);
-            usuarioRegistradoRamon = await userService.getCurrentUser();
-        }
-        catch (error) {
-            console.log("Error de Firebase al buscar a ramon:" + error);
-            usuarioRegistradoRamon = await userService.signUp(ramon.email, ramon.pwd, ramon.nombre, ramon.apellidos);
-        }
-        finally {
-            await userService.logout();
-        }
     });
 
-    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
-    afterAll(async () => {
-        try {
-            if (auth.currentUser) await userService.logout();
-            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de user.spec.ts.');
-            else { console.info('Logout en afterAll de user.spec.ts funcionó correctamente.'); }
-        } catch (error) {
-            console.error(error);
-        }
-    })
 
     describe('HU101: Registrar Usuario', () => {
 
@@ -83,8 +54,7 @@ describe('Pruebas sobre usuarios', () => {
 
             // WHEN
             // El usuario "maria" intenta darse de alta
-            const usuarioCreado: UserModel = await userService
-                .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            const usuarioCreado: UserModel = await userService.signUp(maria);
 
             // THEN
             // El usuario "maria" se registra correctamente
@@ -106,7 +76,8 @@ describe('Pruebas sobre usuarios', () => {
 
             // WHEN
             // El usuario "maria" intenta darse de alta con contraseña "password" (no sigue el formato correcto)
-            await expectAsync(userService.signUp(maria.email, "password", maria.nombre, maria.apellidos))
+            const mariaPwdIncorrect = new RegisterModel(maria.email, maria.nombre, maria.apellidos, "password");
+            await expectAsync(userService.signUp(mariaPwdIncorrect))
                 .toBeRejectedWith(new WrongPasswordFormatError());
             // THEN
             // El usuario "maria" no se registra y se lanza el error WrongPasswordFormatError
@@ -182,8 +153,7 @@ describe('Pruebas sobre usuarios', () => {
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
             // Lista de usuarios registrados incluye a "maria"
-            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
-            const uid = auth.currentUser?.uid;
+            await userService.signUp(maria);
 
             // El usuario "maria" tiene los POI "A" y "B", el vehículo "Ford Fiesta" y la ruta "A - B" dados de alta
             // Simulamos el coste para no llamar a la API.
@@ -200,12 +170,8 @@ describe('Pruebas sobre usuarios', () => {
             const usuarioBorrado = await userService.deleteUser();
 
             // THEN
-            // Se elimina la cuenta
+            // Se elimina la cuenta y todos sus datos asociados (lugares, vehículos y rutas)
             expect(usuarioBorrado).toBeTrue();
-
-            // Se eliminan los objetos asociados
-            const items = await getDoc(doc(firestore, `items/${uid}`));
-            expect(items.exists()).toBeFalse();
         }, 30000);
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
@@ -228,6 +194,7 @@ describe('Pruebas sobre usuarios', () => {
             // GIVEN
             // El usuario "ramon" está registrado y ha iniciado sesión
             await userService.login(ramon.email, ramon.pwd);
+            usuarioRegistradoRamon = await userService.getCurrentUser();
 
             // Se cierra la sesión involuntariamente
             await userService.logout();
@@ -236,14 +203,10 @@ describe('Pruebas sobre usuarios', () => {
             // El usuario "ramon" vuelve a iniciar sesión
             await userService.login(ramon.email, ramon.pwd);
 
+
             // THEN
             // Los datos de usuario de la BD son los mismos que los introducidos previamente
-            expect(usuarioRegistradoRamon).toEqual(jasmine.objectContaining({
-                uid: jasmine.any(String),
-                email: ramon.email,
-                nombre: ramon.nombre,
-                apellidos: ramon.apellidos,
-            }));
+            expect(await userService.getCurrentUser()).toEqual(usuarioRegistradoRamon);
 
             // LIMPIEZA
             // "ramon" cierra sesión

@@ -1,4 +1,3 @@
-// TODO: esto no se debería usar?
 export class RegisterModel {
     email: string;
     nombre: string;

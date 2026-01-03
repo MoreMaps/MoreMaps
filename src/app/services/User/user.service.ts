@@ -8,6 +8,7 @@ import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongParamsError} from '../../errors/WrongParamsError';
 import {SessionAlreadyActiveError} from '../../errors/User/SessionAlreadyActiveError';
 import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
+import {RegisterModel} from '../../data/RegisterModel';
 
 @Injectable({providedIn: 'root'})
 export class UserService {
@@ -19,25 +20,26 @@ export class UserService {
      * @throws UserAlreadyExistsError si ya existe el usuario.
      * @throws WrongPasswordFormatError si la contraseña no cumple con los criterios mínimos.
      */
-    // TODO: se debería utilizar RegisterModel??
-    async signUp(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
+    async signUp(model: RegisterModel): Promise<UserModel> {
+        console.info('porfa funsiona: ' + model.nombre, model.apellidos, model.email, model.pwd);
+
         // Comprobar si hay algún parámetro vacío
-        if (!email || !pwd || !nombre || !apellidos) {
+        if (!model.email || !model.pwd || !model.nombre || !model.apellidos) {
             throw new WrongParamsError('usuario');
         }
 
         // Comprobar si el usuario existe
-        if (await this.userDb.userExists(email)) {
+        if (await this.userDb.userExists(model.email)) {
             throw new UserAlreadyExistsError();
         }
 
         // Comprobar si las credenciales son válidas
-        if (!await this.userDb.passwordValid(pwd)) {
+        if (!await this.userDb.passwordValid(model.pwd)) {
             throw new WrongPasswordFormatError();
         }
 
         // Crea un nuevo usuario
-        return await this.userDb.createUser(email, pwd, nombre, apellidos);
+        return await this.userDb.createUser(model.email, model.pwd, model.nombre, model.apellidos);
     }
 
     // HU102 Iniciar sesión

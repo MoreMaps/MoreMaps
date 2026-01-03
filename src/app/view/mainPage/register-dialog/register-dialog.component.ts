@@ -102,17 +102,17 @@ export class RegisterDialogComponent {
             this.errorMessage = '';
             this.loading = true;
 
-            const registerData: RegisterModel = {
-                email: this.registerForm.value.email,
-                pwd: this.registerForm.value.password,
-                nombre: this.registerForm.value.firstName,
-                apellidos: this.registerForm.value.lastName
-            };
+            const registerData = new RegisterModel(
+                this.registerForm.value.email,
+                this.registerForm.value.firstName,
+                this.registerForm.value.lastName,
+                this.registerForm.value.password,
+            );
 
+            const userModel = await this.userService.signUp(registerData);
+
+            // Registrar usuario en Firebase
             try {
-                // Registrar usuario en Firebase
-                const userModel = await this.userService.signUp(registerData.email,
-                    registerData.pwd, registerData.nombre, registerData.apellidos);
                 this.loading = false;
                 this.dialogRef.close();
                 if (userModel && userModel.uid !== '') {

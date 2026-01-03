@@ -21,7 +21,6 @@ import {
 } from '@angular/fire/firestore';
 import {DBAccessError} from '../../errors/DBAccessError';
 import {ReauthNecessaryError} from '../../errors/User/ReauthNecessaryError';
-import {routes} from '../../app.routes';
 
 @Injectable({
     providedIn: 'root'
@@ -86,7 +85,10 @@ export class UserDB implements UserRepository {
 
             // Borra de Auth y cierra la sesión automáticamente
             await deleteUser(user!);
-            return true;
+
+            // Comprobamos que se hayan borrado todos los items de usuario
+            const items = await getDoc(doc(this.firestore, `items/${user?.uid}`));
+            return !items.exists();
         }
         catch (error: any) {
             if (error.code === 'auth/requires-recent-login') {

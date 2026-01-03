@@ -8,14 +8,14 @@ import {PREFERENCIA, TIPO_TRANSPORTE} from './RouteModel';
  * @param matricula Opcional: solo debe estar si tipoTransporte es vehículo
  * */
 export class PreferenceModel {
-    // HU504: Modificar transporte por defecto
+    // HU504A: Modificar transporte por defecto
     tipoTransporte?: TIPO_TRANSPORTE;
     matricula?: string;
 
-    // HU505: Modificar preferencia de ruta por defecto
+    // HU505B: Modificar preferencia de ruta por defecto
     tipoRuta?: PREFERENCIA;
 
-    // HU506: Elegir información mostrada
+    // HU506C: Elegir información mostrada
     costeCombustible: boolean;
     costeCalorias: boolean;
 

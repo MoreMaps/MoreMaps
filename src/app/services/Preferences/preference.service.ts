@@ -18,7 +18,7 @@ export class PreferenceService {
         return new PreferenceModel(false, false)
     }
 
-    // HU504, HU505, HU506
+    // HU504
     /** Modifica las preferencias del usuario y guarda el resultado final en localStorage.
      * Crea el objeto PreferenceModel si no existe previamente.
      * @returns Promise con true si se han modificado correctamente los datos.

@@ -12,7 +12,7 @@ import {InvalidRouteTypeError} from '../../errors/Route/InvalidRouteTypeError';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 
 // Pruebas de aceptación sobre preferencias
-// HU504, HU505, HU506, HU602
+// HU504A, HU504B, HU504C, HU602
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 fdescribe('Pruebas de aceptación sobre preferencias', () => {
 
@@ -53,7 +53,7 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
             console.info('No se ha podido iniciar sesión con el usuario "ramon": ' + error);
         }
 
-        // Leer los datos del vehículo para los test de la HU504
+        // Leer los datos del vehículo para los test de la HU504A
         // Registrar vehículo inicial "Ford Fiesta" para tener estado base en algunos tests
         try {
             await vehicleService.readVehicle(ford.matricula);
@@ -86,9 +86,9 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
 
     // Las pruebas empiezan a partir de AQUÍ
 
-    describe('HU504: Cambiar preferencias de tipo de transporte', () => {
+    describe('HU504A: Cambiar preferencias de tipo de transporte', () => {
 
-        it('HU504-EV01: Establecer vehículo como transporte por defecto', async () => {
+        it('HU504A-EV01: Establecer vehículo como transporte por defecto', async () => {
             // GIVEN
             // El usuario ramón ha iniciado sesión
             // Lista de vehículos registrados → [“Ford Fiesta”].
@@ -109,7 +109,7 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
             expect(preferencias.matricula).toBe(ford.matricula);
         });
 
-        it('HU504-EI01: Establecer vehículo no registrado como transporte por defecto.', async () => {
+        it('HU504A-EI01: Establecer vehículo no registrado como transporte por defecto.', async () => {
             // GIVEN
             // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → [“Ford Fiesta”].
@@ -126,9 +126,9 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
         });
     });
 
-    describe('HU505: Cambiar preferencias de tipo de ruta', () => {
+    describe('HU504B: Cambiar preferencias de tipo de ruta', () => {
 
-        it('HU505-EV01: Establecer un tipo de ruta válido por defecto', async () => {
+        it('HU504B-EV01: Establecer un tipo de ruta válido por defecto', async () => {
             // GIVEN
             // El usuario ramón ha iniciado sesión
 
@@ -148,7 +148,7 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
             expect(preferencias.tipoRuta).toBe(PREFERENCIA.RAPIDA);
         });
 
-        it('HU505-EI01: Establecer un tipo de ruta inválido por defecto', async () => {
+        it('HU504B-EI01: Establecer un tipo de ruta inválido por defecto', async () => {
             // GIVEN
             // El usuario ramón ha iniciado sesión
 
@@ -162,9 +162,9 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
         });
     });
 
-    describe('HU506: Cambiar preferencias de la información mostrada en las rutas', () => {
+    describe('HU504C: Cambiar preferencias de la información mostrada en las rutas', () => {
 
-        it('HU506-EV01: Elegir información mostrada de ruta', async () => {
+        it('HU504C-EV01: Elegir información mostrada de ruta', async () => {
             // GIVEN
             // El usuario ramón ha iniciado sesión
 
@@ -182,7 +182,7 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
             expect(preferencias.costeCombustible).toBe(false);
         });
 
-        it('HU506-EI01: Elegir información mostrada de ruta sin iniciar sesión', async () => {
+        it('HU504C  -EI01: Elegir información mostrada de ruta sin iniciar sesión', async () => {
             // GIVEN
             // El usuario no ha iniciado sesión
             await userService.logout();

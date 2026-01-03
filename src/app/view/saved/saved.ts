@@ -547,4 +547,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             hash: item.geohash // Algunos ítems como vehículos pueden no tener geohash, será undefined
         };
     }
+
+    protected readonly Math = Math;
 }

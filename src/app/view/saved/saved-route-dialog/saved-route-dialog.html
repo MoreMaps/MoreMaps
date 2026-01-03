@@ -8,11 +8,13 @@
             <div class="header-text">
                 @if (!isEditing()) {
                     <h2 class="dialog-title">
-                        {{ displayData.item.alias }}
+                        {{ displayName }}
                     </h2>
-                    <p class="dialog-subtitle">{{ (displayData.item.tiempo / 3600).toFixed(1) }} h • {{ (displayData.item.distancia / 1000).toFixed(1) }} km</p>
+                    <p class="dialog-subtitle">{{ Math.trunc(displayData.item.tiempo / 3600) }} h
+                        {{ Math.trunc((displayData.item.tiempo % 3600) / 60) }} min
+                        • {{ Math.trunc(displayData.item.distancia / 1000) }} km</p>
                     <p class="dialog-coords">
-                        {{ displayData.item.transportLabel() }}, ruta {{ displayData.item.preferenceLabel() }}
+                        {{ displayTransport }}, ruta {{ displayData.item.preferenceLabel() }}
                     </p>
                 } @else {
                     <h2 class="dialog-title">Editar ruta</h2>

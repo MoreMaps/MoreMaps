@@ -43,6 +43,7 @@ export interface SavedRouteDialogData {
 export class SavedRouteDialog implements OnInit, OnChanges {
     @Input() item?: RouteModel;
     @Input() displayName?: string;
+    @Input() displayTransport?: string;
 
     @Output() closeEvent = new EventEmitter<void>();
     @Output() actionEvent = new EventEmitter<string>();
@@ -163,4 +164,6 @@ export class SavedRouteDialog implements OnInit, OnChanges {
             });
         }
     }
+
+    protected readonly Math = Math;
 }

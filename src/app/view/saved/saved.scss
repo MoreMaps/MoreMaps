@@ -241,7 +241,7 @@
         padding: 2rem;
         background-color: transparent;
 
-        /* CORRECCIÓN: Aplicar estilos a AMBOS componentes (POI y Vehicle) */
+        /* Aplicar estilos a AMBOS componentes (POI y Vehicle) */
         app-saved-poi-dialog,
         app-saved-vehicle-dialog {
             width: 100%;

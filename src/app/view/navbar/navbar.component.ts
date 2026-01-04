@@ -6,10 +6,11 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
-import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {Geohash, geohashForLocation} from 'geofire-common';
-import {RouteFlowService} from '../../services/map/route-flow-service';
+import {geohashForLocation} from 'geofire-common';
 import {firstValueFrom} from 'rxjs';
+
+// Servicios y Componentes
+import {RouteFlowService} from '../../services/map/route-flow-service';
 import {PlaceNameSearchDialogComponent} from './placename-search-dialog/placename-search-dialog';
 
 @Component({
@@ -32,6 +33,7 @@ export class NavbarComponent implements OnInit {
     private route = inject(ActivatedRoute);
     private routeFlowService = inject(RouteFlowService);
     private dialog = inject(MatDialog);
+
     isRouteMode: boolean = false;
 
     ngOnInit(): void {
@@ -51,10 +53,10 @@ export class NavbarComponent implements OnInit {
     }
 
     // ==========================================================
-    // FLUJO 1: BÚSQUEDA DE POI
+    // FLUJO 1: BÚSQUEDA DE POI (Punto de interés individual)
     // ==========================================================
     async openAddDialog(): Promise<void> {
-        // PASO 1: Preguntar method
+        // PASO 1: Preguntar (Nombre o Coordenadas)
         const method = await this.routeFlowService.askForSearchMethod();
         if (!method) return;
 
@@ -73,11 +75,11 @@ export class NavbarComponent implements OnInit {
             }
 
         } else {
-            // CASO COORDENADAS: Usamos el flujo existente que resuelve lat/lon
-            // Aquí 'confirm' es false porque si buscas por coords, quieres ir directo
+            // CASO COORDENADAS: Usamos el flujo existente en el servicio que resuelve lat/lon
+            // 'confirm' es false porque si buscas por coords explícitas, quieres ir directo.
             const result = await this.routeFlowService.executeSearchMethod(method, false);
 
-            if (result) {
+            if (result && result !== 'BACK') {
                 void this.router.navigate(['/map'], { queryParams: result });
             }
         }
@@ -87,140 +89,41 @@ export class NavbarComponent implements OnInit {
     // FLUJO 2: CÁLCULO DE RUTA
     // ==========================================================
 
-    // 2. Búsqueda de rutas
     async openRouteSearch(): Promise<void> {
-        let step = 1;
-        const totalSteps = 4; // Origen, Destino, Transporte, Preferencia
+        // 1. Iniciar el flujo completo a través del servicio
+        // El servicio maneja internamente el contexto, los pasos (Origen -> Destino -> Transporte -> Preferencia) y la persistencia.
+        const flowData = await this.routeFlowService.startRouteFlow();
 
-        // Variables para almacenar el estado
-        let originData: any = null;
-        let destData: any = null;
-        let transporte: TIPO_TRANSPORTE | null = null;
-        let selectedVehicleMatricula: string | undefined = undefined;
-        let preferencia: PREFERENCIA | null = null;
-
-        // Variables para inicio y fin
-        let startHash: Geohash = '';
-        let endHash: Geohash = '';
-
-        // Bucle de navegación
-        while (step <= totalSteps && step > 0) {
-
-            switch (step) {
-                // --- PASO 1: ORIGEN ---
-                case 1: {
-                    const res = await this.routeFlowService.getPointFromUser(
-                        'Punto de Origen',
-                        '¿Desde dónde quieres salir?',
-                        step, totalSteps, false // showBack = false (primer paso)
-                    );
-
-                    if (res === 'BACK') {
-                        // No hay atrás desde el paso 1, salimos o no hacemos nada
-                        return;
-                    }
-                    if (!res) return; // Cancelado
-
-                    originData = res;
-                    startHash = originData.hash || geohashForLocation([originData.lat, originData.lon], 7);
-                    step++; // Avanzar
-                    break;
-                }
-
-                // --- PASO 2: DESTINO ---
-                case 2: {
-                    const res = await this.routeFlowService.getPointFromUser(
-                        'Punto de Destino',
-                        '¿A dónde quieres ir?',
-                        step, totalSteps, true
-                    );
-
-                    if (res === 'BACK') {
-                        step--; // Volver al paso 1
-                        break;
-                    }
-                    if (!res) return; // Cancelado
-
-                    destData = res;
-                    endHash = destData.hash || geohashForLocation([destData.lat, destData.lon], 7);
-
-                    if (endHash === startHash) {
-                        this.snackBar.open('El origen no puede ser el mismo que el destino.', 'Cerrar', {duration: 3000});
-                        break;
-                    }
-
-                    step++;
-                    break;
-                }
-
-                // --- PASO 3: TRANSPORTE (Y VEHÍCULO) ---
-                case 3: {
-                    const res = await this.routeFlowService.getRouteOption<TIPO_TRANSPORTE | 'BACK'>('transport', step, totalSteps);
-
-                    if (res === 'BACK') {
-                        step--;
-                        break;
-                    }
-                    if (!res) return;
-
-                    transporte = res as TIPO_TRANSPORTE;
-
-                    // Lógica de Vehículo (Sub-paso)
-                    if (transporte === TIPO_TRANSPORTE.VEHICULO) {
-                        // Podemos considerar esto un "paso 3.5"
-                        // Nota: He añadido soporte para 'BACK' en selectSavedItem también
-                        const savedVehicle = await this.routeFlowService.selectSavedItem('vehiculos', 'Selecciona tu vehículo', true);
-
-                        if (savedVehicle === 'BACK') {
-                            // Si da atrás en vehículo, volvemos a elegir transporte
-                            break;
-                        }
-                        if (!savedVehicle) return; // Cancelado total
-
-                        selectedVehicleMatricula = savedVehicle.matricula;
-                    } else {
-                        selectedVehicleMatricula = undefined; // Limpiar si cambió de coche a bici
-                    }
-
-                    step++;
-                    break;
-                }
-
-                // --- PASO 4: PREFERENCIA ---
-                case 4: {
-                    const res = await this.routeFlowService.getRouteOption<PREFERENCIA | 'BACK'>('preference', step, totalSteps);
-
-                    if (res === 'BACK') {
-                        step--;
-                        // OJO: Si veníamos de Coche, step 3 incluye vehículo.
-                        // Al bajar a 3, el switch case 3 se ejecutará de nuevo preguntando transporte.
-                        // Esto es buena UX: "¿Quieres cambiar transporte o vehículo?" -> Vuelves a elegir transporte.
-                        break;
-                    }
-                    if (!res) return;
-
-                    preferencia = res as PREFERENCIA;
-                    step++; // Esto rompe el while (step se vuelve 5)
-                    break;
-                }
-            }
+        // 2. Si el usuario canceló en algún punto, flowData será null
+        if (!flowData) {
+            return;
         }
-        // Si salimos del bucle porque step > totalSteps, la info. es completa
-        if (step > totalSteps) {
 
-            const routeParams = {
-                mode: 'route',
-                start: startHash,
-                startName: originData!.name,
-                end: endHash,
-                endName: destData!.name,
-                transport: transporte,
-                preference: preferencia,
-                matricula: selectedVehicleMatricula
-            };
+        // 3. Si tenemos datos completos, preparamos la navegación
+        // Garantizamos que existen los hashes (calculándolos si faltan)
+        const startHash = flowData.origin!.hash || geohashForLocation([flowData.origin!.lat, flowData.origin!.lon], 7);
+        const endHash = flowData.destination!.hash || geohashForLocation([flowData.destination!.lat, flowData.destination!.lon], 7);
 
-            const cleanParams = JSON.parse(JSON.stringify(routeParams));
-            void this.router.navigate(['/map'], {queryParams: cleanParams});
+        // Validación final de seguridad
+        if (startHash === endHash) {
+            this.snackBar.open('El origen no puede ser el mismo que el destino.', 'Cerrar', {duration: 3000});
+            return;
         }
+
+        // 4. Construir parámetros para la URL
+        const routeParams = {
+            mode: 'route',
+            start: startHash,
+            startName: flowData.origin!.name,
+            end: endHash,
+            endName: flowData.destination!.name,
+            transport: flowData.transport,
+            preference: flowData.preference,
+            matricula: flowData.matricula // Puede ser undefined si no es vehículo, JSON.stringify lo limpiará
+        };
+
+        // 5. Navegar al mapa con los datos limpios
+        const cleanParams = JSON.parse(JSON.stringify(routeParams));
+        void this.router.navigate(['/map'], {queryParams: cleanParams});
     }
 }

@@ -458,7 +458,7 @@ body {
     }
 }
 
-// ===== DIALOGOS =====
+// ===== DIÁLOGOS =====
 
 .dialog-container {
     padding: 2rem;
@@ -843,7 +843,7 @@ input:-webkit-autofill:active {
 }
 
 /* =========================================
-   GLOBAL ERROR TEXTFIELDS OVERRIDE
+   GLOBAL ERROR TEXT FIELDS OVERRIDE
    ========================================= */
 
 mat-error,
@@ -996,4 +996,17 @@ mat-error,
 
 .cdk-global-scrollblock {
     overflow: hidden !important; /* Fuerza a que no haya scroll en el body */
+}
+
+/* === FORZAR Z-INDEX DEL SNACKBAR === */
+/* Importante: Esto debe estar en un archivo global y FUERA de cualquier selector .class { ... } */
+
+.cdk-overlay-pane.high-z-index-toast {
+    z-index: 10000 !important; /* Un número absurdamente alto para ganar al backdrop (1000) */
+    position: static !important; /* A veces ayuda a evitar conflictos de contexto de apilamiento */
+}
+
+/* Opcional: Asegurar que el contenedor global permita apilamiento alto */
+.cdk-global-overlay-wrapper {
+    z-index: 10000 !important;
 }

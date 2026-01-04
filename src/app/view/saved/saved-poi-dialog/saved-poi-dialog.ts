@@ -3,7 +3,7 @@ import {
     EventEmitter,
     Inject,
     inject,
-    Input,
+    Input, OnChanges,
     OnInit,
     Optional,
     Output,
@@ -49,7 +49,7 @@ export interface SavedItemDialogData {
     styleUrls: ['./saved-poi-dialog.scss'],
     providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB}]
 })
-export class SavedPoiDialog implements OnInit {
+export class SavedPoiDialog implements OnInit, OnChanges{
     // Inputs for Embedded Mode (Desktop)
     @Input() item?: POIModel;
     @Input() displayName?: string;
@@ -189,7 +189,7 @@ export class SavedPoiDialog implements OnInit {
                     }
                     this.handleAction('update');
 
-                    this.snackBar.open('Cambios guardados', 'Ok',
+                    this.snackBar.open('POI actualizado correctamente', 'Ok',
                         {
                             duration: 3000,
                             horizontalPosition: 'start',

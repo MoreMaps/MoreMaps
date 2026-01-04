@@ -9,7 +9,6 @@ import {
 } from '@angular/fire/auth';
 import {
     collection,
-    deleteDoc,
     doc,
     Firestore,
     getDoc,
@@ -76,19 +75,25 @@ export class UserDB implements UserRepository {
                 }
             }
 
+            // Borra las preferencias del usuario
+            const preferenceRef = doc(this.firestore, `preferences/${user?.uid}`);
+            batch.delete(preferenceRef);
+
+            // Borra al usuario de Firestore
+            const userDocRef = doc(this.firestore, `users/${user?.uid}`);
+            batch.delete(userDocRef);
+
             // Fin de la transacción
             await batch.commit();
-
-            // Borrar de Firestore
-            const userDocRef = doc(this.firestore, `users/${user?.uid}`);
-            await deleteDoc(userDocRef);
 
             // Borra de Auth y cierra la sesión automáticamente
             await deleteUser(user!);
 
-            // Comprobamos que se hayan borrado todos los items de usuario
-            const items = await getDoc(doc(this.firestore, `items/${user?.uid}`));
-            return !items.exists();
+            // Comprobamos que se hayan borrado todos los items y preferencias de usuario, y el usuario en sí
+            const itemsSnap = await getDoc(doc(this.firestore, `items/${user?.uid}`));
+            const preferencesSnap = await getDoc(preferenceRef);
+            const userSnap = await getDoc(userDocRef);
+            return !(itemsSnap.exists() || preferencesSnap.exists() || userSnap.exists());
         }
         catch (error: any) {
             if (error.code === 'auth/requires-recent-login') {

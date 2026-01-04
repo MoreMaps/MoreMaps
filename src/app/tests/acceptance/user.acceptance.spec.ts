@@ -11,14 +11,16 @@ import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatErr
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {RegisterModel} from '../../data/RegisterModel';
+import {PreferenceService} from '../../services/Preferences/preference.service';
 
 
 // it01: HU101, HU102, HU105, HU106, HU603
-fdescribe('Pruebas sobre usuarios', () => {
+describe('Pruebas sobre usuarios', () => {
     let userService: UserService;
     let poiService: POIService;
     let vehicleService: VehicleService;
     let routeService: RouteService;
+    let preferenceService: PreferenceService;
     let usuarioRegistradoRamon: UserModel;
 
     // Datos de prueba
@@ -42,6 +44,7 @@ fdescribe('Pruebas sobre usuarios', () => {
         poiService = TestBed.inject(POIService);
         vehicleService = TestBed.inject(VehicleService);
         routeService = TestBed.inject(RouteService);
+        preferenceService = TestBed.inject(PreferenceService);
     });
 
 
@@ -165,12 +168,15 @@ fdescribe('Pruebas sobre usuarios', () => {
                 rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino,
                 rutaC.preferencia, result, rutaC.matricula);
 
+            // El usuario "maria" establece el vehículo "Ford Fiesta" como vehículo por defecto
+            await preferenceService.updatePreferences({matricula: ford.matricula});
+
             // WHEN
             // Se intenta eliminar la cuenta
             const usuarioBorrado = await userService.deleteUser();
 
             // THEN
-            // Se elimina la cuenta y todos sus datos asociados (lugares, vehículos y rutas)
+            // Se elimina la cuenta y todos sus datos asociados (lugares, vehículos, rutas y preferencias)
             expect(usuarioBorrado).toBeTrue();
         }, 30000);
 

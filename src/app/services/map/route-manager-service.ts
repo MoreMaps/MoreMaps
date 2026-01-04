@@ -134,6 +134,7 @@ export class RouteManagerService implements OnDestroy {
     // --- LÓGICA PRIVADA DE CÁLCULO ---
 
     private async internalCalculate(params: RouteParams): Promise<RouteContext> {
+        console.log(params);
         // Validaciones
         if (params.startHash === params.endHash) throw new Error('Origen y destino iguales');
 

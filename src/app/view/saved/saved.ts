@@ -553,16 +553,19 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     /**
      * Inicia el flujo de cálculo de ruta saltando pasos si hay datos fijos.
      */
-    async initRouteFlow(prefilled: { fixedOrigin?: any, fixedDest?: any, fixedVehicle?: any }) {
+    async initRouteFlow(prefilled: { fixedOrigin?: POIModel, fixedDest?: POIModel, fixedVehicle?: VehicleModel }) {
 
         // Configurar
         const config: RouteFlowConfig = {
             fixedOrigin: prefilled.fixedOrigin ? this.mapToFlowPoint(prefilled.fixedOrigin) : undefined,
             fixedDest: prefilled.fixedDest ? this.mapToFlowPoint(prefilled.fixedDest) : undefined,
-            fixedVehicle: prefilled.fixedVehicle
+            fixedVehicle: prefilled.fixedVehicle ? {
+                matricula: prefilled.fixedVehicle.matricula,
+                alias: prefilled.fixedVehicle.alias
+            } : undefined
         };
 
-        //
+
         // ¡Ejecutar una sola línea de lógica!
         const result = await this.routeFlowService.startRouteFlow(config);
 
@@ -570,6 +573,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         if (result) {
             const startHash = result.origin!.hash || geohashForLocation([result.origin!.lat, result.origin!.lon], 7);
             const endHash = result.destination!.hash || geohashForLocation([result.destination!.lat, result.destination!.lon], 7);
+
+            console.log('matricula', result.matricula);
 
             const routeParams = {
                 mode: 'route',

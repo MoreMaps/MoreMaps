@@ -53,7 +53,6 @@ export class RouteFlowContext {
         if (config.fixedDest) this.data.destination = config.fixedDest;
         if (config.fixedVehicle) {
             this.data.matricula = config.fixedVehicle.matricula;
-            // Si viene vehículo fijo, asumimos transporte vehículo
             this.data.transport = TIPO_TRANSPORTE.VEHICULO;
         }
     }

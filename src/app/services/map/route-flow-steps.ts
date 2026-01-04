@@ -55,8 +55,13 @@ export class DestinationState implements FlowState {
 
         // LIMPIEZA CLAVE: Al avanzar hacia transporte, limpiamos cualquier selección previa
         // o bandera de "ignorar preferencias" para que el paso TransportState se evalúe limpio.
-        ctx.data.transport = undefined;
-        ctx.data.matricula = undefined;
+        if (!ctx.config.fixedVehicle) {
+            ctx.data.transport = undefined;
+            ctx.data.matricula = undefined;
+        } else {
+            // Si es fijo, aseguramos que el transport sea VEHICULO por si acaso
+            ctx.data.transport = TIPO_TRANSPORTE.VEHICULO;
+        }
         ctx.data.ignorePreferences = false;
 
         return new TransportState();
@@ -69,6 +74,7 @@ export class TransportState implements FlowState {
         // A. Configuración Fija (Prioridad absoluta)
         if (ctx.config.fixedVehicle) {
             ctx.data.transport = TIPO_TRANSPORTE.VEHICULO;
+            ctx.data.matricula = ctx.config.fixedVehicle.matricula;
             return new PreferenceState();
         }
 

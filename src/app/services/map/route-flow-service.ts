@@ -27,6 +27,7 @@ import {
 import {OriginState} from './route-flow-steps';
 import {PreferenceService} from '../Preferences/preference.service';
 import {PreferenceModel} from '../../data/PreferenceModel';
+import {TIPO_TRANSPORTE} from '../../data/RouteModel';
 
 
 @Injectable({
@@ -251,8 +252,6 @@ export class RouteFlowService implements IRouteFlowService {
             console.warn('No se pudieron cargar preferencias:', e);
         }
 
-        console.log('Preferencias aplicadas al flujo:', loadedPrefs);
-
         // Pasamos loadedPrefs al contexto
         const context = new RouteFlowContext(config, this, loadedPrefs);
 
@@ -271,7 +270,11 @@ export class RouteFlowService implements IRouteFlowService {
     }
 
     private isDataComplete(data: RouteFlowData): boolean {
-        return !!(data.origin && data.destination && data.transport && data.preference);
+        // La matrícula es obligatoria solo si el transporte es VEHICULO
+        const needsVehicle = data.transport === TIPO_TRANSPORTE.VEHICULO;
+        const hasVehicle = !!data.matricula;
+
+        return !!(data.origin && data.destination && data.transport && (!needsVehicle || hasVehicle));
     }
 
     showFeedback(message: string): void {

@@ -84,7 +84,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
     // ESTADO
     selectedType = signal<ItemType>('lugares');
-    items = signal<any[]>([]); // Lista genérica
+    items = signal<any[]>([]);
 
     selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
 
@@ -101,6 +101,21 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     currentStrategy = computed(() => this.strategies[this.selectedType()]);
 
     vehicleMap = signal<Map<string, string>>(new Map());
+
+    private isUpdating = false;
+
+    selectedItemDisplayName = computed(() => {
+        if (!this.selectedItem) return '';
+        return this.currentStrategy().getDisplayName(this.selectedItem);
+    });
+
+    paginatedItemsWithNames = computed(() => {
+        const items = this.paginatedItems();
+        return items.map(item => ({
+            item,
+            displayName: this.currentStrategy().getDisplayName(item)
+        }));
+    });
 
     constructor() {
         const savedType = localStorage.getItem('user_preference_saved_tab');
@@ -131,7 +146,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                         if (this.selectedItem) {
                             this.openDialogForItem(this.selectedItem);
                         }
-                    }, 0); // timeout a 0 lo mueve al final de la cola
+                    }, 0);
                 } else if (isDesktopNow) {
                     // Si pasamos a desktop, cerrar diálogos (se verá en el panel lateral)
                     this.dialog.closeAll();
@@ -226,6 +241,10 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     private async checkAndSelectFromParams(items: any[], urlId: string | undefined, allowStorageFallback: boolean): Promise<void> {
+        if (this.isUpdating) {
+            return;
+        }
+
         let targetId = urlId;
 
         // SOLO miramos en localStorage si no hay ID de URL y tenemos permiso explícito (navegación limpia)
@@ -303,7 +322,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             case 'vehiculos':
                 return (item as VehicleModel).matricula;
             case 'rutas':
-                return (item as any).id(); // RouteModel.id()
+                return (item as any).id();
             default:
                 return null;
         }
@@ -356,7 +375,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
         // Si es móvil, abrimos diálogo. Si es Desktop, se muestra incrustado
         if (!this.isDesktop()) {
-            this.dialog.closeAll(); // cerramos cualquier diálogo previo
+            this.dialog.closeAll();
             this.openDialogForItem(item);
         }
     }
@@ -379,7 +398,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             maxWidth: '90vw',
             data: {
                 item: item,
-                displayName: this.getDisplayName(freshItem),
+                displayName: this.currentStrategy().getDisplayName(freshItem),
                 displayTransport: this.getRouteTransportLabel(freshItem),
             }
         };
@@ -397,36 +416,31 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 break;
         }
 
-        // Suscribirse siempre al resultado, sea cual sea el tipo
-        if (this.activeDialogRef?.componentInstance) {
-            const instance = this.activeDialogRef?.componentInstance as any;
-
-            if (instance.actionEvent) {
-                instance.actionEvent.subscribe(async (action: string) => {
-                   if (action === 'update') {
-                       await this.handleDialogActions('update');
-                   }
-                });
-            }
-            if (this.activeDialogRef) {
-                this.activeDialogRef.afterClosed().subscribe((result) => {
-                    this.processDialogResult(result)
-                    this.activeDialogRef = null;
-                });
-            }
+        if (this.activeDialogRef) {
+            this.activeDialogRef.afterClosed().subscribe((result) => {
+                void this.processDialogResult(result);
+                this.activeDialogRef = null;
+            });
         }
     }
 
     private async processDialogResult(result: any) {
-        if (result && !result.ignore) {
-            await this.handleDialogActions(result);
-
-            if(result !== 'update') this.deselectItem();
-
-        } else if (!result?.ignore) {
+        // Caso 1: Usuario cerró el diálogo sin acción (click fuera, ESC, etc.)
+        if (!result || result.ignore) {
+            // Solo deseleccionar en móvil
             if (!this.isDesktop()) {
                 this.deselectItem();
             }
+            return;
+        }
+
+        // Caso 2: Hay una acción que procesar
+        await this.handleDialogActions(result);
+
+        // Caso 3: Después de procesar, decidir si deseleccionar
+        // NO deseleccionar si es 'update' (el item sigue seleccionado con datos actualizados)
+        if (result !== 'update') {
+            this.deselectItem();
         }
     }
 
@@ -434,24 +448,28 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         switch (action) {
             case 'delete':
                 this.deselectItem();
-                await this.loadItems(false); // Recargar lista
+                await this.loadItems(false);
                 break;
             case 'update':
-                // Recargar lista para reflejar cambios (ej. alias)
-                await this.loadItems(false);
+                this.isUpdating = true;
 
-                // Actualizar la referencia del item seleccionado con los nuevos datos
-                if (this.selectedItem) {
-                    const currentId = this.getItemId(this.selectedItem);
-                    const updatedItem = this.items().find(item => this.getItemId(item) === currentId);
+                try {
+                    await this.loadItems(false);
 
-                    if (updatedItem) {
-                        // Actualizamos la referencia del item seleccionado
-                        this.selectedItem = updatedItem;
-                        // Si estamos en desktop, Angular detectará el cambio y actualizará la vista
-                        // Si estamos en móvil, el diálogo YA tiene los datos actualizados internamente
-                        // y NO lo cerramos (el diálogo maneja su propia actualización)
+                    if (this.selectedItem) {
+                        const currentId = this.getItemId(this.selectedItem);
+                        const updatedItem = this.items().find(item => this.getItemId(item) === currentId);
+
+                        if (updatedItem) {
+                            this.selectedItem = updatedItem;
+
+                            if (currentId) {
+                                localStorage.setItem('user_preference_saved_item_id', currentId);
+                            }
+                        }
                     }
+                } finally {
+                    this.isUpdating = false;
                 }
                 break;
             case 'showOnMap':
@@ -477,13 +495,13 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                     });
                 }
                 break;
-            case 'route-from': // Origen fijado (Lugar)
+            case 'route-from':
                 await this.initRouteFlow({fixedOrigin: this.selectedItem});
                 break;
-            case 'route-to': // Destino fijado (Lugar)
+            case 'route-to':
                 await this.initRouteFlow({fixedDest: this.selectedItem});
                 break;
-            case 'route-vehicle': // Vehículo fijado
+            case 'route-vehicle':
                 await this.initRouteFlow({fixedVehicle: this.selectedItem});
                 break;
         }
@@ -493,13 +511,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         this.selectedItem = null;
         localStorage.removeItem('user_preference_saved_item_id');
     }
-
-    getDisplayName(item: any): string {
-        console.log(this.currentStrategy());
-        console.log(this.currentStrategy().getDisplayName(item));
-        return this.currentStrategy().getDisplayName(item);
-    }
-
     // --- UTILIDADES ---
 
     paginatedItems = computed(() => {
@@ -524,9 +535,10 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         event.stopPropagation();
         const success = await this.currentStrategy().toggleFavorite(item);
         if (success) {
+            const itemName = this.currentStrategy().getDisplayName(item);
             const message = item.pinned
-                ? `Se ha fijado ${this.getDisplayName(item)}.`
-                : `${this.getDisplayName(item)} ya no está fijado.`;
+                ? `Se ha fijado ${itemName}.`
+                : `${itemName} ya no está fijado.`;
             this.showSnackbar(message);
             await this.loadItems(false);
         }
@@ -579,14 +591,13 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
      * que necesita el servicio de rutas.
      */
     private mapToFlowPoint(item: any): FlowPoint {
-        // Usamos tu estrategia existente para obtener el nombre correcto (alias o placeName)
-        const name = this.getDisplayName(item);
+        const name = this.currentStrategy().getDisplayName(item);
 
         return {
             name: name,
             lat: item.lat,
             lon: item.lon,
-            hash: item.geohash // Algunos ítems como vehículos pueden no tener geohash, será undefined
+            hash: item.geohash
         };
     }
 

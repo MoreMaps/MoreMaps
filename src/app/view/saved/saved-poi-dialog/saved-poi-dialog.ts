@@ -7,7 +7,7 @@ import {
     OnInit,
     Optional,
     Output,
-    signal,
+    signal, SimpleChanges,
     WritableSignal
 } from '@angular/core';
 import {CommonModule, NgOptimizedImage} from '@angular/common';
@@ -81,12 +81,15 @@ export class SavedPoiDialog implements OnInit, OnChanges{
         this.updateDisplayData();
     }
 
-    // Detect changes if inputs change while component is open (Desktop)
-    ngOnChanges(): void {
-        this.updateDisplayData();
-        if (this.isEditing() && this.editForm) this.initForm();
-    }
+    ngOnChanges(changes: SimpleChanges): void {
+        // Solo actualizar si hay cambios en item o displayName
+        if (changes['item'] || changes['displayName']) {
+            this.updateDisplayData();
 
+            // CRÍTICO: NO reinicializar el formulario si el usuario está editando
+            // Solo actualizar los datos de visualización
+        }
+    }
     updateDisplayData(): void {
         // Determine if we are using Input (Desktop) or DialogData (Mobile)
         if (this.dialogData) {
@@ -177,6 +180,10 @@ export class SavedPoiDialog implements OnInit, OnChanges{
                 // Call the service
                 const success = await this.poiService.updatePOI(this.displayData.item.geohash, updatedData);
                 if (success) {
+                    // IMPORTANTE: Salir del modo edición ANTES de actualizar datos
+                    // Esto previene que ngOnChanges reinicialice el formulario
+                    this.isEditing.set(false);
+
                     // Update local data
                     this.displayData.item.alias = updatedData.alias;
                     this.displayData.item.description = updatedData.description;
@@ -187,32 +194,30 @@ export class SavedPoiDialog implements OnInit, OnChanges{
                     } else {
                         this.displayData.displayName = this.displayData.item.placeName;
                     }
+
+                    // Notificar al padre DESPUÉS de actualizar los datos locales
                     this.handleAction('update');
 
-                    this.snackBar.open('POI actualizado correctamente', 'Ok',
-                        {
-                            duration: 3000,
-                            horizontalPosition: 'start',
-                            verticalPosition: 'bottom'
-                        });
-                    this.isEditing.set(false);
-
-                } else {
-                    this.snackBar.open('Error al guardar', 'Ok',
-                        {
-                            duration: 3000,
-                            horizontalPosition: 'start',
-                            verticalPosition: 'bottom'
-                        });
-                }
-            } catch (error) {
-                console.error(error);
-                this.snackBar.open('Error al guardar', 'Ok',
-                    {
+                    this.snackBar.open('POI actualizado correctamente', 'Ok', {
                         duration: 3000,
                         horizontalPosition: 'start',
                         verticalPosition: 'bottom'
                     });
+
+                } else {
+                    this.snackBar.open('Error al guardar', 'Ok', {
+                        duration: 3000,
+                        horizontalPosition: 'start',
+                        verticalPosition: 'bottom'
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+                this.snackBar.open('Error al guardar', 'Ok', {
+                    duration: 3000,
+                    horizontalPosition: 'start',
+                    verticalPosition: 'bottom'
+                });
             }
         }
     }

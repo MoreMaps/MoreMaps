@@ -998,48 +998,60 @@ mat-error,
     overflow: hidden !important; /* Fuerza a que no haya scroll en el body */
 }
 
+
 /* === FORZAR Z-INDEX DEL SNACKBAR === */
 /* Importante: Esto debe estar en un archivo global y FUERA de cualquier selector .class { ... } */
 
-.cdk-overlay-pane.high-z-index-toast {
-    z-index: 10000 !important; /* Un número absurdamente alto para ganar al backdrop (1000) */
-    position: static !important; /* A veces ayuda a evitar conflictos de contexto de apilamiento */
-}
-
-/* Opcional: Asegurar que el contenedor global permita apilamiento alto */
-.cdk-global-overlay-wrapper {
+/* Solo afectar a SNACKBARS, no a menús ni diálogos */
+.mat-mdc-snack-bar-container {
     z-index: 10000 !important;
 }
 
-/* === FIX Z-INDEX PARA MAT-SELECT DENTRO DE DIÁLOGOS === */
-// IMPORTANTE: El overlay del mat-select se crea fuera del diálogo
-// Necesitamos que su contenedor (cdk-overlay-pane) tenga mayor z-index
-
-.cdk-overlay-container {
-    // Todos los overlays de mat-select
-    .cdk-overlay-pane:has(.mat-mdc-select-panel) {
-        z-index: 2000 !important;
-    }
-
-    // Específicamente para tu clase personalizada
-    .cdk-overlay-pane:has(.custom-route-panel) {
-        z-index: 2000 !important;
-    }
+/* Contenedor específico de snackbars */
+.cdk-overlay-pane:has(.mat-mdc-snack-bar-container) {
+    z-index: 10000 !important;
+    // NO usar position: static, mantener el default (absolute/fixed)
 }
 
-// Alternativa más específica si lo anterior no funciona en tu versión de Angular
-::ng-deep {
-    .cdk-overlay-pane {
-        &.mat-mdc-select-panel-above,
-        &.cdk-overlay-pane-select {
+/* Si usas una clase personalizada para tus toasts */
+.cdk-overlay-pane.high-z-index-toast {
+    z-index: 10000 !important;
+}
+
+/* Backdrop de snackbars (si existe) */
+.cdk-overlay-backdrop.mat-snack-bar-backdrop {
+    z-index: 9999 !important;
+}
+
+/* === FIX Z-INDEX PARA MAT-SELECT DENTRO DE DIÁLOGOS === */
+
+// Seleccionar SOLO overlays que están dentro o relacionados con un diálogo
+.cdk-overlay-container {
+    // Solo afectar a overlays de mat-select cuando hay un diálogo activo
+    .cdk-overlay-pane.mat-mdc-dialog-panel ~ .cdk-overlay-connected-position-bounding-box {
+        .cdk-overlay-pane:has(.mat-mdc-select-panel) {
             z-index: 2000 !important;
         }
     }
 }
 
-// Asegurar que el backdrop del select también esté correctamente posicionado
-.cdk-overlay-backdrop.cdk-overlay-transparent-backdrop {
-    z-index: 1999 !important;
+// Alternativa más robusta: usar un selector de hermanos
+.cdk-overlay-container:has(.mat-mdc-dialog-panel) {
+    .cdk-overlay-pane:has(.mat-mdc-select-panel) {
+        z-index: 2000 !important;
+    }
 }
 
+// Backdrop específico para selects en diálogos
+.cdk-overlay-container:has(.mat-mdc-dialog-panel) {
+    .cdk-overlay-backdrop.cdk-overlay-transparent-backdrop {
+        z-index: 1999 !important;
+    }
+}
 
+/* Contenedor específico de login */
+.cdk-overlay-pane:has(.mat-mdc-dialog-panel) {
+
+    z-index: 99999 !important;
+    // NO usar position: static, mantener el default (absolute/fixed)
+}

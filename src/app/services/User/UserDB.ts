@@ -8,7 +8,7 @@ import {
     updateProfile, validatePassword
 } from '@angular/fire/auth';
 import {
-    collection,
+    collection, deleteDoc,
     doc,
     Firestore,
     getDoc,
@@ -79,15 +79,19 @@ export class UserDB implements UserRepository {
             const preferenceRef = doc(this.firestore, `preferences/${user?.uid}`);
             batch.delete(preferenceRef);
 
-            // Borra al usuario de Firestore
-            const userDocRef = doc(this.firestore, `users/${user?.uid}`);
-            batch.delete(userDocRef);
+            // NO borramos aún de Firestore, o no podremos borrar de Auth.
 
             // Fin de la transacción
             await batch.commit();
 
             // Borra de Auth y cierra la sesión automáticamente
             await deleteUser(user!);
+
+            // Borra al usuario de Firestore
+            const userDocRef = doc(this.firestore, `users/${user?.uid}`);
+            await deleteDoc(userDocRef);
+
+            await this.auth.signOut();
 
             // Comprobamos que se hayan borrado todos los items y preferencias de usuario, y el usuario en sí
             const itemsSnap = await getDoc(doc(this.firestore, `items/${user?.uid}`));

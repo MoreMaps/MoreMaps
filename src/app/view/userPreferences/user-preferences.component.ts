@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit, signal} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {CommonModule} from '@angular/common';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -10,7 +10,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {MatDialog} from '@angular/material/dialog';
 import {MatInput} from '@angular/material/input';
-
+import {Router} from '@angular/router';
 import {PreferenceService} from '../../services/Preferences/preference.service';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {PreferenceModel} from '../../data/PreferenceModel';
@@ -22,6 +22,11 @@ import {
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {NavbarComponent} from '../navbar/navbar.component';
+import {UserService} from '../../services/User/user.service';
+import {Auth} from '@angular/fire/auth';
+import {LoginDialogComponent} from '../mainPage/login-dialog/login-dialog';
+import {ReauthNecessaryError} from '../../errors/User/ReauthNecessaryError';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
 
 @Component({
     selector: 'app-user-preferences',
@@ -38,15 +43,19 @@ import {NavbarComponent} from '../navbar/navbar.component';
         MatInput,
         ThemeToggleComponent,
         ProfileButtonComponent,
-        NavbarComponent
+        NavbarComponent,
+        MatProgressSpinner
     ],
     templateUrl: './user-preferences.component.html',
     styleUrls: ['./user-preferences.component.scss']
 })
-export class UserPreferencesComponent implements OnInit {
+export class UserPreferencesComponent implements OnInit, OnDestroy {
     private fb = inject(FormBuilder);
     private preferenceService = inject(PreferenceService);
     private vehicleService = inject(VehicleService);
+    private userService = inject(UserService);
+    private auth = inject(Auth);
+    private router = inject(Router);
     private snackBar = inject(MatSnackBar);
     private dialog = inject(MatDialog);
 
@@ -65,6 +74,11 @@ export class UserPreferencesComponent implements OnInit {
         value: key as TIPO_TRANSPORTE,
         label: label.charAt(0).toUpperCase() + label.slice(1)
     }));
+
+    // Variables de borrar cuenta
+    showDeleteModal = false;
+    deleteCountdown = 5;
+    private deleteTimer: any;
 
     selectedVehicleAlias = signal<string>('');
 
@@ -114,6 +128,10 @@ export class UserPreferencesComponent implements OnInit {
 
         this.prefForm.get('costeCombustible')?.valueChanges.subscribe(updateTodoState);
         this.prefForm.get('costeCalorias')?.valueChanges.subscribe(updateTodoState);
+    }
+
+    ngOnDestroy() {
+        if (this.deleteTimer) clearInterval(this.deleteTimer);
     }
 
     async loadPreferences() {
@@ -244,6 +262,79 @@ export class UserPreferencesComponent implements OnInit {
         this.snackBar.open(message, 'Cerrar', {
             duration: 3000,
             panelClass: [panelClass]
+        });
+    }
+
+    // ==========================================================
+    // LÓGICA DE BORRADO DE CUENTA (Migrada de DeleteUser)
+    // ==========================================================
+
+    openDeletePopup(): void {
+        this.showDeleteModal = true;
+        this.deleteCountdown = 5; // Reiniciar contador
+
+        // Iniciar el intervalo
+        if (this.deleteTimer) clearInterval(this.deleteTimer);
+
+        this.deleteTimer = setInterval(() => {
+            this.deleteCountdown--;
+            if (this.deleteCountdown <= 0) {
+                clearInterval(this.deleteTimer);
+            }
+        }, 1000);
+    }
+
+    closeDeletePopup(): void {
+        this.showDeleteModal = false;
+        if (this.deleteTimer) clearInterval(this.deleteTimer);
+    }
+
+    confirmDelete(): void {
+        this.loading = true; // Reusamos el flag de loading para bloquear la UI
+        this.userService.deleteUser()
+            .then(() => {
+                this.showDeleteModal = false;
+                void this.router.navigate([''], { queryParams: { accDeletion: true } });
+            })
+            .catch((err) => {
+                if (err instanceof ReauthNecessaryError) {
+                    if (!this.auth.currentUser) {
+                        void this.router.navigate([''], { queryParams: { accDeletion: true } });
+                    } else {
+                        this.openReauthDialog();
+                    }
+                } else {
+                    console.error('ERROR al borrar usuario', err);
+                    this.showFeedback('Error al borrar la cuenta', 'error-snackbar');
+                    this.showDeleteModal = false;
+                }
+            })
+            .finally(() => {
+                this.loading = false;
+            });
+    }
+
+    private openReauthDialog(): void {
+        this.showDeleteModal = false;
+        const dialogRef = this.dialog.open(LoginDialogComponent, {
+            data: {
+                email: this.auth.currentUser?.email,
+                isReauth: true
+            },
+            width: '60vw',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            panelClass: 'reauth-dialog-pane',
+            disableClose: false,
+            autoFocus: true,
+            restoreFocus: true
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result?.success) {
+                // Si se re-autenticó con éxito, reintentamos el borrado
+                this.confirmDelete();
+            }
         });
     }
 }

@@ -232,6 +232,127 @@
     }
 }
 
+/* ========================================= */
+/* ESTILOS DEL MODAL DE BORRADO              */
+/* ========================================= */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Fondo semitransparente oscuro */
+    backdrop-filter: blur(4px); /* Efecto borroso */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Por encima */
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+    background-color: var(--color-white);
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    animation: scaleIn 0.2s ease-out;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-purple-dark, #333);
+    margin: 0 0 10px 0;
+    line-height: 1.3;
+}
+
+.modal-subtitle {
+    font-size: 15px;
+    color: #666;
+    margin: 0 0 25px 0;
+}
+
+/* Botones del modal */
+.modal-btn {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.modal-btn:last-child {
+    margin-bottom: 0;
+}
+
+/* Confirmar (Rojo/Naranja fuerte para peligro) */
+.confirm-btn {
+    background-color: var(--color-orange, #ff8c42);
+    color: white;
+    box-shadow: 0 4px 10px rgba(255, 140, 66, 0.3);
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+        background-color: #ff7a2e;
+        transform: translateY(-2px);
+    }
+
+    /* CAMBIO: Reducimos la opacidad significativamente mientras hay cuenta atrás */
+    &.disabled-state, &:disabled {
+        /* Usamos la variable naranja pero con 0.4 de opacidad */
+        background-color: color-mix(in srgb, var(--color-orange), transparent 60%) !important;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+
+        /* Opcional: reducir también la opacidad de los iconos dentro */
+        mat-icon, svg {
+            opacity: 0.5;
+        }
+    }
+
+    .trash-icon-modal {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Cancelar (Gris/Neutro) */
+.cancel-btn {
+    background-color: #f0f0f0;
+    color: #555;
+
+    &:hover {
+        background-color: #e0e0e0;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+
 // === DARK THEME OVERRIDES ===
 :host-context(.dark-theme) {
 
@@ -314,5 +435,18 @@
     .divider {
         background-color: var(--color-gray-blue);
         opacity: 0.5;
+    }
+
+    .modal-container {
+        background-color: var(--color-teal-dark);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .modal-title { color: var(--color-white); }
+    .modal-subtitle { color: var(--color-lavender); }
+
+    .cancel-btn {
+        background-color: rgba(255,255,255,0.1);
+        color: var(--color-white);
+        &:hover { background-color: rgba(255,255,255,0.2); }
     }
 }

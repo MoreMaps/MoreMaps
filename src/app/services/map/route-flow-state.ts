@@ -10,6 +10,11 @@ export interface FlowPoint {
     lon: number;
 }
 
+export interface FlowVehicle {
+    matricula: string,
+    alias?: string
+}
+
 export interface RouteFlowData {
     origin?: FlowPoint;
     destination?: FlowPoint;
@@ -24,7 +29,7 @@ export interface RouteFlowData {
 export interface RouteFlowConfig {
     fixedOrigin?: FlowPoint;
     fixedDest?: FlowPoint;
-    fixedVehicle?: { matricula: string, alias?: string };
+    fixedVehicle?: FlowVehicle;
 }
 
 export interface FlowState {
@@ -33,8 +38,11 @@ export interface FlowState {
 
 export interface IRouteFlowService {
     getPointFromUser(title: string, subtitle: string, currentStep: number, totalSteps: number, showBack: boolean): Promise<any>;
+
     getRouteOption(type: string, currentStep: number, totalSteps: number): Promise<any>;
+
     selectSavedItem(type: string, title: string, showBack: boolean): Promise<any>;
+
     showFeedback(message: string): void;
 }
 

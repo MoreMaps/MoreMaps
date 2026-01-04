@@ -33,6 +33,9 @@ export class RouteLayerService {
     private routeLayer: L.GeoJSON | null = null;
     private startMarker: L.Marker | null = null;
     private endMarker: L.Marker | null = null;
+    private lastGeometry: any = null;
+    private lastStartParams: any = null;
+    private lastEndParams: any = null;
 
     constructor(private mapCore: MapCoreService) {}
 
@@ -40,6 +43,9 @@ export class RouteLayerService {
      * Dibuja la geometría de la ruta (la línea naranja).
      */
     drawGeometry(geometry: any): void {
+        // 0. Copia de seguridad
+        this.lastGeometry = geometry;
+
         // 1. Limpiar ruta previa si existe
         this.clearGeometry();
 
@@ -60,6 +66,8 @@ export class RouteLayerService {
      */
     drawAnchors(start: { lat: number; lon: number; name: string },
                 end: { lat: number; lon: number; name: string }): void {
+        this.lastStartParams = start;
+        this.lastEndParams = end;
         this.clearAnchors();
 
         const map = this.mapCore.getMapInstance();
@@ -76,10 +84,23 @@ export class RouteLayerService {
         }).addTo(map).bindPopup(`Destino: ${end.name}`);
     }
 
+    restore(): void {
+        if (this.lastStartParams && this.lastEndParams) {
+            this.drawAnchors(this.lastStartParams, this.lastEndParams);
+        }
+        if (this.lastGeometry) {
+            this.drawGeometry(this.lastGeometry);
+        }
+    }
+
     /**
      * Limpia lo relacionado con la ruta (línea y marcadores).
      */
     clear(): void {
+        this.lastGeometry = null;
+        this.lastStartParams = null;
+        this.lastEndParams = null;
+
         this.clearGeometry();
         this.clearAnchors();
     }

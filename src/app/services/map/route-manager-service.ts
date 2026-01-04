@@ -94,9 +94,18 @@ export class RouteManagerService implements OnDestroy {
             await this.openRouteDetailsDialog(context);
 
         } catch (e) {
+
             this.handleError(e);
-            // Si fallamos y no había ruta previa, limpiamos
-            if (!this.hasActiveRoute()) {
+
+            // Si el cálculo de la NUEVA ruta falla, pero teníamos una ruta anterior...
+            if (this.currentContext) {
+                // Volvemos a pintar la ruta anterior
+                this.routeLayerService.restore();
+
+                // Reabrimos el diálogo con los datos que ya teníamos guardados
+                await this.openRouteDetailsDialog(this.currentContext);
+            } else {
+                // Si no había nada antes, limpiamos la sesión por completo
                 this.clearRouteSession();
             }
         } finally {
@@ -134,9 +143,9 @@ export class RouteManagerService implements OnDestroy {
     // --- LÓGICA PRIVADA DE CÁLCULO ---
 
     private async internalCalculate(params: RouteParams): Promise<RouteContext> {
-        console.log(params);
         // Validaciones
-        if (params.startHash === params.endHash) throw new Error('Origen y destino iguales');
+        if (params.startHash === params.endHash)
+            throw new Error('Origen y destino iguales');
 
         // Limpieza visual previa
         this.routeLayerService.clear();

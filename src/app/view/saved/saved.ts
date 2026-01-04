@@ -13,7 +13,7 @@ import {VehicleModel} from '../../data/VehicleModel';
 
 // Servicios y Estrategias
 import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
-import {SavedVehiclesStrategy} from '../../services/saved-items/savedVehiclesStrategy';
+import {SavedVehicleStrategy} from '../../services/saved-items/saved-vehicle-strategy.service';
 import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
 import {SavedItemsStrategy} from '../../services/saved-items/savedItemsStrategy';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
@@ -31,7 +31,7 @@ import {geohashForLocation} from 'geofire-common';
 import {SavedRouteDialog} from './saved-route-dialog/saved-route-dialog';
 import {RouteFlowService} from '../../services/map/route-flow-service';
 import {SpinnerSnackComponent} from '../../utils/map-widgets';
-import {FlowPoint, RouteFlowConfig} from '../../services/map/route-flow-state';
+import {FlowPoint, FlowVehicle, RouteFlowConfig} from '../../services/map/route-flow-state';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -53,7 +53,7 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
     ],
     providers: [
         SavedPOIStrategy,
-        SavedVehiclesStrategy,
+        SavedVehicleStrategy,
         SavedRouteStrategy
     ],
     templateUrl: './saved.html',
@@ -78,7 +78,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
-        'vehiculos': inject(SavedVehiclesStrategy),
+        'vehiculos': inject(SavedVehicleStrategy),
         'rutas': inject(SavedRouteStrategy)
     };
 
@@ -425,7 +425,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     private async processDialogResult(result: any) {
-        // Caso 1: Usuario cerró el diálogo sin acción (click fuera, ESC, etc.)
+        // Caso 1: Usuario cerró el diálogo sin acción (clic fuera, ESC, etc.)
         if (!result || result.ignore) {
             // Solo deseleccionar en móvil
             if (!this.isDesktop()) {
@@ -480,14 +480,37 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                     });
                 } else if (this.selectedType() === 'rutas') {
                     const route = this.selectedItem as RouteModel;
+
+                    // resolver alias
+                    let startName = route.nombre_origen;
+                    let endName = route.nombre_destino;
+
+                    try {
+                        const savedPois = await this.strategies['lugares'].loadItems() as POIModel[];
+
+                        const originPoi = savedPois.find(p => p.geohash === route.geohash_origen);
+                        if (originPoi?.alias) {
+                            startName = originPoi.alias;
+                        }
+
+                        const destPoi = savedPois.find(p => p.geohash === route.geohash_destino);
+                        if (destPoi?.alias) {
+                            endName = destPoi.alias;
+                        }
+
+                    } catch (e) {
+                        console.warn("Error al resolver los alias de los POIs: ", e);
+                    }
+
+
                     // Navegamos al mapa reconstruyendo los parámetros de la ruta
                     void this.router.navigate(['/map'], {
                         queryParams: {
                             mode: 'route',
                             start: route.geohash_origen,
                             end: route.geohash_destino,
-                            startName: route.nombre_origen,
-                            endName: route.nombre_destino,
+                            startName: startName,
+                            endName: endName,
                             transport: route.transporte,
                             preference: route.preferencia,
                             matricula: route.matricula
@@ -511,6 +534,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         this.selectedItem = null;
         localStorage.removeItem('user_preference_saved_item_id');
     }
+
     // --- UTILIDADES ---
 
     paginatedItems = computed(() => {
@@ -559,10 +583,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         const config: RouteFlowConfig = {
             fixedOrigin: prefilled.fixedOrigin ? this.mapToFlowPoint(prefilled.fixedOrigin) : undefined,
             fixedDest: prefilled.fixedDest ? this.mapToFlowPoint(prefilled.fixedDest) : undefined,
-            fixedVehicle: prefilled.fixedVehicle ? {
-                matricula: prefilled.fixedVehicle.matricula,
-                alias: prefilled.fixedVehicle.alias
-            } : undefined
+            fixedVehicle: prefilled.fixedVehicle ? this.mapToFlowVehicle(prefilled.fixedVehicle) : undefined
         };
 
 
@@ -592,11 +613,11 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Convierte un ítem guardado (POI, Vehículo, etc.) al formato FlowPoint
+     * Convierte un POI guardado al formato FlowPoint
      * que necesita el servicio de rutas.
      */
     private mapToFlowPoint(item: any): FlowPoint {
-        const name = this.currentStrategy().getDisplayName(item);
+        const name = this.strategies['lugares'].getDisplayName(item);
 
         return {
             name: name,
@@ -604,6 +625,19 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             lon: item.lon,
             hash: item.geohash
         };
+    }
+
+    /**
+     * Convierte un Vehículo guardado al formato FlowVehicle
+     * que necesita el servicio de rutas.
+     */
+    private mapToFlowVehicle(item: any): FlowVehicle {
+        const name = this.strategies['vehiculos'].getDisplayName(item);
+
+        return {
+            matricula: item.matricula,
+            alias: name,
+        }
     }
 
     protected readonly Math = Math;

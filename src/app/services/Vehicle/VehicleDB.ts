@@ -145,7 +145,7 @@ export class VehicleDB implements VehicleRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('VEHICLE DB Error al obtener respuesta de Firebase: ' + error);
+            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }

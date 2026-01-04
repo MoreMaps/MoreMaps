@@ -13,9 +13,8 @@ import {
     setDoc, updateDoc,
     where, writeBatch
 } from '@angular/fire/firestore';
-import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
+import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {Geohash} from 'geofire-common';
-import {RouteResultModel} from '../../data/RouteResultModel';
 import {DBAccessError} from '../../errors/DBAccessError';
 
 @Injectable({
@@ -27,36 +26,23 @@ export class RouteDB implements RouteRepository {
 
     /**
      * Crea una ruta nueva.
-     * @param origen Geohash del POI de origen.
-     * @param destino Geohash del POI de destino.
-     * @param alias Alias de la ruta.
-     * @param transporte Tipo de transporte (vehículo, a pie, bicicleta)
-     * @param nombreOrigen Topónimo del POI de origen.
-     * @param nombreDestino Topónimo del POI de destino.
-     * @param preferencia Preferencia de la ruta (más corta/económica, más rápida, etc.)
-     * @param modelo Resultado de la búsqueda (duración, distancia de la ruta)
-     * @param matricula Matrícula del vehículo (opcional)
+     * @param route Ruta a insertar en la BD.
      */
-    async createRoute(origen: Geohash, destino: Geohash, alias: string, transporte: TIPO_TRANSPORTE,
-                      nombreOrigen: string, nombreDestino: string,
-                      preferencia: PREFERENCIA, modelo: RouteResultModel, matricula?: string): Promise<RouteModel> {
-        const routeId = RouteModel.buildId(origen, destino, transporte, matricula);
+    async createRoute(route: RouteModel): Promise<RouteModel> {
+        const routeId = RouteModel.buildId(route.geohash_origen, route.geohash_destino, route.transporte, route.matricula);
         const path = `items/${this.auth.currentUser!.uid}/routes/${routeId}`;
 
         try{
             // Referencia al documento
             const routeDocRef = doc(this.firestore, path);
 
-            // Crear nuevo RouteModel
-            const route = new RouteModel(origen, destino, alias, transporte, nombreOrigen, nombreDestino, preferencia, modelo!.distancia,
-                modelo!.tiempo, false, matricula);
-
+            // Crea el documento
             await setDoc(routeDocRef, route.toJSON());
             return route;
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('ROUTE DB Error al obtener respuesta de Firebase: ' + error);
+            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }

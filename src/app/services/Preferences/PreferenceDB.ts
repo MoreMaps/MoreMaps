@@ -1,7 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {PreferenceRepository} from './PreferenceRepository';
 import {Auth} from '@angular/fire/auth';
-import {deleteDoc, doc, Firestore, getDoc, setDoc, updateDoc} from '@angular/fire/firestore';
+import {deleteDoc, doc, Firestore, getDoc, setDoc} from '@angular/fire/firestore';
 import {PreferenceModel} from "../../data/PreferenceModel";
 import {DBAccessError} from '../../errors/DBAccessError';
 
@@ -14,37 +14,16 @@ export class PreferenceDB implements PreferenceRepository {
 
     /**
      * Crea un nuevo documento de preferencias.
-     * @param model El objeto con las preferencias a crear.
+     * @param update El objeto con las preferencias a crear.
      */
-    async setPreferences(model: PreferenceModel): Promise<boolean> {
+    async updatePreferences(update: PreferenceModel): Promise<boolean> {
         try {
             // Obtener los datos del documento que se va a crear
             const path = `preferences/${this.auth.currentUser!.uid}`;
             const preferenceRef = doc(this.firestore, path);
 
             // Crear documento
-            await setDoc(preferenceRef, model.toJSON());
-            return true;
-        }
-        catch (error: any) {
-            // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
-            throw new DBAccessError();
-        }
-    }
-
-    /**
-     * Actualiza el documento de preferencias ya existente.
-     * @param update El objeto con las preferencias a actualizar.
-     */
-    async updatePreferences(update: Partial<PreferenceModel>): Promise<boolean> {
-        try {
-            // Obtener los datos del documento que se va a actualizar
-            const path = `preferences/${this.auth.currentUser!.uid}`;
-            const preferenceRef = doc(this.firestore, path);
-
-            // Actualizar documento
-            await updateDoc(preferenceRef, update);
+            await setDoc(preferenceRef, update.toJSON());
             return true;
         }
         catch (error: any) {
@@ -89,14 +68,5 @@ export class PreferenceDB implements PreferenceRepository {
             console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
-    }
-
-    /**
-     * Comprueba si existe el documento de preferencias del usuario actual en la BD.
-     */
-    async preferencesExist(): Promise<boolean> {
-        const path = `preferences/${this.auth.currentUser!.uid}`;
-        const preferences = await getDoc(doc(this.firestore, path));
-        return preferences.exists();
     }
 }

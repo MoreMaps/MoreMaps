@@ -71,11 +71,8 @@ export class PreferenceService {
 
         // Actualizar documento (únicamente los campos enviados)
         // Si no existe, lo crea e inserta los datos.
-        if (!await this.preferenceDb.preferencesExist()) {
-            const updateForDB = new PreferenceModel(update);
-            return this.preferenceDb.setPreferences(updateForDB);
-        }
-        return this.preferenceDb.updatePreferences(update);
+        const updateForDB: PreferenceModel = new PreferenceModel(update);
+        return this.preferenceDb.updatePreferences(updateForDB);
     }
 
     /**

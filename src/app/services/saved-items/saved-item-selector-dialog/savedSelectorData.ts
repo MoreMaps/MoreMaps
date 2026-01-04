@@ -72,7 +72,7 @@ export class SavedItemSelector implements OnInit {
             // Lógica para cargar de BD
             if (this.strategies[this.data.type]) {
                 this.currentStrategy = this.strategies[this.data.type];
-                this.loadItems();
+                void this.loadItems();
             }
         }
     }

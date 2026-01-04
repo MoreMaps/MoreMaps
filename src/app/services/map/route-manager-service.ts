@@ -1,7 +1,7 @@
-import {Injectable, inject, signal, OnDestroy} from '@angular/core';
+import {inject, Injectable, OnDestroy, signal} from '@angular/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {Router, ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {Location} from '@angular/common';
 
 // Imports de datos y modelos
@@ -11,7 +11,7 @@ import {VehicleService} from '../Vehicle/vehicle.service';
 import {MapSearchService} from './map-search-service/map-search.service';
 import {RouteLayerService} from './route-layer-service';
 import {MarkerLayerService} from './marker-layer-service';
-import {TIPO_TRANSPORTE, PREFERENCIA, mapaTransporte} from '../../data/RouteModel';
+import {mapaTransporte, PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {FUEL_TYPE} from '../../data/VehicleModel';
 import {GeohashDecoder} from '../../utils/geohashDecoder';
 import {ImpossibleRouteError} from '../../errors/Route/ImpossibleRouteError';
@@ -20,7 +20,6 @@ import {geohashForLocation} from 'geofire-common';
 // Imports de UI (Dialogs)
 import RouteDetailsDialog from '../../view/route/route-details-dialog/routeDetailsDialog';
 import {RouteFlowService} from './route-flow-service';
-import {FlowPoint} from './route-flow-state';
 import {LoadingRouteDialogComponent} from '../../utils/map-widgets';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
 import {PreferenceService} from '../Preferences/preference.service';
@@ -47,14 +46,14 @@ export interface RouteContext {
 @Injectable({
     providedIn: 'root'
 })
-export class RouteManagerService implements OnDestroy{
+export class RouteManagerService implements OnDestroy {
+    public hasActiveRoute = signal<boolean>(false);
     // --- INYECCIONES DE UI Y NAVEGACIÓN ---
     private dialog = inject(MatDialog);
     private snackBar = inject(MatSnackBar);
     private router = inject(Router);
     private location = inject(Location);
     private route = inject(ActivatedRoute); // Para navegar relativo a la ruta actual
-
     // --- INYECCIONES DE LÓGICA ---
     private mapSearchService = inject(MapSearchService);
     private routeService = inject(RouteService);
@@ -63,12 +62,10 @@ export class RouteManagerService implements OnDestroy{
     private markerLayerService = inject(MarkerLayerService);
     private routeFlowService = inject(RouteFlowService);
     private preferenceService = inject(PreferenceService);
-
     // --- ESTADO ---
     private routeDialogRef: MatDialogRef<RouteDetailsDialog> | null = null;
     private currentParams: RouteParams | null = null;
     private currentContext: RouteContext | null = null;
-    public hasActiveRoute = signal<boolean>(false);
 
     ngOnDestroy(): void {
         this.clearRouteSession();
@@ -94,7 +91,7 @@ export class RouteManagerService implements OnDestroy{
             this.updateUrl(params);
 
             // 4. Abrir Diálogo de Resultados y conectar eventos
-            this.openRouteDetailsDialog(context);
+            await this.openRouteDetailsDialog(context);
 
         } catch (e) {
             this.handleError(e);
@@ -174,7 +171,7 @@ export class RouteManagerService implements OnDestroy{
 
         // Actualizar estado interno
         this.currentParams = params;
-        this.currentContext = { routeResult, coste, params, vehicleAlias };
+        this.currentContext = {routeResult, coste, params, vehicleAlias};
         this.hasActiveRoute.set(true);
 
         return this.currentContext;
@@ -185,26 +182,14 @@ export class RouteManagerService implements OnDestroy{
     private async openRouteDetailsDialog(context: RouteContext) {
         if (!this.currentContext) return;
 
-        if (this.routeDialogRef) this.routeDialogRef.close();
+        // 1. Aseguramos que no haya diálogo previo abierto
+        if (this.routeDialogRef) {
+            this.routeDialogRef.close();
+            this.routeDialogRef = null;
+        }
 
-        this.routeDialogRef = this.dialog.open(RouteDetailsDialog, {
-            hasBackdrop: false,
-            panelClass: 'route-dialog-panel',
-            data: {
-                origenName: context.params.startName,
-                destinoName: context.params.endName,
-                transporte: context.params.transport,
-                preference: context.params.preference,
-                matricula: context.params.matricula,
-                vehicleAlias: context.vehicleAlias,
-                routeResult: context.routeResult,
-                coste: context.coste,
-            }
-        });
-
-        const instance = this.routeDialogRef.componentInstance;
-
-        // Cargar preferencias frescas (Firebase -> LocalStorage)
+        // 2. Cargar preferencias frescas (Firebase -> LocalStorage)
+        // Hacemos esto ANTES de abrir el diálogo para evitar abrirlo dos veces
         let userPrefs: PreferenceModel | undefined;
         try {
             userPrefs = await this.preferenceService.readPreferences();
@@ -212,9 +197,7 @@ export class RouteManagerService implements OnDestroy{
             console.warn('No se pudieron cargar las preferencias al abrir detalles:', error);
         }
 
-        if (this.routeDialogRef) this.routeDialogRef.close();
-
-        // Pasamos 'preferences' en el objeto data
+        // 3. Abrir el diálogo UNA SOLA VEZ con todos los datos
         this.routeDialogRef = this.dialog.open(RouteDetailsDialog, {
             hasBackdrop: false,
             panelClass: 'route-dialog-panel',
@@ -227,47 +210,59 @@ export class RouteManagerService implements OnDestroy{
                 vehicleAlias: context.vehicleAlias,
                 routeResult: context.routeResult,
                 coste: context.coste,
-                preferences: userPrefs
+                preferences: userPrefs // Pasamos las preferencias cargadas
             }
         });
 
+        // 4. Capturar la instancia ACTUAL y suscribirse
+        const instance = this.routeDialogRef.componentInstance;
+
         // SUSCRIPCIONES A EVENTOS
 
-        // 1. Swap
+        // Swap
         instance.swap.subscribe(() => {
             if (!this.currentParams) return;
-            const newParams = { ...this.currentParams,
+            this.routeDialogRef?.close();
+            const newParams = {
+                ...this.currentParams,
                 startHash: this.currentParams.endHash, endHash: this.currentParams.startHash,
                 startName: this.currentParams.endName, endName: this.currentParams.startName
             };
             void this.loadRouteSession(newParams);
         });
 
-        // 2. Cambiar Preferencia
+        // Cambiar Preferencia
         instance.preferenceChange.subscribe((newPref) => {
             if (!this.currentParams) return;
+
+            // 1. Cerramos el diálogo INMEDIATAMENTE para que se vea el "Cargando..."
+            // y evitar conflictos de capas.
+            this.routeDialogRef?.close();
+            this.routeDialogRef = null;
+
+            // 2. Recalculamos
             void this.loadRouteSession({ ...this.currentParams, preference: newPref });
         });
 
-        // 3. Guardar
+        // Guardar
         instance.save.subscribe(async () => {
             try {
                 const routeId = await this.saveCurrentRoute()
                 this.showActionSnackBar('Ruta guardada correctamente', 'VER', routeId)
             } catch (e) {
                 if (e instanceof RouteAlreadyExistsError)
-                    this.snackBar.open(e.message, 'OK', { duration: 3000 });
+                    this.snackBar.open(e.message, 'OK', {duration: 3000});
                 else
                     this.snackBar.open('Error al guardar ruta', 'Cerrar');
             }
         });
 
-        // 4. Editar Atributos (Llama al FlowService)
+        // Editar Atributos
         instance.editOrigin.subscribe(() => this.handleEditAttribute(1));
         instance.editDestination.subscribe(() => this.handleEditAttribute(2));
         instance.editTransport.subscribe(() => this.handleEditAttribute(3));
 
-        // 5. Cerrar
+        // Cerrar
         instance.closeRoute.subscribe(() => {
             this.clearRouteSession();
         });
@@ -297,80 +292,93 @@ export class RouteManagerService implements OnDestroy{
      * 2. Si cambia, lanza una nueva sesión de ruta (Manager).
      */
     private async handleEditAttribute(step: number) {
-        // Seguridad: No podemos editar si no hay parámetros actuales
-        if (!this.currentParams) return;
+        // Guardamos referencia al contexto actual antes de cerrar nada
+        if (!this.currentParams || !this.currentContext) return;
 
-        // Copia de seguridad de los parámetros actuales
-        // Usamos spread operator (...) para no mutar el objeto original todavía
-        let newParams: RouteParams = { ...this.currentParams };
-        let dataChanged = false;
-
-        switch (step) {
-            case 1: // EDITAR ORIGEN
-                const originData = await this.routeFlowService.getPointFromUser(
-                    'Cambiar Origen',
-                    '¿Desde dónde quieres salir?',
-                    1, 4, true
-                );
-
-                if (originData && originData !== 'BACK') {
-                    const point = originData as FlowPoint;
-                    newParams.startName = point.name;
-                    // Si el flow no devuelve hash (raro), lo calculamos
-                    newParams.startHash = point.hash || geohashForLocation([point.lat, point.lon], 7);
-                    dataChanged = true;
-                }
-                break;
-
-            case 2: // EDITAR DESTINO
-                const destData = await this.routeFlowService.getPointFromUser(
-                    'Cambiar Destino',
-                    '¿A dónde quieres ir?',
-                    2, 4, true
-                );
-
-                if (destData && destData !== 'BACK') {
-                    const point = destData as FlowPoint;
-                    newParams.endName = point.name;
-                    newParams.endHash = point.hash || geohashForLocation([point.lat, point.lon], 7);
-                    dataChanged = true;
-                }
-                break;
-
-            case 3: // EDITAR TRANSPORTE
-                const newTransport = await this.routeFlowService.getRouteOption<TIPO_TRANSPORTE | 'BACK'>('transport', 3, 4);
-
-                if (newTransport && newTransport !== 'BACK') {
-                    // Lógica específica de vehículos
-                    if (newTransport === TIPO_TRANSPORTE.VEHICULO) {
-                        const savedVehicle = await this.routeFlowService.selectSavedItem(
-                            'vehiculos',
-                            'Selecciona tu vehículo',
-                            true
-                        );
-
-                        // Si cancela la selección de vehículo, cancelamos toda la edición
-                        if (!savedVehicle || savedVehicle === 'BACK') return;
-
-                        // Si es el mismo coche y mismo transporte, no hacemos nada
-                        if (newTransport === this.currentParams.transport &&
-                            savedVehicle.matricula === this.currentParams.matricula) {
-                            return;
-                        }
-
-                        newParams.matricula = savedVehicle.matricula;
-                    }
-
-                    newParams.transport = newTransport as TIPO_TRANSPORTE;
-                    dataChanged = true;
-                }
-                break;
+        // 1. Cerramos el diálogo actual.
+        // Esto es CRÍTICO para evitar conflictos de backdrop y z-index con los nuevos diálogos.
+        if (this.routeDialogRef) {
+            this.routeDialogRef.close();
+            this.routeDialogRef = null;
         }
 
-        // Si hubo cambios, REINICIAMOS LA SESIÓN con los nuevos datos.
-        // Esto activará el spinner, recalculará al completo y volverá a abrir el diálogo actualizado.
-        if (dataChanged) {
-            await this.loadRouteSession(newParams);
+        // Clonamos los parámetros para no mutar el estado hasta confirmar el cambio
+        const newParams = {...this.currentParams};
+        let hasChanges = false;
+
+        try {
+            // --- CASO 1: CAMBIAR ORIGEN ---
+            if (step === 1) {
+                const res = await this.routeFlowService.getPointFromUser(
+                    'Cambiar Origen', '¿Desde dónde sales?', 1, 1, true
+                );
+
+                if (res && res !== 'BACK') {
+                    newParams.startName = res.name;
+                    // Aseguramos que existe el hash, si viene de coords puras lo calculamos
+                    newParams.startHash = res.hash || geohashForLocation([res.lat, res.lon], 7);
+                    hasChanges = true;
+                }
+            }
+
+            // --- CASO 2: CAMBIAR DESTINO ---
+            else if (step === 2) {
+                const res = await this.routeFlowService.getPointFromUser(
+                    'Cambiar Destino', '¿A dónde quieres ir?', 1, 1, true
+                );
+
+                if (res && res !== 'BACK') {
+                    newParams.endName = res.name;
+                    newParams.endHash = res.hash || geohashForLocation([res.lat, res.lon], 7);
+                    hasChanges = true;
+                }
+            }
+
+            // --- CASO 3: CAMBIAR TRANSPORTE ---
+            else if (step === 3) {
+                const res = await this.routeFlowService.getRouteOption('transport', 1, 1);
+
+                if (res && res !== 'BACK') {
+                    const selectedTransport = res as TIPO_TRANSPORTE;
+
+                    // Si elige Vehículo, paso obligatorio: Matrícula
+                    if (selectedTransport === TIPO_TRANSPORTE.VEHICULO) {
+                        const savedVehicle = await this.routeFlowService.selectSavedItem(
+                            'vehiculos', 'Selecciona tu vehículo', true
+                        );
+
+                        if (savedVehicle && savedVehicle !== 'BACK') {
+                            newParams.transport = TIPO_TRANSPORTE.VEHICULO;
+                            newParams.matricula = savedVehicle.matricula;
+                            hasChanges = true;
+                        }
+                        // Si da a 'Atrás' en vehículos, no hacemos cambios (se queda como estaba)
+                    } else {
+                        // Cambio directo a Pie o Bicicleta
+                        newParams.transport = selectedTransport;
+                        newParams.matricula = undefined;
+                        hasChanges = true;
+                    }
+                }
+            }
+
+            // 2. APLICAR RESULTADO
+            if (hasChanges) {
+                // Si hubo cambios, recalculamos la ruta (Loading... -> API -> Dialog)
+                await this.loadRouteSession(newParams);
+            } else {
+                // Si NO hubo cambios (Usuario canceló o dio atrás),
+                // simplemente reabrimos el diálogo con el contexto QUE YA TENÍAMOS.
+                // Esto es instantáneo y no llama a la API.
+                await this.openRouteDetailsDialog(this.currentContext);
+            }
+
+        } catch (e) {
+            console.error('Error editando atributos de ruta:', e);
+            // En caso de error, intentamos restaurar la vista anterior
+            if (this.currentContext) {
+                await this.openRouteDetailsDialog(this.currentContext);
+            }
         }
     }
 
@@ -394,7 +402,7 @@ export class RouteManagerService implements OnDestroy{
         const msg = (e instanceof ImpossibleRouteError)
             ? 'No existe ruta entre puntos.'
             : `Error: ${e.message}`;
-        this.snackBar.open(msg, 'Cerrar', { duration: 5000 });
+        this.snackBar.open(msg, 'Cerrar', {duration: 5000});
     }
 
     /**
@@ -406,7 +414,7 @@ export class RouteManagerService implements OnDestroy{
             throw new Error("No hay contexto de ruta activo para guardar.");
         }
 
-        const { params, routeResult } = this.currentContext;
+        const {params, routeResult} = this.currentContext;
 
         // Generar un nombre amigable por defecto
         // Ejemplo: "Ruta de Madrid a Barcelona (Coche)"

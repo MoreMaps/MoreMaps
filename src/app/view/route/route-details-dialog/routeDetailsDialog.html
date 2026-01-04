@@ -31,27 +31,43 @@
             <div class="vehicle-info">
                 <span class="vehicle-label">Transporte</span>
                 <span class="vehicle-name">
-                    @if (data.transporte === TIPO_TRANSPORTE.VEHICULO) {
+                    @if (data.transporte === eTransporte.VEHICULO) {
                         {{ data.vehicleAlias || 'Vehículo' }}
-                    } @else if (data.transporte === TIPO_TRANSPORTE.BICICLETA) {
+                    } @else if (data.transporte === eTransporte.BICICLETA) {
                         Bicicleta
                     } @else {
                         A pie
                     }
                 </span>
             </div>
-            <mat-icon class="chevron">chevron_right</mat-icon>
         </div>
     </div>
 
     <div class="info-field">
         <div class="value-box select-box">
             <mat-icon class="pref-icon">tune</mat-icon>
-            <mat-select [(ngModel)]="data.preference" (selectionChange)="onPreferenceChange($event.value)" class="custom-select" panelClass="custom-select-panel">
-                <mat-option [value]="PREFERENCIA.RAPIDA">Más Rápida</mat-option>
-                <mat-option [value]="PREFERENCIA.CORTA">Más Corta</mat-option>
-                <mat-option [value]="PREFERENCIA.RECOMENDADA">Recomendada</mat-option>
-            </mat-select>
+
+            <div class="select-wrapper">
+                <span class="select-label">Preferencia</span>
+
+                <mat-select [(ngModel)]="data.preference"
+                            (selectionChange)="onPreferenceChange($event.value)"
+                            panelClass="custom-select-panel"
+                            disableOptionCentering>
+
+                    <mat-option [value]="ePreferencia.RAPIDA">
+                        Más Rápida
+                    </mat-option>
+                    <mat-option [value]="ePreferencia.CORTA">
+                        Más Corta
+                    </mat-option>
+                    <mat-option [value]="ePreferencia.RECOMENDADA">
+                        Recomendada
+                    </mat-option>
+                </mat-select>
+            </div>
+
+            <mat-icon class="chevron-down">expand_more</mat-icon>
         </div>
     </div>
 

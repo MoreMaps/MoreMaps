@@ -710,7 +710,7 @@ body {
     }
 }
 
-.dialog-container {
+.mdc-dialog__surface {
     animation: fadeIn 0.3s ease-out;
 }
 
@@ -1010,3 +1010,36 @@ mat-error,
 .cdk-global-overlay-wrapper {
     z-index: 10000 !important;
 }
+
+/* === FIX Z-INDEX PARA MAT-SELECT DENTRO DE DIÁLOGOS === */
+// IMPORTANTE: El overlay del mat-select se crea fuera del diálogo
+// Necesitamos que su contenedor (cdk-overlay-pane) tenga mayor z-index
+
+.cdk-overlay-container {
+    // Todos los overlays de mat-select
+    .cdk-overlay-pane:has(.mat-mdc-select-panel) {
+        z-index: 2000 !important;
+    }
+
+    // Específicamente para tu clase personalizada
+    .cdk-overlay-pane:has(.custom-route-panel) {
+        z-index: 2000 !important;
+    }
+}
+
+// Alternativa más específica si lo anterior no funciona en tu versión de Angular
+::ng-deep {
+    .cdk-overlay-pane {
+        &.mat-mdc-select-panel-above,
+        &.cdk-overlay-pane-select {
+            z-index: 2000 !important;
+        }
+    }
+}
+
+// Asegurar que el backdrop del select también esté correctamente posicionado
+.cdk-overlay-backdrop.cdk-overlay-transparent-backdrop {
+    z-index: 1999 !important;
+}
+
+

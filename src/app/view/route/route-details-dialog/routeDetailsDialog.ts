@@ -9,6 +9,7 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {MatOption, MatSelect} from '@angular/material/select';
 import {FormsModule} from '@angular/forms';
 import {RouteCostResult} from '../../../services/Route/route.service';
+import {PreferenceModel} from '../../../data/PreferenceModel';
 
 export interface RouteDialogData {
     origenName: string;
@@ -20,6 +21,7 @@ export interface RouteDialogData {
     nombreVehiculo?: string;         // Opcional
     vehicleAlias?: string;           // Opcional (para mostrar nombre amigable)
     coste?: RouteCostResult;         // Coste calculado
+    preferences?: PreferenceModel;
 }
 
 @Component({
@@ -89,6 +91,21 @@ class RouteDetailsDialog {
                 return 'directions_walk';
             default:
                 return 'directions_car';
+        }
+    }
+
+    /** Controla la visibilidad del coste/calorías
+     * */
+    get shouldShowCost(): boolean {
+        // Si no hay preferencias cargadas, mostramos por defecto (fallback seguro)
+        if (!this.data.preferences) return true;
+
+        if (this.data.transporte === TIPO_TRANSPORTE.VEHICULO) {
+            // Si es vehículo, miramos la preferencia de combustible
+            return this.data.preferences.costeCombustible;
+        } else {
+            // Si es pie o bici, miramos la preferencia de calorías
+            return this.data.preferences.costeCalorias;
         }
     }
 

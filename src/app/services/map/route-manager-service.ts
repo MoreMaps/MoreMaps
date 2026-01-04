@@ -23,6 +23,8 @@ import {RouteFlowService} from './route-flow-service';
 import {FlowPoint} from './route-flow-state';
 import {LoadingRouteDialogComponent} from '../../utils/map-widgets';
 import {RouteAlreadyExistsError} from '../../errors/Route/RouteAlreadyExistsError';
+import {PreferenceService} from '../Preferences/preference.service';
+import {PreferenceModel} from '../../data/PreferenceModel';
 
 // Tipos
 export interface RouteParams {
@@ -59,7 +61,8 @@ export class RouteManagerService implements OnDestroy{
     private vehicleService = inject(VehicleService);
     private routeLayerService = inject(RouteLayerService);
     private markerLayerService = inject(MarkerLayerService);
-    private routeFlowService = inject(RouteFlowService); // Ahora el manager usa el flow
+    private routeFlowService = inject(RouteFlowService);
+    private preferenceService = inject(PreferenceService);
 
     // --- ESTADO ---
     private routeDialogRef: MatDialogRef<RouteDetailsDialog> | null = null;
@@ -179,7 +182,9 @@ export class RouteManagerService implements OnDestroy{
 
     // --- GESTIÓN DE DIÁLOGOS Y EVENTOS ---
 
-    private openRouteDetailsDialog(context: RouteContext) {
+    private async openRouteDetailsDialog(context: RouteContext) {
+        if (!this.currentContext) return;
+
         if (this.routeDialogRef) this.routeDialogRef.close();
 
         this.routeDialogRef = this.dialog.open(RouteDetailsDialog, {
@@ -199,7 +204,34 @@ export class RouteManagerService implements OnDestroy{
 
         const instance = this.routeDialogRef.componentInstance;
 
-        // SUSCRIPCIONES A EVENTOS (La lógica que antes estaba en map-page.component.ts)
+        // Cargar preferencias frescas (Firebase -> LocalStorage)
+        let userPrefs: PreferenceModel | undefined;
+        try {
+            userPrefs = await this.preferenceService.readPreferences();
+        } catch (error) {
+            console.warn('No se pudieron cargar las preferencias al abrir detalles:', error);
+        }
+
+        if (this.routeDialogRef) this.routeDialogRef.close();
+
+        // Pasamos 'preferences' en el objeto data
+        this.routeDialogRef = this.dialog.open(RouteDetailsDialog, {
+            hasBackdrop: false,
+            panelClass: 'route-dialog-panel',
+            data: {
+                origenName: context.params.startName,
+                destinoName: context.params.endName,
+                transporte: context.params.transport,
+                preference: context.params.preference,
+                matricula: context.params.matricula,
+                vehicleAlias: context.vehicleAlias,
+                routeResult: context.routeResult,
+                coste: context.coste,
+                preferences: userPrefs
+            }
+        });
+
+        // SUSCRIPCIONES A EVENTOS
 
         // 1. Swap
         instance.swap.subscribe(() => {

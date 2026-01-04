@@ -127,10 +127,15 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
                 if (!isDesktopNow && this.selectedItem) {
                     // Si pasamos a móvil y hay algo seleccionado, abrir diálogo
-                    this.openDialogForItem(this.selectedItem);
+                    setTimeout(() => {
+                        if (this.selectedItem) {
+                            this.openDialogForItem(this.selectedItem);
+                        }
+                    }, 0); // timeout a 0 lo mueve al final de la cola
                 } else if (isDesktopNow) {
                     // Si pasamos a desktop, cerrar diálogos (se verá en el panel lateral)
                     this.dialog.closeAll();
+
                 }
             });
     }
@@ -351,6 +356,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
         // Si es móvil, abrimos diálogo. Si es Desktop, se muestra incrustado
         if (!this.isDesktop()) {
+            this.dialog.closeAll(); // cerramos cualquier diálogo previo
             this.openDialogForItem(item);
         }
     }
@@ -363,6 +369,9 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             this.dialog.closeAll();
         }
 
+        const currentId = this.getItemId(item);
+        const freshItem = this.items().find(i => this.getItemId(i) === currentId) || item;
+
         const dialogConfig = {
             panelClass: 'saved-item-dialog-panel',
             autoFocus: false,
@@ -370,7 +379,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             maxWidth: '90vw',
             data: {
                 item: item,
-                displayName: this.getDisplayName(item)
+                displayName: this.getDisplayName(freshItem),
+                displayTransport: this.getRouteTransportLabel(freshItem),
             }
         };
 
@@ -388,31 +398,61 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         }
 
         // Suscribirse siempre al resultado, sea cual sea el tipo
-        if (this.activeDialogRef) {
-            this.activeDialogRef.afterClosed().subscribe((result) => {
-                this.processDialogResult(result)
-                this.activeDialogRef = null;
-            });
+        if (this.activeDialogRef?.componentInstance) {
+            const instance = this.activeDialogRef?.componentInstance as any;
+
+            if (instance.actionEvent) {
+                instance.actionEvent.subscribe(async (action: string) => {
+                   if (action === 'update') {
+                       await this.handleDialogActions('update');
+                   }
+                });
+            }
+            if (this.activeDialogRef) {
+                this.activeDialogRef.afterClosed().subscribe((result) => {
+                    this.processDialogResult(result)
+                    this.activeDialogRef = null;
+                });
+            }
         }
     }
 
-    private processDialogResult(result: any) {
+    private async processDialogResult(result: any) {
         if (result && !result.ignore) {
-            this.handleDialogActions(result);
-            this.deselectItem();
+            await this.handleDialogActions(result);
+
+            if(result !== 'update') this.deselectItem();
+
         } else if (!result?.ignore) {
-            this.deselectItem(); // Cerrado sin acción (clic fuera o X)
+            if (!this.isDesktop()) {
+                this.deselectItem();
+            }
         }
     }
 
-    handleDialogActions(action: string | undefined): void {
+    async handleDialogActions(action: string | undefined): Promise<void> {
         switch (action) {
             case 'delete':
                 this.deselectItem();
-                void this.loadItems(false); // Recargar lista
+                await this.loadItems(false); // Recargar lista
                 break;
             case 'update':
-                void this.loadItems(false); // Recargar lista para reflejar cambios (ej. alias)
+                // Recargar lista para reflejar cambios (ej. alias)
+                await this.loadItems(false);
+
+                // Actualizar la referencia del item seleccionado con los nuevos datos
+                if (this.selectedItem) {
+                    const currentId = this.getItemId(this.selectedItem);
+                    const updatedItem = this.items().find(item => this.getItemId(item) === currentId);
+
+                    if (updatedItem) {
+                        // Actualizamos la referencia del item seleccionado
+                        this.selectedItem = updatedItem;
+                        // Si estamos en desktop, Angular detectará el cambio y actualizará la vista
+                        // Si estamos en móvil, el diálogo YA tiene los datos actualizados internamente
+                        // y NO lo cerramos (el diálogo maneja su propia actualización)
+                    }
+                }
                 break;
             case 'showOnMap':
                 if (this.selectedItem && this.selectedType() === 'lugares') {
@@ -438,13 +478,13 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 }
                 break;
             case 'route-from': // Origen fijado (Lugar)
-                void this.initRouteFlow({fixedOrigin: this.selectedItem});
+                await this.initRouteFlow({fixedOrigin: this.selectedItem});
                 break;
             case 'route-to': // Destino fijado (Lugar)
-                void this.initRouteFlow({fixedDest: this.selectedItem});
+                await this.initRouteFlow({fixedDest: this.selectedItem});
                 break;
             case 'route-vehicle': // Vehículo fijado
-                void this.initRouteFlow({fixedVehicle: this.selectedItem});
+                await this.initRouteFlow({fixedVehicle: this.selectedItem});
                 break;
         }
     }
@@ -455,6 +495,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     getDisplayName(item: any): string {
+        console.log(this.currentStrategy());
+        console.log(this.currentStrategy().getDisplayName(item));
         return this.currentStrategy().getDisplayName(item);
     }
 

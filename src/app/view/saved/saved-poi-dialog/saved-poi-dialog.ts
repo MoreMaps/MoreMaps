@@ -16,7 +16,6 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {POIModel} from '../../../data/POIModel';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {Auth} from '@angular/fire/auth';
 import {POIService} from '../../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../../services/POI/POIRepository';
 import {POIDB} from '../../../services/POI/POIDB';
@@ -63,6 +62,8 @@ export class SavedPoiDialog implements OnInit {
     public displayData!: SavedItemDialogData;
     public snackBar = inject(MatSnackBar);
 
+    private hasChanges = false;
+
     isEditing: WritableSignal<Boolean> = signal(false);
     isDeleting: WritableSignal<Boolean> = signal(false);
     editForm!: FormGroup;
@@ -100,7 +101,9 @@ export class SavedPoiDialog implements OnInit {
 
     close(): void {
         if (this.dialogRef) {
-            this.dialogRef.close();
+            // Si hay cambios, devolvemos 'update' para que el padre recargue la lista
+            const result = this.hasChanges ? 'update' : undefined;
+            this.dialogRef.close(result);
         } else {
             this.closeEvent.emit();
         }
@@ -108,7 +111,16 @@ export class SavedPoiDialog implements OnInit {
 
     // Unified Action Handler
     handleAction(action: string): void {
-        if (this.dialogRef && action !== 'edit') {
+        // Para 'update', NO cerramos el diálogo en móvil
+        if (action === 'update') {
+            this.hasChanges = true;
+            // Solo emitimos el evento para que el padre actualice la lista
+            this.actionEvent.emit(action);
+            return;
+        }
+
+        // Para otras acciones (delete, showOnMap), cerramos el diálogo
+        if (this.dialogRef) {
             this.dialogRef.close(action);
         } else {
             this.actionEvent.emit(action);

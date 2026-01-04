@@ -50,6 +50,8 @@ export class SavedVehicleDialog implements OnInit {
     public displayData!: SavedVehicleDialogData;
     public snackBar = inject(MatSnackBar);
 
+    private hasChanges = false;
+
     isEditing: WritableSignal<Boolean> = signal(false);
     isDeleting: WritableSignal<Boolean> = signal(false);
 
@@ -82,13 +84,27 @@ export class SavedVehicleDialog implements OnInit {
     }
 
     close(): void {
-        if (this.dialogRef) this.dialogRef.close();
-        else this.closeEvent.emit();
+        if (this.dialogRef) {
+            const result = this.hasChanges ? 'update' : undefined;
+            this.dialogRef.close(result);
+        } else this.closeEvent.emit();
     }
 
     handleAction(action: string): void {
-        if (this.dialogRef && action !== 'edit') this.dialogRef.close(action);
-        else this.actionEvent.emit(action);
+        // Para 'update', NO cerramos el diálogo en móvil
+        if (action === 'update') {
+            this.hasChanges = true;
+            // Solo emitimos el evento para que el padre actualice la lista
+            this.actionEvent.emit(action);
+            return;
+        }
+
+        // Para otras acciones (delete, showOnMap), cerramos el diálogo
+        if (this.dialogRef) {
+            this.dialogRef.close(action);
+        } else {
+            this.actionEvent.emit(action);
+        }
     }
 
     // --- ACCIONES VISTA ---

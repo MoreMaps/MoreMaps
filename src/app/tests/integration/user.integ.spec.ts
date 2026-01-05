@@ -11,6 +11,7 @@ import {WrongParamsError} from '../../errors/WrongParamsError';
 import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
 import {UserAlreadyExistsError} from '../../errors/User/UserAlreadyExistsError';
 import {RegisterModel} from '../../data/RegisterModel';
+import {PREFERENCE_REPOSITORY, PreferenceRepository} from '../../services/Preferences/PreferenceRepository';
 
 
 // Pruebas de integración sobre usuarios
@@ -20,8 +21,11 @@ describe('Pruebas de integración sobre usuarios', () => {
     // SUT
     let userService: UserService;
 
-    // Mock de acceso a la BD
+    // Mock de acceso a la BD (usuarios)
     let mockUserRepository: jasmine.SpyObj<UserRepository>;
+
+    // Mock de acceso a la BD (preferencias)
+    let mockPreferenceRepository: jasmine.SpyObj<PreferenceRepository>;
 
     // Datos de prueba
     const ramon = USER_TEST_DATA[0];
@@ -29,10 +33,13 @@ describe('Pruebas de integración sobre usuarios', () => {
 
     beforeEach(async () => {
         mockUserRepository = createMockRepository('user');
+        mockPreferenceRepository = createMockRepository('preference');
+
         await TestBed.configureTestingModule({
             providers: [
                 UserService,
                 {provide: USER_REPOSITORY, useValue: mockUserRepository},
+                {provide: PREFERENCE_REPOSITORY, useValue: mockPreferenceRepository}
             ]
         }).compileComponents();
 
@@ -51,6 +58,7 @@ describe('Pruebas de integración sobre usuarios', () => {
             mockUserRepository.userExists.and.resolveTo(false);
             mockUserRepository.passwordValid.and.resolveTo(true);
             mockUserRepository.createUser.and.resolveTo(mockUser);
+            mockPreferenceRepository.updatePreferences.and.resolveTo(true);
 
             // WHEN
             //  el usuario "maria" intenta darse de alta con datos válidos

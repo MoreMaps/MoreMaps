@@ -7,6 +7,8 @@ import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 import {USER_REPOSITORY, UserRepository} from '../../services/User/UserRepository';
 import {VEHICLE_REPOSITORY, VehicleRepository} from '../../services/Vehicle/VehicleRepository';
 import {createMockRepository} from '../test-helpers';
+import {PREFERENCE_REPOSITORY, PreferenceRepository} from '../../services/Preferences/PreferenceRepository';
+import {PreferenceModel} from '../../data/PreferenceModel';
 
 
 // Pruebas de integración sobre vehículos
@@ -22,6 +24,9 @@ describe('Pruebas de integración sobre vehículos', () => {
     // Mock de acceso a la BD (vehículo)
     let mockVehicleRepository: jasmine.SpyObj<VehicleRepository>;
 
+    // Mock de acceso a la BD (preferencias)
+    let mockPreferenceRepository: jasmine.SpyObj<PreferenceRepository>;
+
     // Datos de prueba
     const ford: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
     const audi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
@@ -29,12 +34,14 @@ describe('Pruebas de integración sobre vehículos', () => {
     beforeEach(async () => {
         mockUserRepository = createMockRepository('user');
         mockVehicleRepository = createMockRepository('vehicle');
+        mockPreferenceRepository = createMockRepository('preference');
 
         await TestBed.configureTestingModule({
             providers: [
                 VehicleService,
                 {provide: VEHICLE_REPOSITORY, useValue: mockVehicleRepository},
                 {provide: USER_REPOSITORY, useValue: mockUserRepository},
+                {provide: PREFERENCE_REPOSITORY, useValue: mockPreferenceRepository},
             ],
         }).compileComponents();
 
@@ -205,9 +212,12 @@ describe('Pruebas de integración sobre vehículos', () => {
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
             const mockVehicle: VehicleModel = new VehicleModel(audi.alias, audi.matricula, audi.marca,
                 audi.modelo, audi.anyo, audi.tipoCombustible, audi.consumoMedio, audi.pinned);
+            const mockPreferences: PreferenceModel = PreferenceModel.fromJSON({matricula: audi.matricula});
 
             mockVehicleRepository.vehicleExists.and.resolveTo(true);
             mockVehicleRepository.deleteVehicle.and.resolveTo(true);
+            mockPreferenceRepository.getPreferenceList.and.resolveTo(mockPreferences);
+            mockPreferenceRepository.updatePreferences.and.resolveTo(true);
 
             // WHEN
             // El usuario trata de eliminar el vehículo.

@@ -33,6 +33,11 @@ import {SavedRouteDialog} from './saved-route-dialog/saved-route-dialog';
 import {SpinnerSnackComponent} from '../../utils/map-widgets';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 
+// PATRÓN ITERATOR
+
+import {IterableCollection, PagedIterator} from '../../utils/paginator/iterator.interface';
+import {ConcretePagedCollection} from '../../utils/paginator/concrete-collections';
+
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
 @Component({
@@ -87,29 +92,21 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
     // ESTADO PRINCIPAL
     selectedType = signal<ItemType>('lugares');
-    items = signal<any[]>([]);
+    items = signal<any[]>([]); // Mantenemos la lista completa para comprobaciones de longitud
     selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
     vehicleMap = signal<Map<string, string>>(new Map());
 
-    // Configuración de Paginación
-    readonly itemsPerPage = signal(5); // Cantidad de items por página
+    // --- PATRÓN ITERATOR ---
+    // Instancia del iterador
+    private iterator: PagedIterator<any> | null = null;
+
+    // Signals sincronizados con el iterador para la Vista
+    readonly itemsPerPage = signal(5);
     currentPage = signal(1);
+    totalPages = signal(1);
+    paginatedItems = signal<any[]>([]); // Ahora es un signal de escritura, no computed
 
-    // Paginación Computada (Reactiva)
-    totalPages = computed(() => {
-        const count = this.items().length;
-        if (count === 0) return 1;
-        return Math.ceil(count / this.itemsPerPage());
-    });
-
-    paginatedItems = computed(() => {
-        const start = (this.currentPage() - 1) * this.itemsPerPage();
-        const end = start + this.itemsPerPage();
-        const itemSnap = this.items();
-        if (!itemSnap) return [];
-        return itemSnap.slice(start, end);
-    });
-
+    // Transformación para mostrar nombres (Computed sobre los items paginados actuales)
     paginatedItemsWithNames = computed(() => {
         const items = this.paginatedItems();
         return items.map(item => ({
@@ -134,11 +131,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             this.selectedType.set(savedType as ItemType);
         }
 
-        const savedPage = localStorage.getItem('user_preference_saved_page');
-        if (savedPage) {
-            this.currentPage.set(parseInt(savedPage, 10));
-        }
-
         // Efecto para guardar la pestaña actual
         effect(() => {
             const currentType = this.selectedType();
@@ -153,14 +145,12 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 this.isDesktop.set(isDesktopNow);
 
                 if (!isDesktopNow && this.selectedItem) {
-                    // Mobile: Abrir diálogo si hay selección
                     setTimeout(() => {
                         if (this.selectedItem) {
                             this.openDialogForItem(this.selectedItem);
                         }
                     }, 0);
                 } else if (isDesktopNow) {
-                    // Desktop: Cerrar diálogos (se ve en panel lateral)
                     this.dialog.closeAll();
                 }
             });
@@ -176,13 +166,11 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                     this.selectedType.set(typeParam as ItemType);
                     this.deselectItem();
                 } else if (idParam) {
-                    this.deselectItem(); // Resetear selección visual para recargar
+                    this.deselectItem();
                 }
             }
 
-            // Permitir fallback a localStorage solo si no hay parámetros en URL
             const allowStorageFallback = !idParam && !typeParam;
-
             this.fetchDataWithLoading(allowStorageFallback, idParam).then();
         });
     }
@@ -205,6 +193,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             this.activeDialogRef = null;
         }
 
+        // Guardar página actual
         localStorage.setItem('user_preference_saved_page', this.currentPage().toString());
 
         if (this.selectedItem) {
@@ -230,25 +219,52 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     // --- CARGA DE DATOS ---
 
     async loadItems(allowStorageFallback: boolean, specificId?: string): Promise<void> {
-        const items = await this.currentStrategy().loadItems();
-        this.items.set(items);
+        // 1. Cargar datos crudos
+        const data = await this.currentStrategy().loadItems();
+        this.items.set(data);
+
+        // 2. Crear la Colección y el Iterador (Patrón Iterator)
+        const collection: IterableCollection<any> = new ConcretePagedCollection(data, this.itemsPerPage());
+        this.iterator = collection.createIterator();
+
+        // 3. Restaurar página guardada si aplica
+        const savedPage = localStorage.getItem('user_preference_saved_page');
+        if (savedPage) {
+            // Usamos el método jumpToPage del iterador concreto
+            // Necesitamos hacer casting o asumir que es ConcretePagedIterator si la interfaz no tiene jumpToPage,
+            // pero tu clase concreta sí lo tiene.
+            if (this.iterator && 'jumpToPage' in this.iterator) {
+                (this.iterator as any).jumpToPage(parseInt(savedPage, 10));
+            }
+        }
+
+        // 4. Sincronizar estado inicial del iterador con la vista
+        this.syncIteratorState();
 
         if (this.selectedType() === 'rutas') {
             await this.loadVehicleAliases();
         }
 
-        // Validación de página: si al borrar items la página actual queda vacía, volver atrás
-        if (this.currentPage() > this.totalPages()) {
-            this.currentPage.set(this.totalPages());
-        }
+        await this.checkAndSelectFromParams(data, specificId, allowStorageFallback);
+    }
 
-        await this.checkAndSelectFromParams(items, specificId, allowStorageFallback);
+    /**
+     * Sincroniza los signals de la UI con el estado actual del iterador.
+     */
+    private syncIteratorState(): void {
+        if (this.iterator) {
+            this.paginatedItems.set(this.iterator.getCurrent());
+            this.currentPage.set(this.iterator.getCurrentPageNumber());
+            this.totalPages.set(this.iterator.getTotalPages());
+        } else {
+            this.paginatedItems.set([]);
+            this.currentPage.set(1);
+            this.totalPages.set(1);
+        }
     }
 
     private async checkAndSelectFromParams(items: any[], urlId: string | undefined, allowStorageFallback: boolean): Promise<void> {
-        if (this.isUpdating) {
-            return;
-        }
+        if (this.isUpdating) return;
 
         let targetId = urlId;
 
@@ -262,24 +278,23 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             if (foundItem) {
                 this.selectItem(foundItem);
 
-                // Calcular en qué página está el item y navegar ahí
+                // Calcular página para el salto (necesitamos saber el índice global)
                 const index = items.indexOf(foundItem);
                 const page = Math.floor(index / this.itemsPerPage()) + 1;
-                this.currentPage.set(page);
 
-                // Limpiar URL si venía con parámetros
+                // Usar el iterador para saltar
+                if (this.iterator && 'jumpToPage' in this.iterator) {
+                    (this.iterator as any).jumpToPage(page);
+                    this.syncIteratorState();
+                }
+
+                // Limpiar URL
                 if (urlId || this.route.snapshot.queryParams['type']) {
-                    const urlTree = this.router.createUrlTree([], {
-                        relativeTo: this.route,
-                        queryParams: {}
-                    });
+                    const urlTree = this.router.createUrlTree([], { relativeTo: this.route, queryParams: {} });
                     this.location.replaceState(urlTree.toString());
                 }
-            } else {
-                // Si venía un ID explícito por URL y falla, avisar.
-                if (urlId) {
-                    this.snackBar.open('Elemento no encontrado o aún no disponible.', 'Ok', {duration: 3000});
-                }
+            } else if (urlId) {
+                this.snackBar.open('Elemento no encontrado o aún no disponible.', 'Ok', {duration: 3000});
             }
         }
     }
@@ -291,7 +306,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             vehicles.forEach(v => map.set(v.matricula, v.alias));
             this.vehicleMap.set(map);
         } catch (error) {
-            // Evita la propagación del error
+            console.error('Error cargando alias de vehículos', error);
         }
     }
 
@@ -301,9 +316,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
         if (route.transporte === TIPO_TRANSPORTE.VEHICULO && route.matricula) {
             const alias = this.vehicleMap().get(route.matricula);
-            if (alias) {
-                return `En ${alias}`;
-            }
+            if (alias) return `En ${alias}`;
         }
         return route.transportLabel();
     }
@@ -322,13 +335,14 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         if (this.selectedType() === type) return;
 
         this.selectedType.set(type);
+        // Reset manual
         this.currentPage.set(1);
         this.deselectItem();
         void this.fetchDataWithLoading(false);
     }
 
     private async fetchDataWithLoading(allowStorageFallback: boolean, specificId?: string): Promise<void> {
-        this.items.set([]);
+        this.items.set([]); // Limpiar lista visualmente mientras carga
         if (this.activeSnackRef) this.activeSnackRef.dismiss();
 
         this.loadingTimeout = setTimeout(() => {
@@ -346,7 +360,9 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 await this.router.navigate(['']);
                 return;
             }
+            console.error('Error loading items:', error);
             this.items.set([]);
+            this.paginatedItems.set([]); // Asegurar limpieza del iterador visual
         } finally {
             this.clearLoadingState();
         }
@@ -356,7 +372,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
     selectItem(item: any): void {
         this.selectedItem = item;
-
         const id = this.getItemId(item);
         if (id) localStorage.setItem('user_preference_saved_item_id', id);
 
@@ -368,12 +383,10 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
     private openDialogForItem(item: any): void {
         if (this.activeDialogRef) return;
-
-        if (this.dialog.openDialogs.length > 0) {
-            this.dialog.closeAll();
-        }
+        if (this.dialog.openDialogs.length > 0) this.dialog.closeAll();
 
         const currentId = this.getItemId(item);
+        // Buscar en la lista completa (this.items) no solo en la página actual
         const freshItem = this.items().find(i => this.getItemId(i) === currentId) || item;
 
         const dialogConfig = {
@@ -409,34 +422,19 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     private async processDialogResult(result: any) {
-        if (!result || (typeof result === 'object' && result.ignore)) {
-            if (!this.isDesktop()) {
-                this.deselectItem();
-            }
+        if (!result || result.ignore) {
+            if (!this.isDesktop()) this.deselectItem();
             return;
         }
-
-        // Normalizamos la entrada: puede ser string 'delete' u objeto {action: 'route', payload: {...}}
-        let action = result;
-        let payload = null;
-
-        if (typeof result === 'object' && result.action) {
-            action = result.action;
-            payload = result.payload;
-        }
-
-        await this.handleDialogActions(action, payload);
-
-        if (action !== 'update') {
-            this.deselectItem();
-        }
+        await this.handleDialogActions(result);
+        if (result !== 'update') this.deselectItem();
     }
 
-    async handleDialogActions(action: string | undefined, payload?: string): Promise<void> {
+    async handleDialogActions(action: string | undefined): Promise<void> {
         switch (action) {
             case 'delete':
                 this.deselectItem();
-                await this.loadItems(false);
+                await this.loadItems(false); // Recargará y creará nuevo iterador
                 break;
             case 'update':
                 this.isUpdating = true;
@@ -464,8 +462,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 await this.initRouteFlow({fixedDest: this.selectedItem});
                 break;
             case 'route-vehicle':
-                const vehicleToUse = payload || this.selectedItem;
-                await this.initRouteFlow({fixedVehicle: vehicleToUse});
+                await this.initRouteFlow({fixedVehicle: this.selectedItem});
                 break;
         }
     }
@@ -482,14 +479,13 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             let endName = route.nombre_destino;
 
             try {
-                // Intentamos mejorar los nombres si son POIs guardados
                 const savedPois = await this.strategies['lugares'].loadItems() as POIModel[];
                 const originPoi = savedPois.find(p => p.geohash === route.geohash_origen);
                 if (originPoi?.alias) startName = originPoi.alias;
                 const destPoi = savedPois.find(p => p.geohash === route.geohash_destino);
                 if (destPoi?.alias) endName = destPoi.alias;
             } catch (e) {
-                // Evita la propagación del error
+                console.warn("Error al resolver alias en ruta: ", e);
             }
 
             void this.router.navigate(['/map'], {
@@ -512,14 +508,22 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         localStorage.removeItem('user_preference_saved_item_id');
     }
 
-    // --- PAGINACIÓN UI ---
+    // --- PAGINACIÓN (Delegada al Iterador) ---
 
     previousPage(): void {
-        if (this.currentPage() > 1) this.currentPage.set(this.currentPage() - 1);
+        if (this.iterator && this.iterator.hasPrevious()) {
+            // El iterador actualiza su estado interno
+            this.iterator.getPrevious();
+            // Nosotros actualizamos la vista consultando al iterador
+            this.syncIteratorState();
+        }
     }
 
     nextPage(): void {
-        if (this.currentPage() < this.totalPages()) this.currentPage.set(this.currentPage() + 1);
+        if (this.iterator && this.iterator.hasMore()) {
+            this.iterator.getNext();
+            this.syncIteratorState();
+        }
     }
 
     async toggleFavorite(item: any, event: Event): Promise<void> {
@@ -531,6 +535,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 ? `Se ha fijado ${itemName}.`
                 : `${itemName} ya no está fijado.`;
             this.showSnackbar(message);
+            // Recargar items para refrescar orden y estado (recreará el iterador)
             await this.loadItems(false);
         }
     }

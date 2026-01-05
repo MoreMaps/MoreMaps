@@ -46,9 +46,9 @@
                                  (click)="selectItem(itemData.item)"
                                  [class.selected]="selectedItem?.geohash === itemData.item.geohash">
                                 <div class="item-icon">
-                                    <img ngSrc="assets/images/poi/poi_active.png" height="44" width="33" priority class="poi-icon-img"
+                                    <img ngSrc="../../../assets/images/poi/poi_active.png" height="44" width="33" priority class="poi-icon-img"
                                          [class.visible]="selectedItem?.geohash === itemData.item.geohash" alt="active POI">
-                                    <img ngSrc="assets/images/poi/poi_inactive.png" priority height="44" width="33" class="poi-icon-img"
+                                    <img ngSrc="../../../assets/images/poi/poi_inactive.png" priority height="44" width="33" class="poi-icon-img"
                                          [class.visible]="selectedItem?.geohash !== itemData.item.geohash" alt="inactive POI">
                                 </div>
                                 <div class="item-info">
@@ -71,9 +71,9 @@
                                  (click)="selectItem(itemData.item)"
                                  [class.selected]="selectedItem?.matricula === itemData.item.matricula">
                                 <div class="item-icon">
-                                    <img ngSrc="assets/images/vehicle/vehicle_on.png" height="50" width="50" priority class="poi-icon-img"
+                                    <img ngSrc="../../../assets/images/vehicle/vehicle_off.png" height="50" width="50" priority class="poi-icon-img"
                                          [class.visible]="selectedItem?.matricula === itemData.item.matricula" alt="active vehicle">
-                                    <img ngSrc="assets/images/vehicle/vehicle_off.png" priority height="50" width="50" class="poi-icon-img"
+                                    <img ngSrc="../../../assets/images/vehicle/vehicle_on.png" priority height="50" width="50" class="poi-icon-img"
                                          [class.visible]="selectedItem?.matricula !== itemData.item.matricula" alt="inactive vehicle">
                                 </div>
                                 <div class="item-info">

@@ -696,6 +696,23 @@ body {
             }
         }
     }
+
+    .mat-mdc-form-field-icon-suffix {
+        .mat-icon-button, .mat-icon {
+            color: var(--color-purple-dark) !important;
+            opacity: 1 !important;
+        }
+    }
+
+    .password-hint,
+    .mat-mdc-form-field-hint,
+    .mat-mdc-form-field-error {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    .mat-mdc-form-field-hint {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
 }
 
 // Animaciones

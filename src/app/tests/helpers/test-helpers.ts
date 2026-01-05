@@ -9,7 +9,12 @@ import {ElectricityPriceRepository} from '../../services/electricity-price-servi
 import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
 import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
 import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
+import {PreferenceRepository} from '../../services/Preferences/PreferenceRepository';
 
+/**
+ * Clase para crear objetos espía sobre los repositorios.
+ * @param type repositorio que se quiere espiar
+ */
 export function createMockRepository(type: string): jasmine.SpyObj<any> | null {
     switch (type) {
         case 'user': {
@@ -76,6 +81,12 @@ export function createMockRepository(type: string): jasmine.SpyObj<any> | null {
         case 'electricityPrice': {
             return jasmine.createSpyObj<ElectricityPriceRepository>('ElectricityPriceRepository', [
                 'getPrice',
+            ]);
+        }
+        case 'preference': {
+            return jasmine.createSpyObj<PreferenceRepository>('PreferenceRepository', [
+                'updatePreferences',
+                'getPreferenceList',
             ]);
         }
         case 'fuel': {

@@ -16,23 +16,29 @@ import {PreferenceService} from '../../services/Preferences/preference.service';
 
 // it01: HU101, HU102, HU105, HU106, HU603
 describe('Pruebas sobre usuarios', () => {
+
+    // Servicio principal a probar
     let userService: UserService;
+
+    // Otros servicios necesarios
     let poiService: POIService;
     let vehicleService: VehicleService;
     let routeService: RouteService;
     let preferenceService: PreferenceService;
+
+    // Datos de prueba de usuarios
+    const ramon = USER_TEST_DATA[0]; // usuario ya registrado en la base de datos
+    const maria = USER_TEST_DATA[1]; // usuario no registrado en la base de datos
+
+    // Usuario previamente registrado al inicio de las pruebas
     let usuarioRegistradoRamon: UserModel;
 
-    // Datos de prueba
-    const ramon = USER_TEST_DATA[0];
-    const maria = USER_TEST_DATA[1];
-
+    // Datos para comprobar que los datos de un usuario se borran correctamente
     const poiA = POI_TEST_DATA[0];
     const poiB = POI_TEST_DATA[1];
-
     const ford = VEHICLE_TEST_DATA[0];
-
     const rutaC = ROUTE_TEST_DATA[0];
+
 
     beforeAll( async() => {
         await TestBed.configureTestingModule({
@@ -52,11 +58,11 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU101-EV01: Registrar nuevo usuario válido', async () => {
             // GIVEN
-            // Lista de usuarios registrados vacía que no incluye a "maria"
+            // Lista de usuarios registrados que no incluye a "maria"
             // No se ha iniciado sesión
 
             // WHEN
-            // El usuario "maria" intenta darse de alta
+            // Se intenta dar de alta una cuenta con los datos del usuario “maria”.
             const usuarioCreado: UserModel = await userService.signUp(maria);
 
             // THEN
@@ -68,13 +74,13 @@ describe('Pruebas sobre usuarios', () => {
                 apellidos: maria.apellidos,
             }));
 
-            // LIMPIEZA: la base de datos vuelve al estado inicial
+            // CLEANUP: la base de datos vuelve al estado inicial
             await userService.deleteUser();
         }, 10000);
 
         it('HU101-EI01: Registrar nuevo usuario con contraseña inválida', async () => {
             // GIVEN
-            // Lista de usuarios registrados vacía que no incluye al usuario "maria"
+            // Lista de usuarios registrados que no incluye a "maria"
             // No se ha iniciado sesión
 
             // WHEN
@@ -82,6 +88,7 @@ describe('Pruebas sobre usuarios', () => {
             const mariaPwdIncorrect = new RegisterModel(maria.email, maria.nombre, maria.apellidos, "password");
             await expectAsync(userService.signUp(mariaPwdIncorrect))
                 .toBeRejectedWith(new WrongPasswordFormatError());
+
             // THEN
             // El usuario "maria" no se registra y se lanza el error WrongPasswordFormatError
         });
@@ -96,25 +103,26 @@ describe('Pruebas sobre usuarios', () => {
             // No se ha iniciado sesión
 
             // WHEN
-            // el usuario "ramon" intenta iniciar sesión con su email y contraseña
+            // El usuario "ramon" intenta iniciar sesión con su email y contraseña
             const sesionIniciada = await userService.login(ramon.email, ramon.pwd);
 
             // THEN
-            //  el usuario "ramon" inicia sesión correctamente
+            // El usuario "ramon" inicia sesión correctamente
             expect(sesionIniciada).toBeTrue();
 
-            // se cierra la sesion
+            // CLEANUP: Se cierra la sesion
             await userService.logout();
         }, 10000);
 
         it('HU102-EI01: Iniciar sesión con una cuenta que no existe', async () => {
             // GIVEN
-            // Lista de usuarios registrados vacía que no incluye a "maria"
+            // Lista de usuarios registrados que no incluye a "maria"
             // No se ha iniciado sesión
 
             // WHEN
             // Se intenta iniciar sesión con los datos del usuario "maria"
             await expectAsync(userService.login(maria.email, maria.pwd)).toBeRejectedWith(new UserNotFoundError());
+
             // THEN
             // El usuario no se registra y se lanza el error UserNotFoundError
         });
@@ -145,34 +153,41 @@ describe('Pruebas sobre usuarios', () => {
             // WHEN
             // Se intenta cerrar sesión
             await expectAsync(userService.logout()).toBeRejectedWith(new SessionNotActiveError());
+
             // THEN
             // Se lanza el error SessionNotActiveError y no se cierra la sesión
         });
     });
 
+    /* Este test es bastante intensivo, ya que al eliminar una cuenta se deben eliminar también
+       sus datos asociados. Por ello, el timeout es de 30 segundos. */
     describe('HU106: Eliminar cuenta', () => {
 
-        // Este test es bastante intensivo, así que el timeout son 30s.
         it('HU106-EV01: Eliminar una cuenta existente', async () => {
             // GIVEN
-            // Lista de usuarios registrados incluye a "maria"
+            // Lista de usuarios registrados que incluye a "maria".
+            // El usuario “maria” ha iniciado sesión.
             await userService.signUp(maria);
 
-            // El usuario "maria" tiene los POI "A" y "B", el vehículo "Ford Fiesta" y la ruta "A - B" dados de alta
-            // Simulamos el coste para no llamar a la API.
+            // Lista de POI registrados de maria → [“A”, “B”].
             await poiService.createPOI(poiA)
             await poiService.createPOI(poiB)
+
+            // Lista de vehículos registrados de maria → [“Ford Fiesta”].
             await vehicleService.createVehicle(ford);
-            const result = new RouteResultModel(rutaC.distancia, rutaC.tiempo, undefined as any);
+
+            // Lista de rutas registradas de maria → [“A - B - Ford Fiesta”].
+            // Coste simulado para evitar una llamada costosa a la API
+            const routeCost = new RouteResultModel(rutaC.distancia, rutaC.tiempo, undefined as any);
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino, '',
                 rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino,
-                rutaC.preferencia, result, rutaC.matricula);
+                rutaC.preferencia, routeCost, rutaC.matricula);
 
             // El usuario "maria" establece el vehículo "Ford Fiesta" como vehículo por defecto
             await preferenceService.updatePreferences({matricula: ford.matricula});
 
             // WHEN
-            // Se intenta eliminar la cuenta
+            // El usuario “maria” intenta eliminar su cuenta.
             const usuarioBorrado = await userService.deleteUser();
 
             // THEN
@@ -182,13 +197,14 @@ describe('Pruebas sobre usuarios', () => {
 
         it('HU106-EI01: Eliminar una cuenta existente cuya sesión está inactiva', async () => {
             // GIVEN
-            // Lista de usuarios registrados incluye a "ramon"
-            //  No se ha iniciado sesión
+            // Lista de usuarios registrados que incluye a "ramon"
+            // No se ha iniciado sesión
 
             // WHEN
-            // Se intenta eliminar la cuenta "ramon" sin haber iniciado sesion
+            // El usuario “ramon” intenta eliminar su cuenta sin haber iniciado sesión.
             await expectAsync(userService.deleteUser())
                 .toBeRejectedWith(new SessionNotActiveError());
+
             // THEN
             // Se lanza el error SessionNotActiveError y no se elimina ninguna cuenta
         });
@@ -209,13 +225,11 @@ describe('Pruebas sobre usuarios', () => {
             // El usuario "ramon" vuelve a iniciar sesión
             await userService.login(ramon.email, ramon.pwd);
 
-
             // THEN
-            // Los datos de usuario de la BD son los mismos que los introducidos previamente
+            // Los datos del usuario después de iniciar son idénticos a los que había antes de cerrar sesión
             expect(await userService.getCurrentUser()).toEqual(usuarioRegistradoRamon);
 
-            // LIMPIEZA
-            // "ramon" cierra sesión
+            // CLEANUP: "ramon" cierra sesión
             await userService.logout();
         });
     })

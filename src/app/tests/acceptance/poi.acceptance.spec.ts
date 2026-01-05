@@ -18,29 +18,37 @@ import {RouteService} from '../../services/Route/route.service';
 // Pruebas de aceptación sobre POI
 // HU201, HU202, HU203, HU204, HU205, HU206, HU501, HU604
 describe('Pruebas de aceptación sobre POI', () => {
-    let userService: UserService;
+
+    // Servicios principales a probar
     let poiService: POIService;
     let mapSearchService: MapSearchService;
+
+    // Otros servicios necesarios
+    let userService: UserService;
     let routeService: RouteService;
 
-    let poiRegistrado: POIModel;
-
+    // Utilizamos Auth en beforeAll y afterAll para comprobar que se cierra sesión correctamente.
     let auth: Auth;
 
-    const ramon = USER_TEST_DATA[0];
-    const maria = USER_TEST_DATA[1];
+    // Datos de prueba de usuarios
+    const ramon = USER_TEST_DATA[0]; // usuario ya registrado en la base de datos
+    const maria = USER_TEST_DATA[1]; // usuario no registrado en la base de datos
 
+    // POI previamente registrado al inicio de las pruebas
+    let poiRegistrado: POIModel;
+
+    // Datos de prueba de puntos de interés (POI)
     const poiA: POIModel = POI_TEST_DATA[0];
     const poiB: POIModel = POI_TEST_DATA[1];
 
-    const rutaC = ROUTE_TEST_DATA[0];
+    // Ruta para comprobar que, si se borra un POI asociado a una, también se borra la ruta.
+    const rutaP = ROUTE_TEST_DATA[1];
+
 
     beforeAll(async () => {
         await TestBed.configureTestingModule({
             providers: [appConfig.providers],
-
-            // This prevents Angular from destroying the injector after the first test.
-            teardown: {destroyAfterEach: false}
+            teardown: {destroyAfterEach: false} // Previene que Angular destruya los inyectores después de cada test.
         }).compileComponents();
 
         // Inyección de los servicios
@@ -52,39 +60,43 @@ describe('Pruebas de aceptación sobre POI', () => {
         // Inyección de Auth
         auth = TestBed.inject(Auth);
 
-        // Iniciar sesión con ramón para todos los test
+        // Iniciar sesión con "ramon" para todos los test
         // Puede que la sesión haya quedado activa...
         try {
             await userService.login(ramon.email, ramon.pwd);
         }
-        catch (error) {}
+        catch (error) {
+            console.info('No se ha podido iniciar sesión con el usuario "ramon": ' + error);
+        }
 
-        // Borrar todos los POI del usuario (si hubiere)
+        // Borrar todos los POI del usuario (si hubiera)
         await poiService.clear();
     });
 
-    // Se comprueba si el POI A existe en la base de datos y se crea en caso contrario.
+    // Se comprueba si el POI A existe y se crea en caso contrario.
     beforeEach(async () => {
         // Registrar POI inicial "A" para tener estado base en algunos tests
         try {
             poiRegistrado = await poiService.readPOI(poiA.geohash);
         }
-            // Lanza un error si no existe, entonces se crea
+        // Lanza un error si no existe, entonces se crea
         catch (error) {
             poiRegistrado = await poiService.createPOI(poiA);
         }
     });
 
-    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
+    // Se cierra la sesión al terminar los tests y se informa del resultado
     afterAll(async () => {
-        try {
-            if (auth.currentUser) await userService.logout();
-            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterALl de vehicle.spec.ts.');
-            else { console.info('Logout en afterAll de vehicle.spec.ts funcionó correctamente.'); }
-        } catch (error) {
-            console.error(error);
+        if (auth.currentUser) {
+            try {
+                await userService.logout();
+                console.info('Logout en afterAll de poi.spec.ts funcionó correctamente.');
+            }
+            catch (error) {
+                console.error('Fallo al hacer logout en afterALl de user.spec.ts.');
+            }
         }
-    })
+    });
 
     // Las pruebas empiezan a partir de AQUÍ
 
@@ -102,7 +114,7 @@ describe('Pruebas de aceptación sobre POI', () => {
 
             try {
                 // THEN
-                // Se da de alta el POI
+                // Se da de alta el POI.
                 expect(poiCreado).toEqual(jasmine.objectContaining({
                         lat: poiBuscado.lat,
                         lon: poiBuscado.lon,
@@ -112,8 +124,7 @@ describe('Pruebas de aceptación sobre POI', () => {
                     })
                 );
             } finally {
-                // CLEANUP
-                // Se borra el POI "B"
+                // CLEANUP: Se borra el POI "B"
                 await poiService.deletePOI(poiCreado.geohash);
             }
         }, 10000);
@@ -127,6 +138,7 @@ describe('Pruebas de aceptación sobre POI', () => {
             // Se intenta dar de alta un POI de latitud 89 y longitud 999 (inválida)
             await expectAsync(mapSearchService.searchPOIByCoords(89, 999))
                 .toBeRejectedWith(new LongitudeRangeError());
+
             // THEN
             // Se lanza el error LongitudeRangeError
             // No se modifica el estado
@@ -159,8 +171,7 @@ describe('Pruebas de aceptación sobre POI', () => {
                 })
             );
 
-            // CLEANUP
-            // Se borra el POI "B"
+            // CLEANUP: Se borra el POI "B"
             await poiService.deletePOI(poiCreado.geohash);
         }, 10000);
 
@@ -176,7 +187,6 @@ describe('Pruebas de aceptación sobre POI', () => {
                 .toBeRejectedWith(new PlaceNameNotFoundError(toponimoInexistente));
             // THEN
             // Se lanza el error PlaceNameNotFoundError
-            // No se modifica el estado
         });
     });
 
@@ -187,6 +197,7 @@ describe('Pruebas de aceptación sobre POI', () => {
             // GIVEN
             // El usuario maria se ha registrado y ha iniciado sesión
             await userService.signUp(maria);
+
             try {
                 // WHEN
                 // El usuario maria consulta su lista de POI registrados
@@ -196,11 +207,10 @@ describe('Pruebas de aceptación sobre POI', () => {
                 // Se devuelve una lista vacía y se indica que no hay POI registrados.
                 expect(list.length).toBe(0);
             } finally {
-                // CLEANUP
-                // borrar a maria
+                // CLEANUP: se borra a "maria" y se vuelve a iniciar sesión con "ramon"
+                // Borrar a "maria".
                 await userService.deleteUser();
-
-                // volver a ramon
+                // Volver a "ramon".
                 await userService.login(ramon.email, ramon.pwd);
             }
         }, 10000);
@@ -208,7 +218,7 @@ describe('Pruebas de aceptación sobre POI', () => {
         it('HU203-EV02: Consultar el listado no vacío de POI', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
-            // Lista de POI registrados es ["A"]
+            // Lista de POI registrados → ["A"]
 
             // WHEN
             // El usuario consulta su lista de POI registrados
@@ -217,8 +227,6 @@ describe('Pruebas de aceptación sobre POI', () => {
             // THEN
             // Se devuelve el listado de POI
             expect(listaPoi.length).toBeGreaterThanOrEqual(1);
-
-            // No se modifica el estado
         }, 10000);
     });
 
@@ -244,7 +252,6 @@ describe('Pruebas de aceptación sobre POI', () => {
                     pinned: false
                 })
             );
-            // No se modifica el estado
         }, 10000);
 
         it('HU204-EI02: Consultar información de un POI no registrado', async () => {
@@ -253,12 +260,12 @@ describe('Pruebas de aceptación sobre POI', () => {
             // Lista de POI registrados es [“A”]
 
             // WHEN
-            // El usuario consulta los datos del POI con geohash vacío (no registrado)
-            await expectAsync(poiService.readPOI(" "))
+            // El usuario consulta los datos del POI con geohash vacío (no registrado).
+            await expectAsync(poiService.readPOI(' '))
                 .toBeRejectedWith(new MissingPOIError());
+
             // THEN
             // Se lanza el error MissingPOIError
-            // No se modifica el estado
         });
     });
 
@@ -268,24 +275,23 @@ describe('Pruebas de aceptación sobre POI', () => {
         it('HU205-EV01: Modificar información de un POI registrado', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
-            // Lista de POI registrados es ["A"]
+            // Lista de POI registrados → ["A"]
 
             try {
                 // WHEN
                 // El usuario modifica el alias del POI “A” a "Al y Canto"
-                const poiModificado = await poiService.updatePOI(poiRegistrado.geohash, {alias: "Al y Canto"})
+                const poiModificado = await poiService.updatePOI(poiRegistrado.geohash, {alias: "Al y Canto"});
 
                 // THEN
                 // Se actualiza el POI
                 expect(poiModificado).toBeTrue();
 
-                // El alias ha cambiado
+                // Se cambia el alias
                 const poi = await poiService.readPOI(poiRegistrado.geohash);
                 expect(poi.alias).toEqual("Al y Canto");
             }
             finally {
-                // CLEANUP
-                // Modificar el alias del POI "A" de nuevo al alias vacío.
+                // CLEANUP: Modificar el alias del POI "A" de nuevo al alias vacío.
                 await poiService.updatePOI(poiRegistrado.geohash, {alias: ''});
             }
         }, 10000);
@@ -296,17 +302,17 @@ describe('Pruebas de aceptación sobre POI', () => {
             // Lista de POI registrados es [“A”]
 
             // WHEN
-            // El usuario modifica el alias del POI con geohash vacío a "Castellón de la Nada"
+            // El usuario modifica el alias del POI con geohash vacío (no registrado) a "Castellón de la Nada"
             await expectAsync(poiService.updatePOI(" ", {alias: "Castellón de la Nada"}))
                 .toBeRejectedWith(new MissingPOIError());
+
             // THEN
             // Se lanza el error MissingPOIError
-            // No se modifica el estado
         });
 
         it('HU205-EI03: Modificar información de un POI sin seguir las reglas de dominio', async () => {
             // GIVEN
-            // El usuario ramon ha iniciado sesión
+            // El usuario ramon ha iniciado sesión.
             // Lista de POI registrados es [“A”]
 
             // WHEN
@@ -320,7 +326,6 @@ describe('Pruebas de aceptación sobre POI', () => {
 
             // THEN
             // Se lanza el error DescriptionLengthError
-            // No se modifica el estado
         });
     });
 
@@ -330,16 +335,15 @@ describe('Pruebas de aceptación sobre POI', () => {
         it('HU206-EV01: Eliminar un POI registrado', async () => {
             // GIVEN
             // El usuario ramon ha iniciado sesión
-            // Lista de POI registrados es ["A, B"] (registrar "B")
+            // Lista de POI registrados → ["A, B"] (registrar "B")
             const nuevoPoi: POISearchModel = new POISearchModel(poiB.lat, poiB.lon, poiB.placeName);
             const poiCreado: POIModel = await poiService.createPOI(nuevoPoi)
 
-            // Lista de rutas registradas es ["A-B"]
-            // Simulamos el coste para no llamar a la API.
-            const result = new RouteResultModel(rutaC.distancia, rutaC.tiempo, undefined as any);
-            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
-                result, rutaC.matricula);
+            // Lista de rutas registradas → [“A-B-FordFiesta”].
+            // Coste simulado para evitar una llamada costosa a la API
+            const routeCost = new RouteResultModel(rutaP.distancia, rutaP.tiempo, undefined as any);
+            await routeService.createRoute(rutaP.geohash_origen, rutaP.geohash_destino, rutaP.alias,
+                rutaP.transporte, rutaP.nombre_origen, rutaP.nombre_destino, rutaP.preferencia, routeCost);
 
             // WHEN
             // El usuario trata de borrar el POI "B"
@@ -361,7 +365,7 @@ describe('Pruebas de aceptación sobre POI', () => {
 
             // WHEN
             // El usuario trata de borrar el POI con geohash vacío (no registrado).
-            await expectAsync(poiService.deletePOI(" "))
+            await expectAsync(poiService.deletePOI(' '))
                 .toBeRejectedWith(new MissingPOIError());
             // THEN
             // Se lanza el error MissingPOIError
@@ -383,20 +387,19 @@ describe('Pruebas de aceptación sobre POI', () => {
                 let list = await poiService.getPOIList();
                 expect(list.at(0)?.placeName === 'Alicante').toBeTrue();
 
-                // WHEN
-                // El usuario trata de fijar el POI "B"
+            // WHEN
+            // El usuario trata de fijar el POI "B"
                 const poiFijado = await poiService.pinPOI(poiCreado);
 
-                // THEN
-                // El punto B pasa a estar fijado (pinned = true)
+            // THEN
+            // El punto B pasa a estar fijado (pinned = true)
                 expect(poiFijado).toBeTrue();
 
-                // el orden ahora es ["B", "A"]
+            // El orden ahora es ["B", "A"]
                 list = await poiService.getPOIList();
                 expect(list.at(0)?.placeName).toEqual('Valencia');
             } finally {
-                // CLEANUP
-                // Borrar el POI "B"
+            // CLEANUP: Borrar el POI "B"
                 await poiService.deletePOI(poiCreado.geohash);
             }
 
@@ -411,6 +414,7 @@ describe('Pruebas de aceptación sobre POI', () => {
             // El usuario trata de fijar un POI no registrado
             await expectAsync(poiService.pinPOI(poiB))
                 .toBeRejectedWith(new MissingPOIError());
+
             // THEN
             // Se lanza el error MissingPOIError
             // No se modifica el estado
@@ -422,19 +426,19 @@ describe('Pruebas de aceptación sobre POI', () => {
 
         it('HU604-EV01: Comprobación de datos guardados de POI ante cierre involuntario', async () => {
             // GIVEN
-            //  el usuario "ramon" está registrado y ha iniciado sesión
-            //  la lista de POI registrados es [A]
+            // El usuario "ramon" está registrado y ha iniciado sesión.
+            // Lista de POI registrados → [A].
             const listaPoiAntes = await poiService.getPOIList();
 
-            //  se cierra la sesión involuntariamente
+            // Se cierra la sesión involuntariamente.
             await userService.logout();
 
             // WHEN
-            //  el usuario "ramon" vuelve a iniciar sesión
+            // El usuario "ramon" vuelve a iniciar sesión.
             await userService.login(ramon.email, ramon.pwd);
 
             // THEN
-            //  los datos de POI de la BD son los mismos que los introducidos previamente
+            // Los datos de POI de la BD son los mismos que los introducidos previamente.
             const listaPoi = await poiService.getPOIList();
             expect(listaPoi).toEqual(listaPoiAntes);
         }, 10000);

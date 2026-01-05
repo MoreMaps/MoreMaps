@@ -22,29 +22,37 @@ import {MissingRouteError} from '../../errors/Route/MissingRouteError';
 // HU401, HU402, HU403, HU404, HU405, HU406, HU407, HU408, HU409, HU410, HU411, HU503, HU606
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 describe('Pruebas de aceptación sobre rutas', () => {
+
+    // Servicios principales a probar
+    let routeService: RouteService;
+    let mapSearchService: MapSearchService;
+
+    // Otros servicios necesarios
     let userService: UserService;
     let poiService: POIService;
-    let mapSearchService: MapSearchService;
     let vehicleService: VehicleService;
-    let routeService: RouteService;
+
+    // Utilizamos Auth en beforeAll y afterAll para comprobar que se cierra sesión correctamente.
     let auth: Auth;
 
     // Resultado de la API para la ruta "A-B-FordFiesta" (evita llamadas innecesarias)
     let rutaABCBuscada: RouteResultModel;
 
-    // Datos de prueba
-    const ramon = USER_TEST_DATA[0];
-
-    const poiA = POI_TEST_DATA[0];
-    const poiB = POI_TEST_DATA[1];
-
-    const ford = VEHICLE_TEST_DATA[0];
-
-    // Geohash en América. Sirve para crear rutas imposibles.
-    const geohashAmerica = geohashForLocation([12.266670, -68.333330], 7);
-
+    // Datos de prueba de rutas
     const rutaC = ROUTE_TEST_DATA[0];
     const rutaP = ROUTE_TEST_DATA[1];
+
+    // Datos de prueba de usuarios
+    const ramon = USER_TEST_DATA[0]; // usuario ya registrado en la base de datos
+
+    // Datos de prueba adicionales
+    const poiA = POI_TEST_DATA[0];
+    const poiB = POI_TEST_DATA[1];
+    const ford = VEHICLE_TEST_DATA[0];
+
+    // Geohash en América, para crear rutas imposibles.
+    const geohashAmerica = geohashForLocation([12.266670, -68.333330], 7);
+
 
     beforeAll(async () => {
         await TestBed.configureTestingModule({
@@ -58,14 +66,18 @@ describe('Pruebas de aceptación sobre rutas', () => {
         poiService = TestBed.inject(POIService);
         routeService = TestBed.inject(RouteService);
         mapSearchService = TestBed.inject(MapSearchService);
+
+        // Inyección de Auth
         auth = TestBed.inject(Auth);
 
-        // Iniciar sesión con ramón para todos los test
+        // Iniciar sesión con "ramon" para todos los test
         // Puede que la sesión haya quedado activa...
         try {
             await userService.login(ramon.email, ramon.pwd);
         }
-        catch (error) {}
+        catch (error) {
+            console.info('No se ha podido iniciar sesión con el usuario "ramon": ' + error);
+        }
 
         // Borrar todas las rutas del usuario (si hubiere)
         await routeService.clear();
@@ -83,41 +95,50 @@ describe('Pruebas de aceptación sobre rutas', () => {
         } catch (e) {
             console.info("Error al crear POI A: " + e);
         }
-
         try {
             await poiService.createPOI(poiB);
         } catch (e) {
             console.error("Error al crear POI B: " + e);
         }
 
-        // Resultado de la API para la ruta "A-B-Ford Fiesta" (evita llamadas innecesarias)
+        // Resultado de la API para la ruta "A-B-FordFiesta" (evita llamadas innecesarias)
         rutaABCBuscada = await mapSearchService.searchRoute(rutaC.geohash_origen, rutaC.geohash_destino,
             rutaC.transporte, rutaC.preferencia);
     }, 30000);
 
     afterAll(async () => {
-        // Borrar POI B de la BD
-        // Evitamos borrar POI A y Transporte Fiesta debido a que son usados en otros test
+        // Eliminar Vehículo "Ford Fiesta"
+        try {
+            await vehicleService.deleteVehicle(ford.matricula);
+        } catch (e) {
+            console.info("Error al borrar vehículo: " + e);
+        }
+
+        // Eliminar POI A y POI B
+        try {
+            await poiService.deletePOI(poiA.geohash);
+        } catch (e) {
+            console.info("Error al borrar POI A: " + e);
+        }
         try {
             await poiService.deletePOI(poiB.geohash);
         } catch (e) {
             console.error("Error al borrar POI B: " + e);
         }
 
-        // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
-        try {
-            if (auth.currentUser) await userService.logout();
-            // Si currentUser sigue siendo true, no se ha cerrado correctamente la sesión
-            if (auth.currentUser) console.error(
-                'Fallo al cerrar sesión al finalizar los tests de aceptación de rutas.'
-            );
-            else console.info(
-                    'El cierre de sesión funcionó correctamente al finalizar los tests de aceptación de rutas.'
-            );
-        } catch (error) {
-            console.error(error);
+        // Se cierra la sesión al terminar los tests y se informa del resultado
+        if (auth.currentUser) {
+            try {
+                await userService.logout();
+                console.info('Logout en afterAll de route.spec.ts funcionó correctamente.');
+            }
+            catch (error) {
+                console.error('Fallo al hacer logout en afterALl de user.spec.ts.');
+            }
         }
     });
+
+    // Las pruebas empiezan a partir de AQUÍ
 
     // --- HU401: Obtener y mostrar una ruta ---
 
@@ -130,8 +151,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // 3. Lista de rutas registradas vacía.
 
             // WHEN
-            // El usuario pide una ruta en vehículo, seleccionando el POI "A" como origen y el
-            // POI "B" como destino, con el vehículo "Ford Fiesta" (ruta "A-B").
+            // El usuario pide una ruta seleccionando el POI "A" como origen y el POI "B" como destino
+            // con el vehículo "Ford Fiesta" (ruta "A-B").
             const datosRutaCalculada = await mapSearchService.searchRoute(
                 rutaC.geohash_origen,
                 rutaC.geohash_destino,
@@ -153,7 +174,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
         it('HU401-EI03. Obtener una ruta entre dos puntos sin indicar el medio de transporte.', async () => {
             // GIVEN
             // 1. Lista de POI registrados → ["A", "B"].
-            // 2. Lista de vehículos registrados vacía. (Nota: el sistema tiene vehículos, pero el test simula la selección vacía)
+            // 2. Lista de vehículos → ["Ford Fiesta"].
             // 3. Lista de rutas registradas vacía.
 
             // WHEN
@@ -165,6 +186,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 undefined as any,
                 rutaC.preferencia
             )).toBeRejectedWith(new WrongParamsError('ruta'));
+
             // THEN
             // Se lanza el error WrongRouteParamsError.
         }, 30000);
@@ -226,6 +248,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             await expectAsync(routeService.getRouteCost(falseResult, TIPO_TRANSPORTE.VEHICULO,
                 ford.consumoMedio, ford.tipoCombustible as FUEL_TYPE))
                 .toBeRejectedWith(new InvalidDataError());
+
             // THEN
             // Se lanza el error WrongParamsError.
         }, 30000);
@@ -241,13 +264,11 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // 2. Lista de rutas registradas vacía.
             // 3. El usuario ha seleccionado la ruta "A-B" a pie.
 
-            // Buscamos ruta a pie
+            // WHEN
+            // El usuario pide el coste (en kCal) de la ruta "A-B".
             const foundRoute: RouteResultModel = await mapSearchService.searchRoute(
                 rutaP.geohash_origen, rutaP.geohash_destino, rutaP.transporte, rutaP.preferencia
             );
-
-            // WHEN
-            // El usuario pide el coste (en kCal) de la ruta "A-B". Se asumen 200 kCal/h.
             const coste = await routeService.getRouteCost(foundRoute, rutaP.transporte);
 
             // THEN
@@ -266,6 +287,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
             const falseResult = new RouteResultModel(-1, -1, undefined as any);
             await expectAsync(routeService.getRouteCost(falseResult, TIPO_TRANSPORTE.A_PIE))
                 .toBeRejectedWith(new InvalidDataError());
+
             // THEN
             // Se lanza el error WrongParamsError.
         }, 30000);
@@ -294,8 +316,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // THEN
             // No se lanza ningún error. Se devuelve la ruta correspondiente.
             expect(ruta).toBeDefined();
-            // ¿por qué Less? Porque al ser la más corta, es menos distancia que la ruta "recomendada" (coincide con rápida)
             if (rutaC.distancia != null) {
+                // ¿por qué Less? Porque al ser la más corta, es menos distancia que la ruta "recomendada"
                 expect(ruta.distancia).toBeLessThanOrEqual(rutaC.distancia);
             }
         }, 30000);
@@ -315,6 +337,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 PREFERENCIA.CORTA
             )).toBeRejectedWith(new ImpossibleRouteError());
+
             // THEN
             // Se lanza el error ImpossibleRouteError.
         }, 30000);
@@ -337,6 +360,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 PREFERENCIA.RAPIDA
             );
+
             // THEN
             // No se lanza ningún error. Se devuelve la ruta correspondiente.
             expect(ruta).toBeDefined();
@@ -358,8 +382,9 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.geohash_origen,
                 geohashAmerica,
                 rutaC.transporte,
-                rutaC.preferencia
+                PREFERENCIA.RAPIDA
             )).toBeRejectedWith(new ImpossibleRouteError());
+
             // THEN
             // Se lanza el error ImpossibleRouteError.
         }, 30000);
@@ -377,7 +402,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // WHEN
             // El usuario decide guardar la ruta que ha buscado.
             const rutaGuardada = await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
+                rutaABCBuscada, rutaC.matricula);
             try {
                 // THEN
                 // No se lanza ningún error.
@@ -396,29 +422,35 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 }));
             }
             finally {
-                // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
+                // CLEANUP: Se elimina la ruta creada
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte,
+                    rutaC.matricula);
             }
         }, 30000);
 
         it('HU407-EI08. Guardar una ruta idéntica a una ya guardada.', async () => {
             // GIVEN
             // El usuario ha guardado la ruta más corta entre "A" y "B" utilizando el vehículo "Ford Fiesta".
-            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+            await routeService.createRoute(
+                rutaC.geohash_origen, rutaC.geohash_destino,rutaC.alias, rutaC.transporte, rutaC.nombre_origen,
+                rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula
+            );
 
             try {
                 // WHEN
                 // El usuario intenta guardar una ruta idéntica.
                 await expectAsync(routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                    rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula))
+                    rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
+                    rutaABCBuscada, rutaC.matricula))
                     .toBeRejectedWith(new RouteAlreadyExistsError());
+
                 // THEN
                 // Se lanza el error RouteAlreadyExistsError.
             }
             finally {
-                // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
+                // CLEANUP: Se elimina la ruta creada
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte,
+                    rutaC.matricula);
             }
         }, 30000);
     });
@@ -443,8 +475,9 @@ describe('Pruebas de aceptación sobre rutas', () => {
         it('HU408-EV02. Consultar el listado no vacío de rutas.', async () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
-            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.alias, rutaC.transporte,
+                rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula
+            );
 
             // WHEN
             // El usuario consulta su lista de rutas registradas.
@@ -456,8 +489,9 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 expect(list.length).toBeGreaterThanOrEqual(1);
             }
             finally {
-                // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
+                // CLEANUP: Se elimina la ruta creada
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte,
+                    rutaC.matricula);
             }
         },30000);
     });
@@ -469,8 +503,9 @@ describe('Pruebas de aceptación sobre rutas', () => {
         it('HU409-EV01. Consultar información de una ruta registrada.', async () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
-            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.alias, rutaC.transporte,
+                rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula
+            );
 
             // WHEN
             // El usuario consulta los datos de la ruta "A-B".
@@ -497,8 +532,9 @@ describe('Pruebas de aceptación sobre rutas', () => {
                     matricula: rutaC.matricula,
                 }));
             } finally {
-                // Cleanup
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
+                // CLEANUP: Se elimina la ruta creada
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte,
+                    rutaC.matricula);
             }
         },30000);
 
@@ -527,8 +563,9 @@ describe('Pruebas de aceptación sobre rutas', () => {
         it('HU410-EV01. Eliminar una ruta registrada.', async () => {
             // GIVEN
             // Lista de rutas registradas ["A-B"].
-            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula);
+            await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.alias, rutaC.transporte,
+                rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula
+            );
 
             // WHEN
             // El usuario trata de eliminar la ruta "A-B".
@@ -559,6 +596,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 rutaC.matricula
             )).toBeRejectedWith(new MissingRouteError());
+
             // THEN
             // Se lanza el error MissingRouteError.
         }, 30000);
@@ -572,7 +610,8 @@ describe('Pruebas de aceptación sobre rutas', () => {
             // GIVEN
             // Lista de rutas registradas → ["A-B"].
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, rutaABCBuscada, rutaC.matricula)
+                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
+                rutaABCBuscada, rutaC.matricula);
             let transporteParaBorrar = rutaC.transporte;
 
             // WHEN
@@ -620,6 +659,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.transporte,
                 {transporte: rutaP.transporte}
             )).toBeRejectedWith(new MissingRouteError());
+
             // THEN
             // Se lanza el error MissingRouteError.
         },30000);
@@ -659,10 +699,11 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 expect(list.at(0)?.transporte).toEqual(TIPO_TRANSPORTE.VEHICULO);
             }
             finally {
-                // CLEANUP
-                // Borrar ambas rutas
-                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
-                await routeService.deleteRoute(rutaP.geohash_origen, rutaP.geohash_destino, rutaP.transporte, rutaP.matricula);
+                // CLEANUP: Borrar ambas rutas
+                await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino,
+                    rutaC.transporte, rutaC.matricula);
+                await routeService.deleteRoute(rutaP.geohash_origen, rutaP.geohash_destino,
+                    rutaP.transporte, rutaP.matricula);
             }
 
         });
@@ -684,6 +725,7 @@ describe('Pruebas de aceptación sobre rutas', () => {
                 rutaC.distancia,
                 rutaC.tiempo,
                 ))).toBeRejectedWith(new MissingRouteError());
+
             // THEN
             // Se lanza el error MissingRouteError
         });
@@ -712,8 +754,9 @@ describe('Pruebas de aceptación sobre rutas', () => {
             const listaRutas = await routeService.getRouteList();
             expect(listaRutas).toEqual(listaRutasAntes);
 
-            // CLEANUP
-            await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino, rutaC.transporte, rutaC.matricula);
+            // CLEANUP: Se elimina la ruta creada
+            await routeService.deleteRoute(rutaC.geohash_origen, rutaC.geohash_destino,
+                rutaC.transporte, rutaC.matricula);
         });
     });
 });

@@ -16,18 +16,20 @@ import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
 describe('Pruebas de aceptación sobre preferencias', () => {
 
-    // Servicios
+    // Servicio principal a probar
+    let preferenceService: PreferenceService;
+
+    // Otros servicios necesarios
     let userService: UserService;
     let vehicleService: VehicleService;
-    let preferenceService: PreferenceService;
 
     // Utilizamos Auth en beforeAll y afterAll para comprobar que se cierra sesión correctamente.
     let auth: Auth;
 
     // Datos de prueba de usuarios
-    const ramon = USER_TEST_DATA[0];
+    const ramon = USER_TEST_DATA[0]; // usuario ya registrado en la base de datos
 
-    // Datos de prueba de vehículos
+    // Datos de prueba adicionales
     const ford = VEHICLE_TEST_DATA[0];
     const audi = VEHICLE_TEST_DATA[1];
 
@@ -53,7 +55,7 @@ describe('Pruebas de aceptación sobre preferencias', () => {
             console.info('No se ha podido iniciar sesión con el usuario "ramon": ' + error);
         }
 
-        // Leer los datos del vehículo para los test de la HU504A
+        // Leer los datos del vehículo para los test de HU504A
         // Registrar vehículo inicial "Ford Fiesta" para tener estado base en algunos tests
         try {
             await vehicleService.readVehicle(ford.matricula);
@@ -77,10 +79,10 @@ describe('Pruebas de aceptación sobre preferencias', () => {
         if (auth.currentUser) {
             try {
                 await userService.logout();
+                console.info('Logout en afterAll de user.spec.ts funcionó correctamente.');
             } catch (error) {
                 console.error('Fallo al hacer logout en afterALl de user.spec.ts.');
             }
-            console.info('Logout en afterAll de user.spec.ts funcionó correctamente.');
         }
     });
 
@@ -104,6 +106,7 @@ describe('Pruebas de aceptación sobre preferencias', () => {
             // No se lanza ningún error.
             // Se fija el vehículo como transporte por defecto.
             expect(res).toBeTrue();
+
             // El vehículo por defecto pasa a ser "Ford Fiesta".
             const preferencias = await preferenceService.readPreferences();
             expect(preferencias.matricula).toBe(ford.matricula);
@@ -157,6 +160,7 @@ describe('Pruebas de aceptación sobre preferencias', () => {
             const tipoInvalido = 'longest' as unknown as PREFERENCIA;
             await expectAsync(preferenceService.updatePreferences({tipoRuta: tipoInvalido}))
                 .toBeRejectedWith(new InvalidRouteTypeError());
+
             // THEN
             // Se lanza el error InvalidRouteTypeError y no se modifica el estado.
         });
@@ -182,7 +186,7 @@ describe('Pruebas de aceptación sobre preferencias', () => {
             expect(preferencias.costeCombustible).toBe(false);
         });
 
-        it('HU504C  -EI01: Elegir información mostrada de ruta sin iniciar sesión', async () => {
+        it('HU504C-EI01: Elegir información mostrada de ruta sin iniciar sesión', async () => {
             // GIVEN
             // El usuario no ha iniciado sesión
             await userService.logout();

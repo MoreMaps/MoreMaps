@@ -14,27 +14,36 @@ import {RouteResultModel} from '../../data/RouteResultModel';
 // Pruebas de aceptación sobre vehículos
 // HU301, HU302, HU303, HU304, HU305, HU502, HU605
 describe('Pruebas de aceptación sobre vehículos', () => {
-    let userService: UserService;
+
+    // Servicio principal a probar
     let vehicleService: VehicleService;
+
+    // Otros servicios necesarios
+    let userService: UserService;
     let routeService: RouteService;
 
+    // Utilizamos Auth en beforeAll y afterAll para comprobar que se cierra sesión correctamente.
     let auth: Auth;
 
-    const ramon = USER_TEST_DATA[0];
-    const maria = USER_TEST_DATA[1];
+    // Datos de prueba de usuarios
+    const ramon = USER_TEST_DATA[0]; // usuario ya registrado en la base de datos
+    const maria = USER_TEST_DATA[1]; // usuario no registrado en la base de datos
 
-    const rutaC = ROUTE_TEST_DATA[0];
-
+    // Datos de prueba de vehículos
     const ford: VehicleModel = VEHICLE_TEST_DATA[0] as VehicleModel;
     const audi: VehicleModel = VEHICLE_TEST_DATA[1] as VehicleModel;
 
+    // Vehículo previamente registrado al inicio de las pruebas
     let vehiculoRegistrado: VehicleModel;
+
+    // Ruta para comprobar que, si se borra un vehículo asociado a una, también se borra la ruta.
+    const rutaC = ROUTE_TEST_DATA[0];
 
 
     beforeAll(async () => {
         await TestBed.configureTestingModule({
             providers: [appConfig.providers],
-            teardown: {destroyAfterEach: false}
+            teardown: {destroyAfterEach: false} // Previene que Angular destruya los inyectores después de cada test.
         }).compileComponents();
 
         // Inyección de los servicios
@@ -45,14 +54,16 @@ describe('Pruebas de aceptación sobre vehículos', () => {
         // Inyección de Auth
         auth = TestBed.inject(Auth);
 
-        // Iniciar sesión con ramón para todos los test
+        // Iniciar sesión con "ramon" para todos los test
         // Puede que la sesión haya quedado activa...
         try {
             await userService.login(ramon.email, ramon.pwd);
         }
-        catch (error) {}
+        catch (error) {
+            console.info('No se ha podido iniciar sesión con el usuario "ramon": ' + error);
+        }
 
-        // Borrar todos los vehículos del usuario (si hubiere)
+        // Borrar todos los vehículos del usuario (si hubiera)
         await vehicleService.clear();
     });
 
@@ -67,16 +78,18 @@ describe('Pruebas de aceptación sobre vehículos', () => {
         }
     })
 
-    // Jasmine no garantiza el orden de ejecución entre archivos .spec. Limpiamos auth
+    // Se cierra la sesión al terminar los tests y se informa del resultado
     afterAll(async () => {
-        try {
-            if (auth.currentUser) await userService.logout();
-            if (auth.currentUser) throw new Error('Fallo al hacer logout en afterAll de vehicle.spec.ts.');
-            else { console.info('Logout en afterAll de vehicle.spec.ts funcionó correctamente.'); }
-        } catch (error) {
-            console.error(error);
+        if (auth.currentUser) {
+            try {
+                await userService.logout();
+                console.info('Logout en afterAll de vehicle.spec.ts funcionó correctamente.');
+            }
+            catch (error) {
+                console.error('Fallo al hacer logout en afterALl de user.spec.ts.');
+            }
         }
-    })
+    });
 
     // Las pruebas empiezan a partir de AQUÍ
 
@@ -84,15 +97,16 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU301-EV01: Registrar nuevo vehículo "Ford Fiesta"', async () => {
             // GIVEN
-            // El usuario "ramon" ha iniciado sesión
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta"] (No contiene "Audi A6")
 
             // WHEN
-            // El usuario intenta registrar el vehículo
+            // El usuario intenta registrar el vehículo "Audi A6".
             const vehiculoCreado = await vehicleService.createVehicle(audi);
+
             // THEN
-            // No se lanza ningún error
-            // Se da de alta el vehículo
+            // No se lanza ningún error.
+            // Se da de alta el vehículo.
             expect(vehiculoCreado).toEqual(jasmine.objectContaining({
                 alias: audi.alias,
                 matricula: audi.matricula,
@@ -102,15 +116,16 @@ describe('Pruebas de aceptación sobre vehículos', () => {
                 tipoCombustible: audi.tipoCombustible,
                 consumoMedio: audi.consumoMedio,
                 pinned: audi.pinned,
-                }));
+                })
+            );
 
-            // CLEANUP
-            // Borrar el vehículo creado
+            // CLEANUP: Borrar el vehículo creado
             await vehicleService.deleteVehicle(vehiculoCreado.matricula);
         }, 10000);
 
         it('HU301-EI01: Registrar vehículo ya existente', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta"]
 
             // WHEN
@@ -120,7 +135,6 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
             // THEN
             // Se lanza el error VehicleAlreadyExistsError
-            // No se modifica el estado.
         });
     });
 
@@ -128,27 +142,30 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU302-EV01: Consultar el listado vacío de vehículos', async () => {
             // GIVEN
-            // El usuario maria se ha registrado y ha iniciado sesión
+            // El usuario “ramon” ha iniciado sesión.
+            // El usuario maria se ha registrado y ha iniciado sesión.
             await userService.signUp(maria);
 
             try {
                 // WHEN
-                // El usuario maria consulta su lista de vehículos registrados (vacía)
+                // El usuario "maria" consulta su lista de vehículos registrados (vacía)
                 let list: VehicleModel[] = await vehicleService.getVehicleList();
+
                 // THEN
                 // Se devuelve una lista vacía y se indica que no hay vehículos registrados.
                 expect(list.length).toBe(0);
             } finally {
-                // CLEANUP
-                // Borrar a maria.
+                // CLEANUP: se borra a "maria" y se vuelve a iniciar sesión con "ramon"
+                // Borrar a "maria".
                 await userService.deleteUser();
-                // Volver a iniciar sesión con ramon.
+                // Volver a "ramon".
                 await userService.login(ramon.email, ramon.pwd);
             }
         }, 10000);
 
         it('HU302-EV02: Consultar lista no vacía de vehículos', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta"]
 
             // WHEN
@@ -165,12 +182,13 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU303-EV01: Modificar datos de un vehículo registrado', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta"] (con matrícula "1234XYZ")
 
-            const nuevaMatricula = "1235ZYX"; // para el WHEN
+            // WHEN
+            // El usuario trata de modificar la matrícula del vehículo "Ford Fiesta" a "1235ZYX".
+            const nuevaMatricula = "1235ZYX";
             try {
-                // WHEN
-                // El usuario trata de modificar la matrícula del vehículo "Ford Fiesta" a "1235ZYX".
                 const vehiculoModificado = await vehicleService
                     .updateVehicle(vehiculoRegistrado.matricula, {matricula: nuevaMatricula});
 
@@ -190,19 +208,21 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU303-EI01: Modificar matrícula de un vehículo para que coincida con la de otro', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
             const vehiculoAudi = await vehicleService.createVehicle(audi);
+
             try {
                 // WHEN
-                // El usuario trata de modificar la matrícula del vehículo Audi (4321XYZ) a la del "Ford Fiesta" (1234XYZ)
+                // El usuario trata de modificar la matrícula del vehículo Audi (4321XYZ)
+                // a la del "Ford Fiesta" (1234XYZ)
                 await expectAsync(vehicleService.updateVehicle(vehiculoAudi.matricula, {matricula: ford.matricula}))
                     .toBeRejectedWith(new VehicleAlreadyExistsError());
 
                 // THEN
                 // Se lanza el error VehicleAlreadyExistsError.
-                // Estado esperado: no se modifica el estado.
             } finally {
-                // CLEANUP
+                // CLEANUP: Se elimina el vehículo "Audi A6"
                 await vehicleService.deleteVehicle(vehiculoAudi.matricula);
             }
         });
@@ -212,15 +232,16 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU304-EV01: Eliminar vehículo registrado', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"]
             const vehiculoAudi = await vehicleService.createVehicle(audi);
 
-            // Lista de rutas registradas es ["A-B"], con Audi A6 como vehículo.
-            // Simulamos el coste para no llamar a la API.
-            const result = new RouteResultModel(rutaC.distancia, rutaC.tiempo, undefined as any);
+            // Lista de rutas registradas → [“A-B-AudiA6”].
+            // Coste simulado para evitar una llamada costosa a la API
+            const routeCost = new RouteResultModel(rutaC.distancia, rutaC.tiempo, undefined as any);
             await routeService.createRoute(rutaC.geohash_origen, rutaC.geohash_destino,
                 rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia,
-                result, vehiculoAudi.matricula);
+                routeCost, vehiculoAudi.matricula);
 
             // WHEN
             // El usuario trata de eliminar el vehículo.
@@ -230,13 +251,14 @@ describe('Pruebas de aceptación sobre vehículos', () => {
             // No se lanza ningún error. Se elimina el vehículo de la lista.
             expect(resultado).toBeTrue();
 
-            // Se elimina la ruta "A-B" de la lista.
+            // Se elimina la ruta "A-B-AudiA6" de la lista.
             const routes = await routeService.getRouteList();
             expect(routes.length).toBe(0);
         }, 10000);
 
         it('HU304-EI01: Eliminar vehículo no registrado', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta"].
 
             // WHEN
@@ -253,6 +275,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU305-EV01: Consultar información de un vehículo registrado', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta"].
 
             // WHEN
@@ -275,6 +298,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU305-EI02: Consultar información de un vehículo no registrado', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta"].
 
             // WHEN
@@ -291,6 +315,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU502-EV01: Fijar un vehículo registrado', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta", "Audi A6"].
             const vehiculoAudi: VehicleModel = await vehicleService.createVehicle(audi);
 
@@ -320,6 +345,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU502-EI02: Fijar un vehículo no registrado', async () => {
             // GIVEN
+            // El usuario “ramon” ha iniciado sesión.
             // Lista de vehículos registrados → ["Ford Fiesta"].
 
             // WHEN
@@ -336,19 +362,19 @@ describe('Pruebas de aceptación sobre vehículos', () => {
 
         it('HU605-EV01: Comprobación de datos guardados de vehículos ante cierre involuntario', async () => {
             // GIVEN
-            //  El usuario "ramon" está registrado y ha iniciado sesión.
-            //  Lista de vehículos registrados → ["Ford Fiesta"].
+            // El usuario “ramon” ha iniciado sesión.
+            // Lista de vehículos registrados → ["Ford Fiesta"].
             const listaVehiculosAntes = await vehicleService.getVehicleList();
 
-            //  Se cierra la sesión involuntariamente.
+            // Se cierra la sesión involuntariamente.
             await userService.logout();
 
             // WHEN
-            //  El usuario "ramon" vuelve a iniciar sesión.
+            // El usuario "ramon" vuelve a iniciar sesión.
             await userService.login(ramon.email, ramon.pwd);
 
             // THEN
-            //  Los datos de vehículos de la BD son los mismos que los introducidos previamente.
+            // Los datos de vehículos de la BD son los mismos que los introducidos previamente.
             const listaVehicle = await vehicleService.getVehicleList();
             expect(listaVehicle).toEqual(listaVehiculosAntes);
         }, 10000);

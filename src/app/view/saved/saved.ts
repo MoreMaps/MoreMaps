@@ -6,10 +6,13 @@ import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatSnackBar, MatSnackBarRef} from '@angular/material/snack-bar';
 import {BreakpointObserver} from '@angular/cdk/layout';
+import {Subscription} from 'rxjs';
+import {geohashForLocation} from 'geofire-common';
 
 // Modelos
 import {POIModel} from '../../data/POIModel';
 import {VehicleModel} from '../../data/VehicleModel';
+import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 
 // Servicios y Estrategias
 import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
@@ -17,6 +20,8 @@ import {SavedVehicleStrategy} from '../../services/saved-items/saved-vehicle-str
 import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
 import {SavedItemsStrategy} from '../../services/saved-items/savedItemsStrategy';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
+import {RouteFlowService} from '../../services/map/route-flow-service';
+import {FlowPoint, FlowVehicle, RouteFlowConfig} from '../../services/map/route-flow-state';
 
 // Componentes
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
@@ -24,14 +29,9 @@ import {NavbarComponent} from '../navbar/navbar.component';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {SavedPoiDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
-import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
-import {Subscription} from 'rxjs';
-import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {geohashForLocation} from 'geofire-common';
 import {SavedRouteDialog} from './saved-route-dialog/saved-route-dialog';
-import {RouteFlowService} from '../../services/map/route-flow-service';
 import {SpinnerSnackComponent} from '../../utils/map-widgets';
-import {FlowPoint, FlowVehicle, RouteFlowConfig} from '../../services/map/route-flow-state';
+import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -67,46 +67,47 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     private route = inject(ActivatedRoute);
     private dialog = inject(MatDialog);
     private breakpointObserver = inject(BreakpointObserver);
-    private location = inject(Location)
+    private location = inject(Location);
     private activeDialogRef: MatDialogRef<any> | null = null;
     private breakpointSubscription: Subscription | null = null;
     private queryParamsSubscription: Subscription | null = null;
     private routeFlowService = inject(RouteFlowService);
     private vehicleRepo = inject(VEHICLE_REPOSITORY);
 
+    // Estado de la vista
     isDesktop = signal(false);
 
+    // Estrategias
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
         'vehiculos': inject(SavedVehicleStrategy),
         'rutas': inject(SavedRouteStrategy)
     };
-
-    // ESTADO
-    selectedType = signal<ItemType>('lugares');
-    items = signal<any[]>([]);
-
-    selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
-
-    // Paginación
-    currentPage = signal(1);
-    itemsPerPage = signal(4);
-    totalPages = computed(() => {
-        let itemSnap = this.items();
-        if (!itemSnap) return 1;
-        const total = Math.ceil(itemSnap.length / this.itemsPerPage());
-        return total === 0 ? 1 : total;
-    });
-
     currentStrategy = computed(() => this.strategies[this.selectedType()]);
 
+    // ESTADO PRINCIPAL
+    selectedType = signal<ItemType>('lugares');
+    items = signal<any[]>([]);
+    selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
     vehicleMap = signal<Map<string, string>>(new Map());
 
-    private isUpdating = false;
+    // Configuración de Paginación
+    readonly itemsPerPage = signal(5); // Cantidad de items por página
+    currentPage = signal(1);
 
-    selectedItemDisplayName = computed(() => {
-        if (!this.selectedItem) return '';
-        return this.currentStrategy().getDisplayName(this.selectedItem);
+    // Paginación Computada (Reactiva)
+    totalPages = computed(() => {
+        const count = this.items().length;
+        if (count === 0) return 1;
+        return Math.ceil(count / this.itemsPerPage());
+    });
+
+    paginatedItems = computed(() => {
+        const start = (this.currentPage() - 1) * this.itemsPerPage();
+        const end = start + this.itemsPerPage();
+        const itemSnap = this.items();
+        if (!itemSnap) return [];
+        return itemSnap.slice(start, end);
     });
 
     paginatedItemsWithNames = computed(() => {
@@ -117,7 +118,17 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         }));
     });
 
+    selectedItemDisplayName = computed(() => {
+        if (!this.selectedItem) return '';
+        return this.currentStrategy().getDisplayName(this.selectedItem);
+    });
+
+    emptyMessage = computed(() => this.currentStrategy().getEmptyMessage());
+
+    private isUpdating = false;
+
     constructor() {
+        // Recuperar preferencias
         const savedType = localStorage.getItem('user_preference_saved_tab');
         if (savedType) {
             this.selectedType.set(savedType as ItemType);
@@ -128,35 +139,34 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             this.currentPage.set(parseInt(savedPage, 10));
         }
 
-        // Guardar la pestaña actual
+        // Efecto para guardar la pestaña actual
         effect(() => {
             const currentType = this.selectedType();
             localStorage.setItem('user_preference_saved_tab', currentType);
         });
 
+        // Responsive Observer
         this.breakpointSubscription = this.breakpointObserver
             .observe('(min-width: 1025px)')
             .subscribe(result => {
-                const isDesktopNow = result.matches
+                const isDesktopNow = result.matches;
                 this.isDesktop.set(isDesktopNow);
 
                 if (!isDesktopNow && this.selectedItem) {
-                    // Si pasamos a móvil y hay algo seleccionado, abrir diálogo
+                    // Mobile: Abrir diálogo si hay selección
                     setTimeout(() => {
                         if (this.selectedItem) {
                             this.openDialogForItem(this.selectedItem);
                         }
                     }, 0);
                 } else if (isDesktopNow) {
-                    // Si pasamos a desktop, cerrar diálogos (se verá en el panel lateral)
+                    // Desktop: Cerrar diálogos (se ve en panel lateral)
                     this.dialog.closeAll();
-
                 }
             });
     }
 
     ngOnInit(): void {
-        // Reaccionar a cambios en la URL
         this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
             const typeParam = params['type'];
             const idParam = params['id'];
@@ -166,22 +176,19 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                     this.selectedType.set(typeParam as ItemType);
                     this.deselectItem();
                 } else if (idParam) {
-                    this.deselectItem();
+                    this.deselectItem(); // Resetear selección visual para recargar
                 }
             }
 
-            // Determinar si permitimos el fallback a localStorage
-            //   Si la URL trae parámetros (type o id), la navegación es explícita y NO debemos usar el histórico.
-            //   Si la URL está limpia, permitimos recuperar la última selección.
+            // Permitir fallback a localStorage solo si no hay parámetros en URL
             const allowStorageFallback = !idParam && !typeParam;
 
-            // Cargar datos
             this.fetchDataWithLoading(allowStorageFallback, idParam).then();
         });
     }
 
     ngOnDestroy(): void {
-        this.clearLoadingState()
+        this.clearLoadingState();
 
         if (this.breakpointSubscription) {
             this.breakpointSubscription.unsubscribe();
@@ -230,13 +237,11 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             await this.loadVehicleAliases();
         }
 
-        // Validación de página
-        const realTotalPages = Math.ceil(items.length / this.itemsPerPage()) || 1;
-        if (this.currentPage() > realTotalPages) {
-            this.currentPage.set(realTotalPages);
+        // Validación de página: si al borrar items la página actual queda vacía, volver atrás
+        if (this.currentPage() > this.totalPages()) {
+            this.currentPage.set(this.totalPages());
         }
 
-        // Llamamos a la selección pasándole explícitamente si puede usar storage
         await this.checkAndSelectFromParams(items, specificId, allowStorageFallback);
     }
 
@@ -247,7 +252,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
         let targetId = urlId;
 
-        // SOLO miramos en localStorage si no hay ID de URL y tenemos permiso explícito (navegación limpia)
         if (!targetId && allowStorageFallback) {
             targetId = localStorage.getItem('user_preference_saved_item_id')?.toString();
         }
@@ -258,11 +262,12 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             if (foundItem) {
                 this.selectItem(foundItem);
 
+                // Calcular en qué página está el item y navegar ahí
                 const index = items.indexOf(foundItem);
                 const page = Math.floor(index / this.itemsPerPage()) + 1;
                 this.currentPage.set(page);
 
-                // Limpiar URL solo si venía con parámetros para dejarla limpia
+                // Limpiar URL si venía con parámetros
                 if (urlId || this.route.snapshot.queryParams['type']) {
                     const urlTree = this.router.createUrlTree([], {
                         relativeTo: this.route,
@@ -271,10 +276,11 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                     this.location.replaceState(urlTree.toString());
                 }
             } else {
-                // Caso importante: Si venía un ID en la URL, pero no se encontró (ej. retardo en BD),
-                // NO seleccionamos nada. No hacemos fallback a localStorage para evitar confusión.
-                console.warn(`Item con id ${targetId} no encontrado en la lista cargada.`);
-                this.snackBar.open('Elemento no encontrado o aún no disponible.', 'Ok', {duration: 3000});
+                console.warn(`Item con id ${targetId} no encontrado.`);
+                // Si venía un ID explícito por URL y falla, avisar.
+                if (urlId) {
+                    this.snackBar.open('Elemento no encontrado o aún no disponible.', 'Ok', {duration: 3000});
+                }
             }
         }
     }
@@ -283,13 +289,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         try {
             const vehicles = await this.vehicleRepo.getVehicleList();
             const map = new Map<string, string>();
-
-            vehicles.forEach(v => {
-                // Mapeamos matrícula -> alias
-                const displayName = v.alias;
-                map.set(v.matricula, displayName);
-            });
-
+            vehicles.forEach(v => map.set(v.matricula, v.alias));
             this.vehicleMap.set(map);
         } catch (error) {
             console.error('Error cargando alias de vehículos', error);
@@ -297,34 +297,25 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     getRouteTransportLabel(item: any): string {
-        // Validación de seguridad
         if (this.selectedType() !== 'rutas' || !item) return '';
-
         const route = item as RouteModel;
 
-        // Si es vehículo y tiene matrícula
         if (route.transporte === TIPO_TRANSPORTE.VEHICULO && route.matricula) {
             const alias = this.vehicleMap().get(route.matricula);
             if (alias) {
                 return `En ${alias}`;
             }
         }
-
-        // Fallback al texto por defecto ("En coche", "A pie", etc.)
         return route.transportLabel();
     }
 
     private getItemId(item: any): string | null {
         if (!item) return null;
         switch (this.selectedType()) {
-            case 'lugares':
-                return (item as POIModel).geohash;
-            case 'vehiculos':
-                return (item as VehicleModel).matricula;
-            case 'rutas':
-                return (item as any).id();
-            default:
-                return null;
+            case 'lugares': return (item as POIModel).geohash;
+            case 'vehiculos': return (item as VehicleModel).matricula;
+            case 'rutas': return (item as any).id();
+            default: return null;
         }
     }
 
@@ -333,8 +324,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
         this.selectedType.set(type);
         this.currentPage.set(1);
-
-        // Cambio manual: limpiar selección y no permitir fallback a storage
         this.deselectItem();
         void this.fetchDataWithLoading(false);
     }
@@ -373,7 +362,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         const id = this.getItemId(item);
         if (id) localStorage.setItem('user_preference_saved_item_id', id);
 
-        // Si es móvil, abrimos diálogo. Si es Desktop, se muestra incrustado
         if (!this.isDesktop()) {
             this.dialog.closeAll();
             this.openDialogForItem(item);
@@ -383,7 +371,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     private openDialogForItem(item: any): void {
         if (this.activeDialogRef) return;
 
-        // Si hay otros diálogos, forzamos su cierre para limpiar la pantalla.
         if (this.dialog.openDialogs.length > 0) {
             this.dialog.closeAll();
         }
@@ -403,7 +390,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             }
         };
 
-        // Aquí usamos el switch type, es más limpio que instanceof para decidir el componente
         switch (this.selectedType()) {
             case 'lugares':
                 this.activeDialogRef = this.dialog.open(SavedPoiDialog, dialogConfig);
@@ -425,20 +411,15 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     private async processDialogResult(result: any) {
-        // Caso 1: Usuario cerró el diálogo sin acción (clic fuera, ESC, etc.)
         if (!result || result.ignore) {
-            // Solo deseleccionar en móvil
             if (!this.isDesktop()) {
                 this.deselectItem();
             }
             return;
         }
 
-        // Caso 2: Hay una acción que procesar
         await this.handleDialogActions(result);
 
-        // Caso 3: Después de procesar, decidir si deseleccionar
-        // NO deseleccionar si es 'update' (el item sigue seleccionado con datos actualizados)
         if (result !== 'update') {
             this.deselectItem();
         }
@@ -452,20 +433,14 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 break;
             case 'update':
                 this.isUpdating = true;
-
                 try {
                     await this.loadItems(false);
-
                     if (this.selectedItem) {
                         const currentId = this.getItemId(this.selectedItem);
                         const updatedItem = this.items().find(item => this.getItemId(item) === currentId);
-
                         if (updatedItem) {
                             this.selectedItem = updatedItem;
-
-                            if (currentId) {
-                                localStorage.setItem('user_preference_saved_item_id', currentId);
-                            }
+                            if (currentId) localStorage.setItem('user_preference_saved_item_id', currentId);
                         }
                     }
                 } finally {
@@ -473,50 +448,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 }
                 break;
             case 'showOnMap':
-                if (this.selectedItem && this.selectedType() === 'lugares') {
-                    const poi = this.selectedItem as POIModel;
-                    void this.router.navigate(['/map'], {
-                        queryParams: {lat: poi.lat, lon: poi.lon, name: poi.alias}
-                    });
-                } else if (this.selectedType() === 'rutas') {
-                    const route = this.selectedItem as RouteModel;
-
-                    // resolver alias
-                    let startName = route.nombre_origen;
-                    let endName = route.nombre_destino;
-
-                    try {
-                        const savedPois = await this.strategies['lugares'].loadItems() as POIModel[];
-
-                        const originPoi = savedPois.find(p => p.geohash === route.geohash_origen);
-                        if (originPoi?.alias) {
-                            startName = originPoi.alias;
-                        }
-
-                        const destPoi = savedPois.find(p => p.geohash === route.geohash_destino);
-                        if (destPoi?.alias) {
-                            endName = destPoi.alias;
-                        }
-
-                    } catch (e) {
-                        console.warn("Error al resolver los alias de los POIs: ", e);
-                    }
-
-
-                    // Navegamos al mapa reconstruyendo los parámetros de la ruta
-                    void this.router.navigate(['/map'], {
-                        queryParams: {
-                            mode: 'route',
-                            start: route.geohash_origen,
-                            end: route.geohash_destino,
-                            startName: startName,
-                            endName: endName,
-                            transport: route.transporte,
-                            preference: route.preferencia,
-                            matricula: route.matricula
-                        }
-                    });
-                }
+                void this.handleShowOnMap();
                 break;
             case 'route-from':
                 await this.initRouteFlow({fixedOrigin: this.selectedItem});
@@ -530,20 +462,49 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         }
     }
 
+    private async handleShowOnMap(): Promise<void> {
+        if (this.selectedType() === 'lugares') {
+            const poi = this.selectedItem as POIModel;
+            void this.router.navigate(['/map'], {
+                queryParams: {lat: poi.lat, lon: poi.lon, name: poi.alias}
+            });
+        } else if (this.selectedType() === 'rutas') {
+            const route = this.selectedItem as RouteModel;
+            let startName = route.nombre_origen;
+            let endName = route.nombre_destino;
+
+            try {
+                // Intentamos mejorar los nombres si son POIs guardados
+                const savedPois = await this.strategies['lugares'].loadItems() as POIModel[];
+                const originPoi = savedPois.find(p => p.geohash === route.geohash_origen);
+                if (originPoi?.alias) startName = originPoi.alias;
+                const destPoi = savedPois.find(p => p.geohash === route.geohash_destino);
+                if (destPoi?.alias) endName = destPoi.alias;
+            } catch (e) {
+                console.warn("Error al resolver alias en ruta: ", e);
+            }
+
+            void this.router.navigate(['/map'], {
+                queryParams: {
+                    mode: 'route',
+                    start: route.geohash_origen,
+                    end: route.geohash_destino,
+                    startName: startName,
+                    endName: endName,
+                    transport: route.transporte,
+                    preference: route.preferencia,
+                    matricula: route.matricula
+                }
+            });
+        }
+    }
+
     deselectItem(): void {
         this.selectedItem = null;
         localStorage.removeItem('user_preference_saved_item_id');
     }
 
-    // --- UTILIDADES ---
-
-    paginatedItems = computed(() => {
-        const start = (this.currentPage() - 1) * this.itemsPerPage();
-        const end = start + this.itemsPerPage();
-        const itemSnap = this.items();
-        if (!itemSnap) return [];
-        return itemSnap.slice(start, end);
-    });
+    // --- PAGINACIÓN UI ---
 
     previousPage(): void {
         if (this.currentPage() > 1) this.currentPage.set(this.currentPage() - 1);
@@ -552,8 +513,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     nextPage(): void {
         if (this.currentPage() < this.totalPages()) this.currentPage.set(this.currentPage() + 1);
     }
-
-    emptyMessage = computed(() => this.currentStrategy().getEmptyMessage());
 
     async toggleFavorite(item: any, event: Event): Promise<void> {
         event.stopPropagation();
@@ -572,30 +531,20 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         this.snackBar.open(msg, 'Ok', {duration: 5000, horizontalPosition: 'left', verticalPosition: 'bottom'});
     }
 
-    // LÓGICA DE RUTA ---------------------
+    // LÓGICA DE RUTA (Route Flow)
 
-    /**
-     * Inicia el flujo de cálculo de ruta saltando pasos si hay datos fijos.
-     */
     async initRouteFlow(prefilled: { fixedOrigin?: POIModel, fixedDest?: POIModel, fixedVehicle?: VehicleModel }) {
-
-        // Configurar
         const config: RouteFlowConfig = {
             fixedOrigin: prefilled.fixedOrigin ? this.mapToFlowPoint(prefilled.fixedOrigin) : undefined,
             fixedDest: prefilled.fixedDest ? this.mapToFlowPoint(prefilled.fixedDest) : undefined,
             fixedVehicle: prefilled.fixedVehicle ? this.mapToFlowVehicle(prefilled.fixedVehicle) : undefined
         };
 
-
-        // ¡Ejecutar una sola línea de lógica!
         const result = await this.routeFlowService.startRouteFlow(config);
 
-        // Navegar
         if (result) {
             const startHash = result.origin!.hash || geohashForLocation([result.origin!.lat, result.origin!.lon], 7);
             const endHash = result.destination!.hash || geohashForLocation([result.destination!.lat, result.destination!.lon], 7);
-
-            console.log('matricula', result.matricula);
 
             const routeParams = {
                 mode: 'route',
@@ -612,13 +561,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         }
     }
 
-    /**
-     * Convierte un POI guardado al formato FlowPoint
-     * que necesita el servicio de rutas.
-     */
     private mapToFlowPoint(item: any): FlowPoint {
         const name = this.strategies['lugares'].getDisplayName(item);
-
         return {
             name: name,
             lat: item.lat,
@@ -627,13 +571,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         };
     }
 
-    /**
-     * Convierte un Vehículo guardado al formato FlowVehicle
-     * que necesita el servicio de rutas.
-     */
     private mapToFlowVehicle(item: any): FlowVehicle {
         const name = this.strategies['vehiculos'].getDisplayName(item);
-
         return {
             matricula: item.matricula,
             alias: name,

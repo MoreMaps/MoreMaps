@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
+import {Component, computed, inject, OnInit, signal} from '@angular/core';
 import {CommonModule, NgOptimizedImage} from '@angular/common';
 import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
@@ -18,11 +18,10 @@ import {SavedVehicleStrategy} from '../saved-vehicle-strategy.service';
 import {SavedItemsStrategy} from '../savedItemsStrategy';
 
 export interface SavedSelectorData {
-    // search-results se emplea para búsqueda de rutas con más de un resultado
     type: 'lugares' | 'vehiculos' | 'search-results';
     title?: string;
     showBack: boolean;
-    items?: any[]; // solo para búsquedas de rutas con más de un resultado
+    items?: any[];
 }
 
 @Component({
@@ -38,7 +37,6 @@ export interface SavedSelectorData {
     ],
     templateUrl: './savedSelectorData.html',
     styleUrls: ['./savedSelectorData.scss'],
-    // Proveemos las estrategias aquí igual que en SavedItemsComponent
     providers: [
         POIService,
         VehicleService,
@@ -52,24 +50,37 @@ export class SavedItemSelector implements OnInit {
     private dialogRef = inject(MatDialogRef<SavedItemSelector>);
     public data = inject<SavedSelectorData>(MAT_DIALOG_DATA);
 
-    // Estrategias inyectadas
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
         'vehiculos': inject(SavedVehicleStrategy)
     };
 
-    // Estado
+    // Estado de datos
     items = signal<any[]>([]);
     isLoading = signal<boolean>(true);
     currentStrategy!: SavedItemsStrategy;
 
+    // --- Paginación ---
+    readonly itemsPerPage = signal(5); // 5 elementos por página en el diálogo
+    currentPage = signal(1);
+
+    totalPages = computed(() => {
+        const count = this.items().length;
+        if (count === 0) return 1;
+        return Math.ceil(count / this.itemsPerPage());
+    });
+
+    paginatedItems = computed(() => {
+        const start = (this.currentPage() - 1) * this.itemsPerPage();
+        const end = start + this.itemsPerPage();
+        return this.items().slice(start, end);
+    });
+
     ngOnInit(): void {
-        // Lógica de carga para búsqueda de rutas con más de un resultado
         if (this.data.items && this.data.items.length > 0) {
             this.items.set(this.data.items);
             this.isLoading.set(false);
         } else {
-            // Lógica para cargar de BD
             if (this.strategies[this.data.type]) {
                 this.currentStrategy = this.strategies[this.data.type];
                 void this.loadItems();
@@ -82,6 +93,7 @@ export class SavedItemSelector implements OnInit {
         try {
             const loadedItems = await this.currentStrategy.loadItems();
             this.items.set(loadedItems);
+            this.currentPage.set(1); // Resetear a página 1 al cargar
         } catch (error) {
             console.error('Error cargando items:', error);
             this.items.set([]);
@@ -89,6 +101,21 @@ export class SavedItemSelector implements OnInit {
             this.isLoading.set(false);
         }
     }
+
+    // --- Controles de Paginación ---
+    previousPage(): void {
+        if (this.currentPage() > 1) {
+            this.currentPage.set(this.currentPage() - 1);
+        }
+    }
+
+    nextPage(): void {
+        if (this.currentPage() < this.totalPages()) {
+            this.currentPage.set(this.currentPage() + 1);
+        }
+    }
+
+    // --- Acciones ---
 
     selectItem(item: any): void {
         this.dialogRef.close(item);

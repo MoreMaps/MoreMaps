@@ -20,7 +20,7 @@
                 </button>
             </div>
 
-            @if (items() && items()!.length > 0) {
+            @if (items().length > 0) {
                 <div class="pagination">
                     <span class="page-info">Página {{ currentPage() }} de {{ totalPages() }}</span>
                     <div class="pagination-buttons">
@@ -35,7 +35,7 @@
             }
         </div>
 
-        @if (items() && items().length > 0) {
+        @if (items().length > 0) {
 
             <div class="items-list">
                 @switch (selectedType()) {

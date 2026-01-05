@@ -9,10 +9,13 @@ import {WrongParamsError} from '../../errors/WrongParamsError';
 import {SessionAlreadyActiveError} from '../../errors/User/SessionAlreadyActiveError';
 import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
 import {RegisterModel} from '../../data/RegisterModel';
+import {PREFERENCE_REPOSITORY, PreferenceRepository} from '../Preferences/PreferenceRepository';
+import {PreferenceModel} from '../../data/PreferenceModel';
 
 @Injectable({providedIn: 'root'})
 export class UserService {
     private userDb: UserRepository = inject(USER_REPOSITORY);
+    private preferenceDb: PreferenceRepository = inject(PREFERENCE_REPOSITORY);
 
     // HU101 Crear usuario
     /** Crea el usuario si este no existe ya.
@@ -38,7 +41,23 @@ export class UserService {
         }
 
         // Crea un nuevo usuario
-        return await this.userDb.createUser(model.email, model.pwd, model.nombre, model.apellidos);
+        const res = await this.userDb.createUser(model.email, model.pwd, model.nombre, model.apellidos);
+
+        // Creación de las preferencias por defecto del usuario
+        const preferencias = new PreferenceModel({
+            costeCombustible: true,
+            costeCalorias: true,
+            tipoTransporte: undefined,
+            tipoRuta: undefined,
+            matricula: undefined
+        })
+        try{
+            await this.preferenceDb.updatePreferences(preferencias);
+        } catch(error) {
+            console.warn('Ha ocurrido un error y se ha creado el usuario sin preferencias.')
+        }
+
+        return res;
     }
 
     // HU102 Iniciar sesión

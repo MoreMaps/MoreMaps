@@ -150,6 +150,9 @@
                         <app-saved-vehicle-dialog
                             [item]="selectedItem"
                             [displayName]="selectedItemDisplayName()"
+
+                            [existingMatriculas]="allMatriculas()"
+
                             (actionEvent)="handleDialogActions($event)"
                             (closeEvent)="deselectItem()">
                         </app-saved-vehicle-dialog>

@@ -44,6 +44,7 @@ export interface SavedVehicleDialogData {
 export class SavedVehicleDialog implements OnInit, OnChanges {
     @Input() item?: VehicleModel;
     @Input() displayName?: string;
+    @Input() existingMatriculas?: string[];
 
     @Output() closeEvent = new EventEmitter<void>();
     @Output() actionEvent = new EventEmitter<any>();
@@ -79,7 +80,8 @@ export class SavedVehicleDialog implements OnInit, OnChanges {
         } else if (this.item) {
             this.displayData = {
                 item: this.item,
-                displayName: this.item.alias || `${this.item.marca} ${this.item.modelo}`
+                displayName: this.item.alias || `${this.item.marca} ${this.item.modelo}`,
+                existingMatriculas: this.existingMatriculas,
             };
         }
     }

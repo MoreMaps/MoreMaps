@@ -122,6 +122,14 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
     emptyMessage = computed(() => this.currentStrategy().getEmptyMessage());
 
+    allMatriculas = computed<string[]>(() => {
+        if (this.selectedType() === 'vehiculos') {
+            // Asegúrate de que items() tenga objetos VehicleModel válidos
+            return this.items().map((v: any) => v.matricula);
+        }
+        return [];
+    });
+
     private isUpdating = false;
 
     constructor() {

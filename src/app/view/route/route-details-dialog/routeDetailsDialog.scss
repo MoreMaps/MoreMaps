@@ -63,6 +63,9 @@
     gap: 8px; /* Espacio entre las cajas de origen y destino */
     margin-left: 28px; /* Espacio para la línea conectora */
     margin-right: 40px; /* Espacio para el botón de swap */
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
 }
 
 /* Estilo cajas inputs */
@@ -451,6 +454,7 @@
     .divider {
         background-color: rgba(255, 255, 255, 0.15);
     }
+
 
 
     .main-stat.duration {

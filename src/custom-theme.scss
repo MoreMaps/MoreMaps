@@ -1169,3 +1169,52 @@ mat-error,
     }
 }
 
+/* =========================================
+   FIX: INPUTS READONLY Y DISABLED EN MODO OSCURO
+   ========================================= */
+.dark-theme {
+    // Afecta a cualquier input dentro de un form-field de Material
+    .mat-mdc-form-field {
+
+        // 1. Para inputs marcados como READONLY
+        input[readonly],
+        .mat-mdc-input-element[readonly],
+            // 2. Para inputs marcados como DISABLED (Lo que se ve en tu imagen)
+        input:disabled,
+        .mat-mdc-input-element:disabled {
+
+            // Forzamos el color morado oscuro
+            color: var(--color-purple-dark) !important;
+
+            // Webkit (Chrome/Safari) a veces fuerza el color gris en disabled
+            // Esto lo sobrescribe:
+            -webkit-text-fill-color: var(--color-purple-dark) !important;
+
+            // Evitamos que se vea transparente/borroso
+            opacity: 0.6 !important;
+
+            // Mantenemos el cursor normal para readonly y prohibido para disabled
+            &[readonly] { cursor: default; }
+            &:disabled { cursor: not-allowed; }
+        }
+    }
+    .mdc-text-field--disabled {
+        // El label flotante o en reposo
+        .mdc-floating-label {
+            color: var(--color-purple-dark) !important;
+            opacity: 0.6 !important;
+            -webkit-text-fill-color: var(--color-purple-dark) !important;
+        }
+    }
+
+    // 2. Sobrescribimos las variables de Material para campos "filled" deshabilitados
+    .mat-mdc-form-field.mat-form-field-disabled {
+        --mdc-filled-disabled-label-text-color: var(--color-purple-dark);
+        --mat-form-field-filled-disabled-label-text-color: var(--color-purple-dark);
+
+        // Esto asegura que si el label está "arriba" (floating), también se vea
+        .mat-mdc-floating-label {
+            color: var(--color-purple-dark) !important;
+        }
+    }
+}

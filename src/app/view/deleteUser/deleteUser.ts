@@ -38,11 +38,7 @@ export class AccountSettingsComponent {
     confirmDelete(): void {
         this.userService.deleteUser()
             .then((r) => {
-                if (r) console.log('Usuario borrado con éxito.');
-                else {
-                    console.log('Usuario no borrado');
-                    return
-                }
+                if (!r) return
                 this.router.navigate(['']);
             })
             .catch((err) => {
@@ -50,7 +46,6 @@ export class AccountSettingsComponent {
                     if   (!this.auth.currentUser) this.router.navigate(['']);
                     else this.openLoginDialog();
                 }
-                console.log('ERROR al borrar usuario' + err);
             })
         this.showModal = false;
     }

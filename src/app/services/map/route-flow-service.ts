@@ -200,7 +200,6 @@ export class RouteFlowService implements IRouteFlowService {
                 }
             }
         } catch (error: any) {
-            console.error(error);
             this.snackBar.open(`Búsqueda sin resultados.`, '', {duration: 3000});
             return 'BACK';
         }
@@ -249,7 +248,7 @@ export class RouteFlowService implements IRouteFlowService {
                 }
             }
         } catch (e) {
-            console.warn('No se pudieron cargar preferencias:', e);
+
         }
 
         // Pasamos loadedPrefs al contexto

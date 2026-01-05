@@ -42,7 +42,6 @@ export class RouteDB implements RouteRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -67,7 +66,6 @@ export class RouteDB implements RouteRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -123,7 +121,6 @@ export class RouteDB implements RouteRepository {
 
             return updatedRoute;
         } catch (error: any) {
-            console.error('Error al actualizar ruta en Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -149,7 +146,6 @@ export class RouteDB implements RouteRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -172,7 +168,6 @@ export class RouteDB implements RouteRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -198,7 +193,6 @@ export class RouteDB implements RouteRepository {
         }
             // Ha ocurrido un error inesperado en Firebase.
         catch (error: any) {
-            console.error("ERROR de Firebase: " + error);
             throw new DBAccessError();
         }
     }
@@ -222,8 +216,7 @@ export class RouteDB implements RouteRepository {
         }
             // Ha ocurrido un error inesperado en Firebase.
         catch (error: any) {
-            console.error('Error al obtener respuesta de Firebase: ' + error);
-            return false;
+            throw new DBAccessError();
         }
     }
 

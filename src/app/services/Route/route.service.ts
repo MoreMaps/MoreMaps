@@ -290,7 +290,6 @@ export class RouteService {
                 update.tiempo = nuevoCalculo.tiempo;
             } catch (e) {
                 if (e instanceof ImpossibleRouteError) throw e;
-                console.error("Error recalculando la ruta al actualizar: ", e);
                 throw new InvalidDataError();
             }
         }

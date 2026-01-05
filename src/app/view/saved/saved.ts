@@ -276,7 +276,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                     this.location.replaceState(urlTree.toString());
                 }
             } else {
-                console.warn(`Item con id ${targetId} no encontrado.`);
                 // Si venía un ID explícito por URL y falla, avisar.
                 if (urlId) {
                     this.snackBar.open('Elemento no encontrado o aún no disponible.', 'Ok', {duration: 3000});
@@ -292,7 +291,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             vehicles.forEach(v => map.set(v.matricula, v.alias));
             this.vehicleMap.set(map);
         } catch (error) {
-            console.error('Error cargando alias de vehículos', error);
+            // Evita la propagación del error
         }
     }
 
@@ -347,7 +346,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 await this.router.navigate(['']);
                 return;
             }
-            console.error('Error loading items:', error);
             this.items.set([]);
         } finally {
             this.clearLoadingState();
@@ -481,7 +479,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 const destPoi = savedPois.find(p => p.geohash === route.geohash_destino);
                 if (destPoi?.alias) endName = destPoi.alias;
             } catch (e) {
-                console.warn("Error al resolver alias en ruta: ", e);
+                // Evita la propagación del error
             }
 
             void this.router.navigate(['/map'], {

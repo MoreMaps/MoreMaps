@@ -68,7 +68,6 @@ export class MainPageComponent implements OnInit {
                     void this.router.navigate(['map']);
                 } catch (e) {
                     // si llegamos aquí, significa que el usuario en auth está, pero en firebase, no.
-                    console.warn('El usuario existe en Auth, pero no en Firebase');
                 }
             }
         });

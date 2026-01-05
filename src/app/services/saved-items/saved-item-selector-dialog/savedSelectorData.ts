@@ -95,7 +95,6 @@ export class SavedItemSelector implements OnInit {
             this.items.set(loadedItems);
             this.currentPage.set(1); // Resetear a página 1 al cargar
         } catch (error) {
-            console.error('Error cargando items:', error);
             this.items.set([]);
         } finally {
             this.isLoading.set(false);

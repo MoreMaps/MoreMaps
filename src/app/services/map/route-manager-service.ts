@@ -204,7 +204,6 @@ export class RouteManagerService implements OnDestroy {
         try {
             userPrefs = await this.preferenceService.readPreferences();
         } catch (error) {
-            console.warn('No se pudieron cargar las preferencias al abrir detalles:', error);
         }
 
         // 3. Abrir el diálogo UNA SOLA VEZ con todos los datos
@@ -384,7 +383,7 @@ export class RouteManagerService implements OnDestroy {
             }
 
         } catch (e) {
-            console.error('Error editando atributos de ruta:', e);
+
             // En caso de error, intentamos restaurar la vista anterior
             if (this.currentContext) {
                 await this.openRouteDetailsDialog(this.currentContext);

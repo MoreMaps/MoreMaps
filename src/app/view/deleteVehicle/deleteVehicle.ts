@@ -28,7 +28,6 @@ export class DeleteConfirmationVehiclePopupComponent {
             this.success.emit(result);
             this.close.emit();
         } else {
-            console.error("Falta Auth o Matrícula para borrar");
             this.close.emit();
         }
     }

@@ -50,7 +50,6 @@ export class UserDB implements UserRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -101,12 +100,12 @@ export class UserDB implements UserRepository {
         }
         catch (error: any) {
             if (error.code === 'auth/requires-recent-login') {
-                console.warn('El usuario necesita re-autenticarse para borrar la cuenta.');
+
                 throw new ReauthNecessaryError();
             }
 
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
+
             throw new DBAccessError();
         }
     }
@@ -124,7 +123,7 @@ export class UserDB implements UserRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
+
             throw new DBAccessError();
         }
     }
@@ -151,7 +150,7 @@ export class UserDB implements UserRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
+
             throw new DBAccessError();
         }
     }

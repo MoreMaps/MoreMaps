@@ -21,7 +21,6 @@ export class UserService {
      * @throws WrongPasswordFormatError si la contraseña no cumple con los criterios mínimos.
      */
     async signUp(model: RegisterModel): Promise<UserModel> {
-        console.info('porfa funsiona: ' + model.nombre, model.apellidos, model.email, model.pwd);
 
         // Comprobar si hay algún parámetro vacío
         if (!model.email || !model.pwd || !model.nombre || !model.apellidos) {

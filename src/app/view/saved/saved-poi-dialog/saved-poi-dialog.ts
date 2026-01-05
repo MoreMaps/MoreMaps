@@ -212,7 +212,6 @@ export class SavedPoiDialog implements OnInit, OnChanges{
                     });
                 }
             } catch (error) {
-                console.error(error);
                 this.snackBar.open('Error al guardar', 'Ok', {
                     duration: 3000,
                     horizontalPosition: 'start',

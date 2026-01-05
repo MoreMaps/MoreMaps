@@ -110,8 +110,7 @@ export class UserPreferencesComponent implements OnInit, OnDestroy {
                 }
             }
         });
-
-        // Lógica para checkbox Todo
+        
         const updateTodoState = () => {
             // Leemos directamente el valor de los controles para asegurar el dato más fresco
             const valComb = this.prefForm.get('costeCombustible')?.value;
@@ -161,9 +160,6 @@ export class UserPreferencesComponent implements OnInit, OnDestroy {
 
             // Guardamos el estado inicial
             this.initialValues = this.prefForm.getRawValue();
-
-        } catch (error) {
-            console.error('Error cargando preferencias', error);
         } finally {
             this.loading = false;
         }
@@ -251,7 +247,7 @@ export class UserPreferencesComponent implements OnInit, OnDestroy {
                 this.showFeedback('Preferencias guardadas correctamente', 'success-snackbar');
             }
         } catch (error) {
-            console.error(error);
+
             this.showFeedback('Error al guardar preferencias', 'error-snackbar');
         } finally {
             this.loading = false;
@@ -304,7 +300,7 @@ export class UserPreferencesComponent implements OnInit, OnDestroy {
                         this.openReauthDialog();
                     }
                 } else {
-                    console.error('ERROR al borrar usuario', err);
+
                     this.showFeedback('Error al borrar la cuenta', 'error-snackbar');
                     this.showDeleteModal = false;
                 }

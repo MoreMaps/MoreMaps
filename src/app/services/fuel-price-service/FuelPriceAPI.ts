@@ -129,7 +129,7 @@ export class FuelPriceAPI implements FuelPriceRepository {
         try {
             respuesta = await firstValueFrom(this.http.get<T>(url, {headers, params}));
         } catch (error) {
-            console.error('Error al obtener respuesta de la API: ' + error);
+
             throw new APIAccessError();
         }
 

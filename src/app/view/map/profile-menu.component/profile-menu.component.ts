@@ -52,17 +52,9 @@ export class ProfileMenuComponent {
     confirmLogout(): void {
         this.userService.logout()
             .then((r) => {
-                if (r) {
-                    console.log('Usuario cerrado sesión con éxito.');
-                } else {
-                    console.log('Error al cerrar sesión');
-                    return;
-                }
+                if (!r) return;
                 this.dialogRef.close();
                 void this.router.navigate(['']);
-            })
-            .catch((err) => {
-                console.log('ERROR al cerrar sesión: ' + err);
             });
         this.showLogoutConfirmation.set(false);
     }

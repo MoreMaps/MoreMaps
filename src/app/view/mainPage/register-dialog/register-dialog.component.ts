@@ -119,7 +119,6 @@ export class RegisterDialogComponent {
                     // Cerrar diálogo y devolver success
                     this.dialogRef.close({success: true});
                 } else {
-                    console.log(userModel);
                 }
             } catch (error: any) {
                 this.loading = false;

@@ -28,7 +28,6 @@ export class PreferenceDB implements PreferenceRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -44,7 +43,6 @@ export class PreferenceDB implements PreferenceRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -65,7 +63,6 @@ export class PreferenceDB implements PreferenceRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }

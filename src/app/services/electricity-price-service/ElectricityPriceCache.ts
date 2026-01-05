@@ -22,14 +22,9 @@ export class ElectricityPriceCache implements ElectricityPriceRepository {
         const now = Date.now();
 
         // Verificar si existe caché y si no ha caducado
-        // todo: eliminar logs
         if (!this.cachedPrice || this.cacheUpdateNecessary()) {
-            console.log('🌐 Descargando datos de la API (electricidad)...');
             this.cachedPrice = await this.source.getPrice();
             this.lastFetchTime = now;
-        }
-        else{
-            console.log('⚡ Recuperando datos de caché (electricidad)...');
         }
         return this.cachedPrice;
     }

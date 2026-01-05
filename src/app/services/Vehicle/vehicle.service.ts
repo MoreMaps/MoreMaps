@@ -38,7 +38,6 @@ export class VehicleService {
             this.validateVehicle(model, true);
         }
         catch (error: any) {
-            console.error(error);
             throw new InvalidDataError();
         }
 
@@ -91,7 +90,6 @@ export class VehicleService {
             this.validateVehicle(update, false);
         }
         catch (error: any) {
-            console.error(error);
             throw new InvalidDataError();
         }
 

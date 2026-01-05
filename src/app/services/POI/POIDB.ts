@@ -39,7 +39,6 @@ export class POIDB implements POIRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -60,7 +59,6 @@ export class POIDB implements POIRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -81,7 +79,7 @@ export class POIDB implements POIRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
+
             throw new DBAccessError();
         }
     }
@@ -100,7 +98,6 @@ export class POIDB implements POIRepository {
             const batch = writeBatch(this.firestore);
             for (const route of routes) {
                 const path = `items/${this.auth.currentUser!.uid}/routes/` + RouteModel.buildId(route.geohash_origen, route.geohash_destino, route.transporte, route.matricula);
-                console.log(path);
                 batch.delete(doc(this.firestore, path));
             }
             batch.delete(poiRef);
@@ -111,7 +108,6 @@ export class POIDB implements POIRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -135,7 +131,6 @@ export class POIDB implements POIRepository {
         }
             // Ha ocurrido un error inesperado en Firebase.
         catch (error: any) {
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             return false;
         }
     }
@@ -162,7 +157,6 @@ export class POIDB implements POIRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -179,7 +173,6 @@ export class POIDB implements POIRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }

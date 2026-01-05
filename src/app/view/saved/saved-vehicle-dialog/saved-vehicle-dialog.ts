@@ -23,6 +23,7 @@ import {EditVehicleComponent} from '../../editVehicle/editVehicle';
 export interface SavedVehicleDialogData {
     item: VehicleModel;
     displayName: string;
+    existingMatriculas?: string[];
 }
 
 @Component({

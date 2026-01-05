@@ -1047,9 +1047,13 @@ mat-error,
     // Solo afectar a overlays de mat-select cuando hay un diálogo activo
     .cdk-overlay-pane.mat-mdc-dialog-panel ~ .cdk-overlay-connected-position-bounding-box {
         .cdk-overlay-pane:has(.mat-mdc-select-panel) {
-            z-index: 2000 !important;
+            z-index: 30000 !important;
         }
+        z-index: 30000 !important;
     }
+}
+.cdk-overlay-connected-position-bounding-box {
+    z-index: 10000 !important;
 }
 
 // Alternativa más robusta: usar un selector de hermanos
@@ -1072,3 +1076,96 @@ mat-error,
     z-index: 99999 !important;
     // NO usar position: static, mantener el default (absolute/fixed)
 }
+
+/* 1. El panel con las opciones (Más Rápida, Más Corta...) */
+.cdk-overlay-pane:has(.mat-mdc-select-panel) {
+    z-index: 100001 !important; /* Por encima del diálogo (99999) */
+}
+
+
+// SELECTS
+
+/* =========================
+   APP SELECT (SIN mat-form-field)
+   ========================= */
+
+.app-select {
+    background-color: var(--color-lavender);
+    border: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    height: 50px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+
+    &:hover {
+        background-color: #fafafa;
+    }
+
+    &:focus-within {
+        border-color: var(--color-mint-green);
+        box-shadow: 0 0 0 3px rgba(161, 231, 197, 0.2);
+        background-color: var(--color-white);
+    }
+
+    &.error {
+        border-color: var(--color-orange);
+        background-color: rgba(255, 149, 57, 0.1);
+    }
+}
+
+.app-select {
+
+    /* Ocultamos flecha Material */
+    ::ng-deep .mat-mdc-select-arrow-wrapper {
+        display: none !important;
+    }
+
+    /* Trigger sin alturas raras */
+    ::ng-deep .mat-mdc-select-trigger {
+        height: auto !important;
+        padding: 0;
+    }
+
+    /* Texto del valor */
+    ::ng-deep .mat-mdc-select-value {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--color-teal-dark);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+:host-context(.dark-theme) .app-select {
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--color-gray-blue);
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    &:focus-within {
+        background-color: rgba(0, 0, 0, 0.4);
+        border-color: var(--color-mint-green);
+    }
+
+    ::ng-deep .mat-mdc-select-value {
+        color: var(--color-white) !important;
+    }
+}
+
+::ng-deep .app-select-panel {
+    border-radius: 12px;
+    padding: 4px 0;
+
+    .mat-mdc-option {
+        height: 44px;
+        font-size: 0.9rem;
+    }
+}
+

@@ -50,7 +50,8 @@
             <div class="select-wrapper">
                 <span class="select-label">Preferencia</span>
 
-                <mat-select [(ngModel)]="data.preference"
+                <mat-select #prefSelect
+                            [(ngModel)]="data.preference"
                             (selectionChange)="onPreferenceChange($event.value)"
                             panelClass="custom-select-panel"
                             disableOptionCentering>

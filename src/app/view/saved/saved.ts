@@ -466,7 +466,19 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         if (actionString !== 'update') this.deselectItem();
     }
 
-    async handleDialogActions(action: string | undefined, payload?: any): Promise<void> {
+    async handleDialogActions(arg1: string | any, arg2?: any): Promise<void> {
+        let action: string | undefined;
+        let payload: any;
+
+        if (typeof arg1 === 'object' && arg1 !== null && 'action' in arg1) {
+            action = arg1.action;
+            payload = arg1.payload;
+        } else {
+            // Es la llamada estándar (string, payload)
+            action = arg1;
+            payload = arg2;
+        }
+
         switch (action) {
             case 'delete':
                 this.deselectItem();
@@ -501,10 +513,10 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 void this.handleShowOnMap();
                 break;
             case 'route-from':
-                await this.initRouteFlow({fixedOrigin: payload || this.selectedItem});
+                await this.initRouteFlow({fixedOrigin: arg2 || this.selectedItem});
                 break;
             case 'route-to':
-                await this.initRouteFlow({fixedDest: payload || this.selectedItem});
+                await this.initRouteFlow({fixedDest: arg2 || this.selectedItem});
                 break;
             case 'route-vehicle':
                 await this.initRouteFlow({fixedVehicle: payload || this.selectedItem});

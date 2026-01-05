@@ -1,0 +1,158 @@
+<dev-theme-toggle></dev-theme-toggle>
+<profile-button></profile-button>
+<app-navbar></app-navbar>
+
+<div class="page-background">
+
+    <div class="preference-card">
+
+        <div class="card-header">
+            <h2>Preferencias</h2>
+            <p>Personaliza tu experiencia</p>
+        </div>
+
+        <form [formGroup]="prefForm" class="vertical-form">
+
+            <div class="form-group">
+                <label>Tipo de ruta predeterminado</label>
+                <mat-form-field appearance="outline" class="w-full custom-field">
+                    <mat-select formControlName="tipoRuta" placeholder="Seleccionar ruta">
+                        @for (opt of routesOptions; track opt.value) {
+                            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                        }
+                    </mat-select>
+
+                    @if (prefForm.get('tipoRuta')?.value) {
+                        <button mat-icon-button matSuffix
+                                (click)="$event.stopPropagation(); prefForm.get('tipoRuta')?.setValue(null)">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    }
+                </mat-form-field>
+            </div>
+
+            <div class="form-group">
+                <label>Transporte predeterminado</label>
+                <mat-form-field appearance="outline" class="w-full custom-field">
+                    <mat-select formControlName="tipoTransporte" placeholder="Seleccionar transporte">
+                        @for (opt of transportOptions; track opt.value) {
+                            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                        }
+                    </mat-select>
+
+                    @if (prefForm.get('tipoTransporte')?.value) {
+                        <button mat-icon-button matSuffix
+                                (click)="$event.stopPropagation(); prefForm.get('tipoTransporte')?.setValue(null)">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    }
+                </mat-form-field>
+            </div>
+
+            @if (isVehicleSelected) {
+                <div class="form-group">
+                    <label>Vehículo predeterminado</label>
+
+                    <mat-form-field appearance="outline"
+                                    class="w-full custom-field cursor-pointer"
+                                    [class.mat-form-field-invalid]="prefForm.get('matricula')?.invalid && prefForm.get('matricula')?.touched"
+                                    (click)="openVehicleSelector()">
+
+                        <input [value]="selectedVehicleAlias()"
+                               matInput
+                               placeholder="Toca para seleccionar"
+                               readonly
+                               style="cursor: pointer;">
+
+                        <mat-icon matPrefix>directions_car</mat-icon>
+
+                        @if (!prefForm.get('matricula')?.value) {
+                            <mat-icon matSuffix>expand_more</mat-icon>
+                        }
+
+                        @if (prefForm.get('matricula')?.value) {
+                            <button (click)="clearVehicleSelection($event)" mat-icon-button matSuffix>
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        }
+                    </mat-form-field>
+
+                    @if (prefForm.get('matricula')?.hasError('required') && prefForm.get('matricula')?.touched) {
+                        <mat-error class="text-xs mt-1">Debes seleccionar un vehículo</mat-error>
+                    }
+                </div>
+            }
+
+            <div class="info-group">
+                <label class="block mb-3" style="font-size: 0.85rem; opacity: 0.8;">Información a mostrar</label>
+
+                <div class="checkbox-list">
+                    <mat-checkbox color="primary" formControlName="checkTodo">
+                        Todo
+                    </mat-checkbox>
+
+                    <div style="padding-left: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <mat-checkbox color="primary" formControlName="costeCombustible">
+                            Coste del combustible
+                        </mat-checkbox>
+                        <mat-checkbox color="primary" formControlName="costeCalorias">
+                            kCal (ruta a pie o en bici)
+                        </mat-checkbox>
+                    </div>
+                </div>
+            </div>
+
+            <button (click)="onSubmit()"
+                    [disabled]="loading || prefForm.invalid || !hasChanges"
+                    class="btn-custom btn-save"
+                    type="button">
+                @if (loading) {
+                    <span>Guardando...</span>
+                } @else {
+                    <span>GUARDAR CAMBIOS</span>
+                }
+            </button>
+
+            <div class="divider"></div>
+
+            <div class="actions-container">
+                <button class="btn-custom btn-delete" type="button" (click)="openDeletePopup()">
+                    <mat-icon>delete</mat-icon>
+                    BORRAR CUENTA
+                </button>
+            </div>
+
+        </form>
+    </div>
+    @if (showDeleteModal) {
+        <div class="modal-overlay" (click)="closeDeletePopup()">
+            <div class="modal-container" (click)="$event.stopPropagation()">
+                <h2 class="modal-title">¿Seguro que quieres borrar tu cuenta?</h2>
+                <p class="modal-subtitle">Esta acción es irreversible y perderás todos tus datos.</p>
+
+                <button class="modal-btn confirm-btn"
+                        (click)="confirmDelete()"
+                        [disabled]="loading || deleteCountdown > 0"
+                        [class.disabled-state]="deleteCountdown > 0">
+
+                    @if (loading) {
+                        <mat-spinner diameter="20" color="accent"></mat-spinner>
+                    } @else if (deleteCountdown > 0) {
+                        <mat-icon>timer</mat-icon>
+                        ESPERA {{ deleteCountdown }}s
+                    } @else {
+                        <svg class="trash-icon-modal" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        CONFIRMAR BORRADO
+                    }
+                </button>
+
+                <button class="modal-btn cancel-btn" (click)="closeDeletePopup()">
+                    CANCELAR
+                </button>
+            </div>
+        </div>
+    }
+</div>

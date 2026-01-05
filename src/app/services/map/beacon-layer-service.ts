@@ -69,7 +69,6 @@ export class BeaconLayerService {
 
     private setupEvents(map: L.Map): void {
         map.on('locationfound', (e: L.LocationEvent) => {
-            console.log("Ubicación encontrada");
             this.lastLocation = e.latlng;
             this.drawUserMarker(e.latlng);
             this.locationFoundSubject.next(e.latlng);

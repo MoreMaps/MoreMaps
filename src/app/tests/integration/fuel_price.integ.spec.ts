@@ -1,5 +1,5 @@
 import {TestBed} from '@angular/core/testing'
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
 import {
     FUEL_PRICE_REPOSITORY,

@@ -28,15 +28,9 @@ export class FuelPriceCache implements FuelPriceRepository {
         const now = Date.now();
 
         // Verificar si existe caché y si no ha caducado
-        // todo: eliminar logs
         if (!this.mapaPrecios$ || this.cacheUpdateNecessary()) {
-            console.log('🌐 Descargando datos de la API pública...');
             this.lastFetchTime = now;
             this.mapaPrecios$ = await this.source.processStations();
-            console.log(this.mapaPrecios$);
-        }
-        else{
-            console.log('⚡ Recuperando datos de caché...');
         }
         return this.mapaPrecios$;
     }

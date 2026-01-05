@@ -47,8 +47,6 @@ export class MapSearchAPI implements MapSearchRepository {
             );
         } catch (error: any) {
             // Error inesperado de ORS
-            console.log(error);
-            console.error('Error al obtener respuesta de la API: ' + error.error);
             throw new APIAccessError();
         }
 
@@ -78,7 +76,6 @@ export class MapSearchAPI implements MapSearchRepository {
             );
         } catch (error: any) {
             // Error inesperado de ORS
-            console.error('Error al obtener respuesta de la API: ' + error.error);
             throw new APIAccessError();
         }
 
@@ -129,12 +126,10 @@ export class MapSearchAPI implements MapSearchRepository {
         catch (error: any) {
             // Si la ruta es imposible, devolver un resultado inválido.
             if (error.status === 400) {
-                console.warn('Ruta imposible detectada por el API');
                 throw new ImpossibleRouteError();
             }
 
             // Ha ocurrido un error inesperado en ORS.
-            console.error('Error calculando ruta: ', error);
             throw new APIAccessError();
         }
     }

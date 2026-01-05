@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing'
 import {ROUTE_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {USER_REPOSITORY, UserRepository} from '../../services/User/UserRepository';
 import {RouteService} from '../../services/Route/route.service';
 import {ROUTE_REPOSITORY, RouteRepository} from '../../services/Route/RouteRepository';
@@ -193,8 +193,7 @@ describe('Pruebas de integración sobre rutas', () => {
             expect(rutaGuardada).toEqual(mockRouteModel);
 
             // Se llama a la función "createRoute" con los parámetros pertinentes.
-            expect(mockRouteRepository.createRoute).toHaveBeenCalledWith(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, mockRoute, rutaC.matricula);
+            expect(mockRouteRepository.createRoute).toHaveBeenCalledWith(mockRouteModel);
         });
 
         it('HU407-EI08. Guardar una ruta idéntica a una ya guardada.', async () => {

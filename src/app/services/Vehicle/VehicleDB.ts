@@ -41,7 +41,6 @@ export class VehicleDB implements VehicleRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -67,7 +66,6 @@ export class VehicleDB implements VehicleRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -115,7 +113,6 @@ export class VehicleDB implements VehicleRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -145,7 +142,6 @@ export class VehicleDB implements VehicleRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('VEHICLE DB Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -169,7 +165,6 @@ export class VehicleDB implements VehicleRepository {
         }
             // Ha ocurrido un error inesperado en Firebase.
         catch (error: any) {
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             return false;
         }
     }
@@ -190,7 +185,6 @@ export class VehicleDB implements VehicleRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }
@@ -213,7 +207,6 @@ export class VehicleDB implements VehicleRepository {
         }
         catch (error: any) {
             // Ha ocurrido un error inesperado en Firebase
-            console.error('Error al obtener respuesta de Firebase: ' + error);
             throw new DBAccessError();
         }
     }

@@ -6,10 +6,12 @@ import {UserService} from '../../services/User/user.service';
 import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {WrongParamsError} from '../../errors/WrongParamsError';
 import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
 import {UserAlreadyExistsError} from '../../errors/User/UserAlreadyExistsError';
+import {RegisterModel} from '../../data/RegisterModel';
+import {PREFERENCE_REPOSITORY, PreferenceRepository} from '../../services/Preferences/PreferenceRepository';
 
 
 // Pruebas de integración sobre usuarios
@@ -19,8 +21,11 @@ describe('Pruebas de integración sobre usuarios', () => {
     // SUT
     let userService: UserService;
 
-    // Mock de acceso a la BD
+    // Mock de acceso a la BD (usuarios)
     let mockUserRepository: jasmine.SpyObj<UserRepository>;
+
+    // Mock de acceso a la BD (preferencias)
+    let mockPreferenceRepository: jasmine.SpyObj<PreferenceRepository>;
 
     // Datos de prueba
     const ramon = USER_TEST_DATA[0];
@@ -28,10 +33,13 @@ describe('Pruebas de integración sobre usuarios', () => {
 
     beforeEach(async () => {
         mockUserRepository = createMockRepository('user');
+        mockPreferenceRepository = createMockRepository('preference');
+
         await TestBed.configureTestingModule({
             providers: [
                 UserService,
                 {provide: USER_REPOSITORY, useValue: mockUserRepository},
+                {provide: PREFERENCE_REPOSITORY, useValue: mockPreferenceRepository}
             ]
         }).compileComponents();
 
@@ -50,11 +58,11 @@ describe('Pruebas de integración sobre usuarios', () => {
             mockUserRepository.userExists.and.resolveTo(false);
             mockUserRepository.passwordValid.and.resolveTo(true);
             mockUserRepository.createUser.and.resolveTo(mockUser);
+            mockPreferenceRepository.updatePreferences.and.resolveTo(true);
 
             // WHEN
             //  el usuario "maria" intenta darse de alta con datos válidos
-            const usuarioCreado: UserModel = await userService
-                .signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            const usuarioCreado: UserModel = await userService.signUp(maria);
 
             // THEN
             //  se llama a la función "createUser"
@@ -74,7 +82,8 @@ describe('Pruebas de integración sobre usuarios', () => {
 
             // WHEN
             //  el usuario "maria" intenta darse de alta sin contraseña
-            await expectAsync(userService.signUp(maria.email, undefined as unknown as string, maria.nombre, maria.apellidos))
+            const mariaPwdIncorrect = new RegisterModel(maria.email, maria.nombre, maria.apellidos, '');
+            await expectAsync(userService.signUp(mariaPwdIncorrect))
                 .toBeRejectedWith(new WrongParamsError('usuario'));
             // THEN
             //  se lanza el error WrongPasswordFormatError
@@ -90,7 +99,7 @@ describe('Pruebas de integración sobre usuarios', () => {
 
             // WHEN
             //  el usuario "maria" intenta darse de alta
-            await expectAsync(userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos))
+            await expectAsync(userService.signUp(maria))
                 .toBeRejectedWith(new UserAlreadyExistsError());
             // THEN
             //  se lanza el error WrongPasswordFormatError
@@ -106,7 +115,8 @@ describe('Pruebas de integración sobre usuarios', () => {
 
             // WHEN
             //  el usuario "maria" intenta darse de alta con contraseña "password" (no sigue el formato correcto)
-            await expectAsync(userService.signUp(maria.email, "password", maria.nombre, maria.apellidos))
+            const mariaPwdIncorrect = new RegisterModel(maria.email, maria.nombre, maria.apellidos, "password");
+            await expectAsync(userService.signUp(mariaPwdIncorrect))
                 .toBeRejectedWith(new WrongPasswordFormatError());
             // THEN
             //  el usuario "maria" no se registra y se lanza el error WrongPasswordFormatError

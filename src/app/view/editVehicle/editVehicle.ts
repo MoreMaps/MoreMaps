@@ -4,14 +4,22 @@ import {
     EventEmitter,
     inject,
     Input,
-    OnChanges,
+    OnChanges, OnDestroy,
     OnInit,
     Output,
     signal,
     SimpleChanges
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {
+    AbstractControl,
+    FormBuilder,
+    FormGroup,
+    ReactiveFormsModule,
+    ValidationErrors,
+    ValidatorFn,
+    Validators
+} from '@angular/forms';
 import {VehicleModel} from '../../data/VehicleModel';
 import {VehicleService} from '../../services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
@@ -31,8 +39,9 @@ const FUEL_TYPES = ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido (HEV)',
     styleUrls: ['./editVehicle.css'],
     providers: [VehicleService, {provide: VEHICLE_REPOSITORY, useClass: VehicleDB}]
 })
-export class EditVehicleComponent implements OnInit, OnChanges {
+export class EditVehicleComponent implements OnInit, OnChanges, OnDestroy {
     @Input() vehicle: VehicleModel | null = null;
+    @Input() existingMatriculas: string[] = [];
     @Output() close = new EventEmitter<void>();
     @Output() update = new EventEmitter<VehicleModel | null>();
 
@@ -81,7 +90,12 @@ export class EditVehicleComponent implements OnInit, OnChanges {
     initFormStructure() {
         this.editForm = this.fb.group({
             alias: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(50), notOnlyWhitespaceValidator(), ]],
-            matricula: ['', [Validators.required, Validators.pattern("^[0-9]{4}[A-Za-z]{3}$"), noVowelsValidator()]],
+            matricula: ['', [
+                Validators.required,
+                Validators.pattern("^[0-9]{4}[A-Za-z]{3}$"),
+                noVowelsValidator(),
+                this.matriculaDuplicadaValidator()
+            ]],
             marca: ['', [Validators.required, notOnlyWhitespaceValidator()]],
             modelo: ['', [Validators.required, notOnlyWhitespaceValidator()]],
             anyo: [this.currentYear, [
@@ -113,6 +127,27 @@ export class EditVehicleComponent implements OnInit, OnChanges {
         });
         // Actualizamos la señal manualmente para que se refresque la UI
         this.selectedFuel.set(v.tipoCombustible);
+    }
+
+    matriculaDuplicadaValidator(): ValidatorFn {
+        return (control: AbstractControl): ValidationErrors | null => {
+            if (!control.value) return null;
+
+            const valorInput = control.value.toString().trim().toUpperCase();
+
+            // Si estamos editando, permitimos que la matrícula sea igual a la que ya tenía este vehículo
+            const matriculaPropia = this.vehicle ? this.vehicle.matricula.toUpperCase() : '';
+            if (valorInput === matriculaPropia) {
+                return null;
+            }
+
+            // Buscamos si existe en la lista que nos pasó el padre
+            if (this.existingMatriculas.some(m => m.toUpperCase() === valorInput)) {
+                return { matriculaExists: true };
+            }
+
+            return null;
+        };
     }
 
     async onSave(): Promise<void> {

@@ -6,7 +6,7 @@ import {PlaceNameNotFoundError} from '../../errors/POI/PlaceNameNotFoundError';
 import {coords, MapSearchService} from '../../services/map/map-search-service/map-search.service';
 import {MAP_SEARCH_REPOSITORY, MapSearchRepository} from '../../services/map/map-search-service/MapSearchRepository';
 import {POISearchModel} from '../../data/POISearchModel';
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {RouteResultModel} from '../../data/RouteResultModel';
 import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 import {GeohashDecoder} from '../../utils/geohashDecoder';

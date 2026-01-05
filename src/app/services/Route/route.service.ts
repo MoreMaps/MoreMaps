@@ -118,7 +118,9 @@ export class RouteService {
         }
 
         // Crea la ruta
-        return this.routeDb.createRoute(origen, destino, alias, transporte, nombreOrigen, nombreDestino, preferencia, modelo, matricula);
+        const route = new RouteModel(origen, destino, alias, transporte, nombreOrigen, nombreDestino,
+            preferencia, modelo!.distancia, modelo!.tiempo, false, matricula);
+        return this.routeDb.createRoute(route);
     }
 
     // HU408: Listar rutas
@@ -288,7 +290,6 @@ export class RouteService {
                 update.tiempo = nuevoCalculo.tiempo;
             } catch (e) {
                 if (e instanceof ImpossibleRouteError) throw e;
-                console.error("Error recalculando la ruta al actualizar: ", e);
                 throw new InvalidDataError();
             }
         }

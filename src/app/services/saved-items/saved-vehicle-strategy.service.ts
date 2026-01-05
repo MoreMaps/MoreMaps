@@ -4,7 +4,7 @@ import {VehicleService} from '../Vehicle/vehicle.service';
 import {VehicleModel} from '../../data/VehicleModel';
 
 @Injectable({providedIn: 'root'})
-export class SavedVehiclesStrategy implements SavedItemsStrategy {
+export class SavedVehicleStrategy implements SavedItemsStrategy {
     private vehicleService = inject(VehicleService);
 
     async loadItems(): Promise<VehicleModel[]> {

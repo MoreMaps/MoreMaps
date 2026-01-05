@@ -5,15 +5,26 @@ import {POIModel} from '../data/POIModel';
 import {geohashForLocation} from 'geofire-common';
 import {VehicleModel} from '../data/VehicleModel';
 import {PREFERENCIA, RouteModel, TIPO_TRANSPORTE} from '../data/RouteModel';
+import {RegisterModel} from '../data/RegisterModel';
 
 /**
  * Datos de prueba sobre usuarios
  */
-export const USER_TEST_DATA = [
+export const USER_TEST_DATA: RegisterModel[] = [
     // Usuario "ramon"
-    {email: "ramonejemplo@gmail.com", pwd: "Passw0rd!", nombre: "Ramón", apellidos: "García García"},
+    new RegisterModel(
+        "ramonejemplo@gmail.com",
+        "Ramón",
+        "García García",
+        "Passw0rd!",
+    ),
     // Usuario "maria"
-    {email: "mariaejemplo@gmail.com", pwd: "P4ssword!", nombre: "María", apellidos: "De Los Campos"},
+    new RegisterModel(
+        "mariaejemplo@gmail.com",
+        "María",
+        "De Los Campos",
+        "P4ssword!",
+    ),
 ]
 
 /**

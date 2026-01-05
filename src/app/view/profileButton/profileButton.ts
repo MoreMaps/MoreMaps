@@ -43,7 +43,6 @@ export class ProfileButtonComponent implements OnInit {
                 // El usuario existe, cargamos sus datos
                 await this.loadUserData();
             } else {
-                console.warn("No hay sesión, redirigiendo...");
                 await this.router.navigate(['']);
             }
         });
@@ -72,7 +71,6 @@ export class ProfileButtonComponent implements OnInit {
                 });
             }
         } catch (error) {
-            console.error('Error loading user data:', error);
             this.userData.set({
                 fullName: '',
                 email: user.email || '',

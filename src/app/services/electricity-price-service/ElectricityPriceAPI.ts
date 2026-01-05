@@ -53,7 +53,6 @@ export class ElectricityPriceAPI implements ElectricityPriceRepository {
 
         // La respuesta no contiene el valor que buscamos
         if (!priceData || !priceData.value) {
-            console.error('No se encontró el precio de la electricidad, respuesta obtenida: ' + JSON.stringify(respuesta));
             return -1;
         }
 
@@ -80,7 +79,6 @@ export class ElectricityPriceAPI implements ElectricityPriceRepository {
         try {
             respuesta = await firstValueFrom(this.http.get<T>(url, {headers, params}));
         } catch (error) {
-            console.error('Error al obtener respuesta de la API: ' + error);
             throw new APIAccessError();
         }
 

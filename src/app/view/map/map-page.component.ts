@@ -213,7 +213,6 @@ export class MapPageComponent implements OnInit, OnDestroy, AfterViewInit {
                     this.shouldCenterOnLocation = false; // No queremos que el GPS mueva el mapa mientras vemos la ruta
                     await this.routeManagerService.loadRouteSession(routeParams);
                 } else {
-                    console.warn("Parametros de ruta incompletos.");
                 }
                 return; // Cortamos aquí, no evaluamos POIs ni ubicación
             }

@@ -33,15 +33,12 @@ export class LogoutUser {
     confirmLogout(): void {
         this.userService.deleteUser()
             .then((r) => {
-                if (r) console.log('Usuario borrado con éxito.');
-                else {
-                    console.log('Usuario no borrado');
+                if (!r)
                     return
-                }
                 this.router.navigate(['']);
             })
             .catch((err) => {
-                console.log('ERROR al borrar usuario' + err);
+
             })
         this.showLogoutConfirmation = false;
     }

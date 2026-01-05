@@ -20,7 +20,7 @@
                 </button>
             </div>
 
-            @if (items() && items()!.length > 0) {
+            @if (items().length > 0) {
                 <div class="pagination">
                     <span class="page-info">Página {{ currentPage() }} de {{ totalPages() }}</span>
                     <div class="pagination-buttons">
@@ -35,86 +35,86 @@
             }
         </div>
 
-        @if (items() && items().length > 0) {
+        @if (items().length > 0) {
 
             <div class="items-list">
                 @switch (selectedType()) {
 
                     @case ('lugares') {
-                        @for (item of paginatedItems(); track item.geohash) {
+                        @for (itemData of paginatedItemsWithNames(); track itemData.item.geohash) {
                             <div class="item-card"
-                                 (click)="selectItem(item)"
-                                 [class.selected]="selectedItem?.geohash === item.geohash">
+                                 (click)="selectItem(itemData.item)"
+                                 [class.selected]="selectedItem?.geohash === itemData.item.geohash">
                                 <div class="item-icon">
-                                    <img ngSrc="assets/images/poi_active.png" height="44" width="33" priority class="poi-icon-img"
-                                         [class.visible]="selectedItem?.geohash === item.geohash" alt="active POI">
-                                    <img ngSrc="assets/images/poi_inactive.png" priority height="44" width="33" class="poi-icon-img"
-                                         [class.visible]="selectedItem?.geohash !== item.geohash" alt="inactive POI">
+                                    <img ngSrc="../../../assets/images/poi/poi_active.png" height="44" width="33" priority class="poi-icon-img"
+                                         [class.visible]="selectedItem?.geohash === itemData.item.geohash" alt="active POI">
+                                    <img ngSrc="../../../assets/images/poi/poi_inactive.png" priority height="44" width="33" class="poi-icon-img"
+                                         [class.visible]="selectedItem?.geohash !== itemData.item.geohash" alt="inactive POI">
                                 </div>
                                 <div class="item-info">
-                                    <h3 class="item-name">{{ getDisplayName(item) }}</h3>
-                                    @if (getDisplayName(item) !== item.placeName) {
-                                        <p class="item-place-if-alias">{{ item.placeName }}</p>
+                                    <h3 class="item-name">{{ itemData.displayName }}</h3>
+                                    @if (itemData.displayName !== itemData.item.placeName) {
+                                        <p class="item-place-if-alias">{{ itemData.item.placeName }}</p>
                                     }
-                                    <p class="item-description">({{ item.lat | number:'1.2-4' }}, {{ item.lon | number:'1.2-4' }})</p>
+                                    <p class="item-description">({{ itemData.item.lat | number:'1.2-4' }}, {{ itemData.item.lon | number:'1.2-4' }})</p>
                                 </div>
-                                <button mat-icon-button class="favorite-button" [class.pinned]="item.pinned" (click)="toggleFavorite(item, $event)">
-                                    <mat-icon>{{ item.pinned ? 'star' : 'star_border' }}</mat-icon>
+                                <button mat-icon-button class="favorite-button" [class.pinned]="itemData.item.pinned" (click)="toggleFavorite(itemData.item, $event)">
+                                    <mat-icon>{{ itemData.item.pinned ? 'star' : 'star_border' }}</mat-icon>
                                 </button>
                             </div>
                         }
                     }
 
                     @case ('vehiculos') {
-                        @for (item of paginatedItems(); track item.matricula) {
+                        @for (itemData of paginatedItemsWithNames(); track itemData.item.matricula) {
                             <div class="item-card"
-                                 (click)="selectItem(item)"
-                                 [class.selected]="selectedItem?.matricula === item.matricula">
+                                 (click)="selectItem(itemData.item)"
+                                 [class.selected]="selectedItem?.matricula === itemData.item.matricula">
                                 <div class="item-icon">
-                                    <img ngSrc="assets/images/vehicle/vehicle_on.png" height="50" width="50" priority class="poi-icon-img"
-                                         [class.visible]="selectedItem?.matricula === item.matricula" alt="active vehicle">
-                                    <img ngSrc="assets/images/vehicle/vehicle_off.png" priority height="50" width="50" class="poi-icon-img"
-                                         [class.visible]="selectedItem?.matricula !== item.matricula" alt="inactive vehicle">
+                                    <img ngSrc="../../../assets/images/vehicle/vehicle_off.png" height="50" width="50" priority class="poi-icon-img"
+                                         [class.visible]="selectedItem?.matricula === itemData.item.matricula" alt="active vehicle">
+                                    <img ngSrc="../../../assets/images/vehicle/vehicle_on.png" priority height="50" width="50" class="poi-icon-img"
+                                         [class.visible]="selectedItem?.matricula !== itemData.item.matricula" alt="inactive vehicle">
                                 </div>
                                 <div class="item-info">
-                                    <h3 class="item-name">{{ getDisplayName(item) }}</h3>
-                                    <p class="item-description" style="font-weight: 500;">{{ item.matricula }}</p>
-                                    <p class="item-description">{{ item.marca }} {{ item.modelo }} {{ item.anyo }}</p>
+                                    <h3 class="item-name">{{ itemData.displayName }}</h3>
+                                    <p class="item-description" style="font-weight: 500;">{{ itemData.item.matricula }}</p>
+                                    <p class="item-description">{{ itemData.item.marca }} {{ itemData.item.modelo }} {{ itemData.item.anyo }}</p>
                                 </div>
-                                <button mat-icon-button class="favorite-button" [class.pinned]="item.pinned" (click)="toggleFavorite(item, $event)">
-                                    <mat-icon>{{ item.pinned ? 'star' : 'star_border' }}</mat-icon>
+                                <button mat-icon-button class="favorite-button" [class.pinned]="itemData.item.pinned" (click)="toggleFavorite(itemData.item, $event)">
+                                    <mat-icon>{{ itemData.item.pinned ? 'star' : 'star_border' }}</mat-icon>
                                 </button>
                             </div>
                         }
                     }
 
                     @case ('rutas') {
-                        @for (item of paginatedItems(); track item.id()) {
+                        @for (itemData of paginatedItemsWithNames(); track itemData.item.id()) {
                             <div class="item-card"
-                                 (click)="selectItem(item)"
-                                 [class.selected]="selectedItem?.id() === item.id()">
+                                 (click)="selectItem(itemData.item)"
+                                 [class.selected]="selectedItem?.id() === itemData.item.id()">
 
                                 <div class="item-icon">
                                     <img ngSrc="assets/images/route/route_on.svg" height="58" width="52" priority class="poi-icon-img"
-                                         [class.visible]="selectedItem?.id() === item.id()" alt="active route">
+                                         [class.visible]="selectedItem?.id() === itemData.item.id()" alt="active route">
                                     <img ngSrc="assets/images/route/route_off.svg" priority height="58" width="52" class="poi-icon-img"
-                                         [class.visible]="selectedItem?.id() !== item.id()" alt="inactive route">
+                                         [class.visible]="selectedItem?.id() !== itemData.item.id()" alt="inactive route">
                                 </div>
 
                                 <div class="item-info">
-                                    <h3 class="item-name">{{ item.alias }}</h3>
+                                    <h3 class="item-name">{{ itemData.item.alias }}</h3>
 
-                                    <p class="item-description">
-                                        {{ (item.tiempo / 3600).toFixed(1) }} h • {{ (item.distancia / 1000).toFixed(1) }} km
-                                    </p>
+                                    <p class="item-description">{{ Math.trunc(itemData.item.tiempo / 3600) }} h
+                                        {{ Math.trunc((itemData.item.tiempo % 3600) / 60) }} min
+                                        • {{ Math.trunc(itemData.item.distancia / 1000) }} km</p>
 
                                     <p class="item-description" style="font-weight: 500;">
-                                        {{ getRouteTransportLabel(item) | titlecase }}, ruta {{ item.preferenceLabel() }}
+                                        {{ getRouteTransportLabel(itemData.item) }}, ruta {{ itemData.item.preferenceLabel() }}
                                     </p>
                                 </div>
 
-                                <button mat-icon-button class="favorite-button" [class.pinned]="item.pinned" (click)="toggleFavorite(item, $event)">
-                                    <mat-icon>{{ item.pinned ? 'star' : 'star_border' }}</mat-icon>
+                                <button mat-icon-button class="favorite-button" [class.pinned]="itemData.item.pinned" (click)="toggleFavorite(itemData.item, $event)">
+                                    <mat-icon>{{ itemData.item.pinned ? 'star' : 'star_border' }}</mat-icon>
                                 </button>
                             </div>
                         }
@@ -141,7 +141,7 @@
                     @case ('lugares') {
                         <app-saved-poi-dialog
                             [item]="selectedItem"
-                            [displayName]="getDisplayName(selectedItem)"
+                            [displayName]="selectedItemDisplayName()"
                             (actionEvent)="handleDialogActions($event)"
                             (closeEvent)="deselectItem()">
                         </app-saved-poi-dialog>
@@ -149,7 +149,10 @@
                     @case ('vehiculos') {
                         <app-saved-vehicle-dialog
                             [item]="selectedItem"
-                            [displayName]="getDisplayName(selectedItem)"
+                            [displayName]="selectedItemDisplayName()"
+
+                            [existingMatriculas]="allMatriculas()"
+
                             (actionEvent)="handleDialogActions($event)"
                             (closeEvent)="deselectItem()">
                         </app-saved-vehicle-dialog>
@@ -157,7 +160,8 @@
                     @case ('rutas') {
                         <app-saved-route-dialog
                             [item]="selectedItem"
-                            [displayName]="getDisplayName(selectedItem)"
+                            [displayName]="selectedItemDisplayName()"
+                            [displayTransport]="getRouteTransportLabel(selectedItem)"
                             (actionEvent)="handleDialogActions($event)"
                             (closeEvent)="deselectItem()">
                         </app-saved-route-dialog>

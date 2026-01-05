@@ -5,10 +5,11 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatButtonModule} from '@angular/material/button';
 import {RouteResultModel} from '../../../data/RouteResultModel';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../../data/RouteModel';
-import {MatTooltip} from '@angular/material/tooltip';
-import {MatOption, MatSelect} from '@angular/material/select';
+import {MatTooltipModule} from '@angular/material/tooltip';
+import {MatSelectModule} from '@angular/material/select';
 import {FormsModule} from '@angular/forms';
 import {RouteCostResult} from '../../../services/Route/route.service';
+import {PreferenceModel} from '../../../data/PreferenceModel';
 
 export interface RouteDialogData {
     origenName: string;
@@ -20,12 +21,19 @@ export interface RouteDialogData {
     nombreVehiculo?: string;         // Opcional
     vehicleAlias?: string;           // Opcional (para mostrar nombre amigable)
     coste?: RouteCostResult;         // Coste calculado
+    preferences?: PreferenceModel;
 }
 
 @Component({
     selector: 'app-route-details-dialog',
     standalone: true,
-    imports: [CommonModule, MatDialogModule, MatIconModule, MatButtonModule, MatTooltip, MatSelect, MatOption, FormsModule],
+    imports: [CommonModule,
+        MatDialogModule,
+        MatIconModule,
+        MatButtonModule,
+        MatTooltipModule,
+        MatSelectModule,
+        FormsModule],
     templateUrl: './routeDetailsDialog.html',
     styleUrls: ['./routeDetailsDialog.scss']
 })
@@ -42,8 +50,8 @@ class RouteDetailsDialog {
     @Output() preferenceChange = new EventEmitter<PREFERENCIA>();
 
     // Exponer enums al template
-    protected readonly PREFERENCIA = PREFERENCIA;
-    protected readonly TIPO_TRANSPORTE = TIPO_TRANSPORTE
+    public ePreferencia = PREFERENCIA;
+    public eTransporte = TIPO_TRANSPORTE
 
     constructor(
         public dialogRef: MatDialogRef<RouteDetailsDialog>,
@@ -92,7 +100,22 @@ class RouteDetailsDialog {
         }
     }
 
-    // Estos métodos emiten al padre para que maneje la lógica (abrir buscador, recalcular, etc)
+    /** Controla la visibilidad del coste/calorías
+     * */
+    get shouldShowCost(): boolean {
+        // Si no hay preferencias cargadas, mostramos por defecto (fallback seguro)
+        if (!this.data.preferences) return true;
+
+        if (this.data.transporte === TIPO_TRANSPORTE.VEHICULO) {
+            // Si es vehículo, miramos la preferencia de combustible
+            return this.data.preferences.costeCombustible;
+        } else {
+            // Si es pie o bici, miramos la preferencia de calorías
+            return this.data.preferences.costeCalorias;
+        }
+    }
+
+    // Estos métodos emiten al padre para que maneje la lógica (abrir buscador, recalcular, etc.)
     onEditOrigin() {
         this.editOrigin.emit();
     }

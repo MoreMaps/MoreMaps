@@ -37,6 +37,8 @@
                     <span class="error-msg">Formato inválido (Ej: 1234BCD)</span>
                 } @else if (editForm.get('matricula')?.hasError('hasVowels')) {
                     <span class="error-msg">No se permiten vocales</span>
+                } @else if (editForm.get('matricula')?.hasError('matriculaExists')) {
+                    <span class="error-msg">Esta matrícula ya está registrada</span>
                 }
             }
         </div>

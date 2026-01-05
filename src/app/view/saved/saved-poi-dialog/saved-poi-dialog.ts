@@ -3,11 +3,11 @@ import {
     EventEmitter,
     Inject,
     inject,
-    Input,
+    Input, OnChanges,
     OnInit,
     Optional,
     Output,
-    signal,
+    signal, SimpleChanges,
     WritableSignal
 } from '@angular/core';
 import {CommonModule, NgOptimizedImage} from '@angular/common';
@@ -16,7 +16,6 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {POIModel} from '../../../data/POIModel';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {Auth} from '@angular/fire/auth';
 import {POIService} from '../../../services/POI/poi.service';
 import {POI_REPOSITORY} from '../../../services/POI/POIRepository';
 import {POIDB} from '../../../services/POI/POIDB';
@@ -50,7 +49,7 @@ export interface SavedItemDialogData {
     styleUrls: ['./saved-poi-dialog.scss'],
     providers: [POIService, {provide: POI_REPOSITORY, useClass: POIDB}]
 })
-export class SavedPoiDialog implements OnInit {
+export class SavedPoiDialog implements OnInit, OnChanges{
     // Inputs for Embedded Mode (Desktop)
     @Input() item?: POIModel;
     @Input() displayName?: string;
@@ -62,6 +61,8 @@ export class SavedPoiDialog implements OnInit {
     // Unified data object for the template to use
     public displayData!: SavedItemDialogData;
     public snackBar = inject(MatSnackBar);
+
+    private hasChanges = false;
 
     isEditing: WritableSignal<Boolean> = signal(false);
     isDeleting: WritableSignal<Boolean> = signal(false);
@@ -80,12 +81,15 @@ export class SavedPoiDialog implements OnInit {
         this.updateDisplayData();
     }
 
-    // Detect changes if inputs change while component is open (Desktop)
-    ngOnChanges(): void {
-        this.updateDisplayData();
-        if (this.isEditing() && this.editForm) this.initForm();
-    }
+    ngOnChanges(changes: SimpleChanges): void {
+        // Solo actualizar si hay cambios en item o displayName
+        if (changes['item'] || changes['displayName']) {
+            this.updateDisplayData();
 
+            // CRÍTICO: NO reinicializar el formulario si el usuario está editando
+            // Solo actualizar los datos de visualización
+        }
+    }
     updateDisplayData(): void {
         // Determine if we are using Input (Desktop) or DialogData (Mobile)
         if (this.dialogData) {
@@ -100,7 +104,9 @@ export class SavedPoiDialog implements OnInit {
 
     close(): void {
         if (this.dialogRef) {
-            this.dialogRef.close();
+            // Si hay cambios, devolvemos 'update' para que el padre recargue la lista
+            const result = this.hasChanges ? 'update' : undefined;
+            this.dialogRef.close(result);
         } else {
             this.closeEvent.emit();
         }
@@ -108,7 +114,16 @@ export class SavedPoiDialog implements OnInit {
 
     // Unified Action Handler
     handleAction(action: string): void {
-        if (this.dialogRef && action !== 'edit') {
+        // Para 'update', NO cerramos el diálogo en móvil
+        if (action === 'update') {
+            this.hasChanges = true;
+            // Solo emitimos el evento para que el padre actualice la lista
+            this.actionEvent.emit(action);
+            return;
+        }
+
+        // Para otras acciones (delete, showOnMap), cerramos el diálogo
+        if (this.dialogRef) {
             this.dialogRef.close(action);
         } else {
             this.actionEvent.emit(action);
@@ -165,6 +180,10 @@ export class SavedPoiDialog implements OnInit {
                 // Call the service
                 const success = await this.poiService.updatePOI(this.displayData.item.geohash, updatedData);
                 if (success) {
+                    // IMPORTANTE: Salir del modo edición ANTES de actualizar datos
+                    // Esto previene que ngOnChanges reinicialice el formulario
+                    this.isEditing.set(false);
+
                     // Update local data
                     this.displayData.item.alias = updatedData.alias;
                     this.displayData.item.description = updatedData.description;
@@ -175,32 +194,29 @@ export class SavedPoiDialog implements OnInit {
                     } else {
                         this.displayData.displayName = this.displayData.item.placeName;
                     }
+
+                    // Notificar al padre DESPUÉS de actualizar los datos locales
                     this.handleAction('update');
 
-                    this.snackBar.open('Cambios guardados', 'Ok',
-                        {
-                            duration: 3000,
-                            horizontalPosition: 'start',
-                            verticalPosition: 'bottom'
-                        });
-                    this.isEditing.set(false);
-
-                } else {
-                    this.snackBar.open('Error al guardar', 'Ok',
-                        {
-                            duration: 3000,
-                            horizontalPosition: 'start',
-                            verticalPosition: 'bottom'
-                        });
-                }
-            } catch (error) {
-                console.error(error);
-                this.snackBar.open('Error al guardar', 'Ok',
-                    {
+                    this.snackBar.open('POI actualizado correctamente', 'Ok', {
                         duration: 3000,
                         horizontalPosition: 'start',
                         verticalPosition: 'bottom'
                     });
+
+                } else {
+                    this.snackBar.open('Error al guardar', 'Ok', {
+                        duration: 3000,
+                        horizontalPosition: 'start',
+                        verticalPosition: 'bottom'
+                    });
+                }
+            } catch (error) {
+                this.snackBar.open('Error al guardar', 'Ok', {
+                    duration: 3000,
+                    horizontalPosition: 'start',
+                    verticalPosition: 'bottom'
+                });
             }
         }
     }

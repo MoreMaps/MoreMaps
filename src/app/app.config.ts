@@ -33,6 +33,9 @@ import {POIService} from './services/POI/poi.service';
 import {VehicleService} from './services/Vehicle/vehicle.service';
 import {VEHICLE_REPOSITORY} from './services/Vehicle/VehicleRepository';
 import {VehicleDB} from './services/Vehicle/VehicleDB';
+import {PreferenceService} from './services/Preferences/preference.service';
+import {PREFERENCE_REPOSITORY} from './services/Preferences/PreferenceRepository';
+import {PreferenceDB} from './services/Preferences/PreferenceDB';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -51,6 +54,7 @@ export const appConfig: ApplicationConfig = {
       RouteService,
       FuelPriceService,
       ElectricityPriceService,
+      PreferenceService,
       { provide: POI_REPOSITORY, useClass: POIDB },
       { provide: VEHICLE_REPOSITORY, useClass: VehicleDB },
       { provide: USER_REPOSITORY, useClass: UserDB },
@@ -60,5 +64,6 @@ export const appConfig: ApplicationConfig = {
       {provide: ELECTRICITY_PRICE_SOURCE, useClass: ElectricityPriceAPI},
       {provide: FUEL_PRICE_REPOSITORY, useClass: FuelPriceCache},
       {provide: FUEL_PRICE_SOURCE, useClass: FuelPriceAPI},
+      {provide: PREFERENCE_REPOSITORY, useClass: PreferenceDB},
   ]
 };

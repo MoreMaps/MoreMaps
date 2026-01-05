@@ -8,10 +8,14 @@ import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongParamsError} from '../../errors/WrongParamsError';
 import {SessionAlreadyActiveError} from '../../errors/User/SessionAlreadyActiveError';
 import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
+import {RegisterModel} from '../../data/RegisterModel';
+import {PREFERENCE_REPOSITORY, PreferenceRepository} from '../Preferences/PreferenceRepository';
+import {PreferenceModel} from '../../data/PreferenceModel';
 
 @Injectable({providedIn: 'root'})
 export class UserService {
     private userDb: UserRepository = inject(USER_REPOSITORY);
+    private preferenceDb: PreferenceRepository = inject(PREFERENCE_REPOSITORY);
 
     // HU101 Crear usuario
     /** Crea el usuario si este no existe ya.
@@ -19,25 +23,41 @@ export class UserService {
      * @throws UserAlreadyExistsError si ya existe el usuario.
      * @throws WrongPasswordFormatError si la contraseña no cumple con los criterios mínimos.
      */
-    // TODO: se debería utilizar RegisterModel??
-    async signUp(email: string, pwd: string, nombre: string, apellidos: string): Promise<UserModel> {
+    async signUp(model: RegisterModel): Promise<UserModel> {
+
         // Comprobar si hay algún parámetro vacío
-        if (!email || !pwd || !nombre || !apellidos) {
+        if (!model.email || !model.pwd || !model.nombre || !model.apellidos) {
             throw new WrongParamsError('usuario');
         }
 
         // Comprobar si el usuario existe
-        if (await this.userDb.userExists(email)) {
+        if (await this.userDb.userExists(model.email)) {
             throw new UserAlreadyExistsError();
         }
 
         // Comprobar si las credenciales son válidas
-        if (!await this.userDb.passwordValid(pwd)) {
+        if (!await this.userDb.passwordValid(model.pwd)) {
             throw new WrongPasswordFormatError();
         }
 
         // Crea un nuevo usuario
-        return await this.userDb.createUser(email, pwd, nombre, apellidos);
+        const res = await this.userDb.createUser(model.email, model.pwd, model.nombre, model.apellidos);
+
+        // Creación de las preferencias por defecto del usuario
+        const preferencias = new PreferenceModel({
+            costeCombustible: true,
+            costeCalorias: true,
+            tipoTransporte: undefined,
+            tipoRuta: undefined,
+            matricula: undefined
+        })
+        try{
+            await this.preferenceDb.updatePreferences(preferencias);
+        } catch(error) {
+            console.warn('Ha ocurrido un error y se ha creado el usuario sin preferencias.')
+        }
+
+        return res;
     }
 
     // HU102 Iniciar sesión

@@ -6,17 +6,22 @@ import {MatDialog, MatDialogModule, MatDialogRef} from '@angular/material/dialog
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatSnackBar, MatSnackBarRef} from '@angular/material/snack-bar';
 import {BreakpointObserver} from '@angular/cdk/layout';
+import {Subscription} from 'rxjs';
+import {geohashForLocation} from 'geofire-common';
 
 // Modelos
 import {POIModel} from '../../data/POIModel';
 import {VehicleModel} from '../../data/VehicleModel';
+import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
 
 // Servicios y Estrategias
 import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
-import {SavedVehiclesStrategy} from '../../services/saved-items/savedVehiclesStrategy';
+import {SavedVehicleStrategy} from '../../services/saved-items/saved-vehicle-strategy.service';
 import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
 import {SavedItemsStrategy} from '../../services/saved-items/savedItemsStrategy';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
+import {RouteFlowService} from '../../services/map/route-flow-service';
+import {FlowPoint, FlowVehicle, RouteFlowConfig} from '../../services/map/route-flow-state';
 
 // Componentes
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
@@ -24,14 +29,13 @@ import {NavbarComponent} from '../navbar/navbar.component';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {SavedPoiDialog} from './saved-poi-dialog/saved-poi-dialog';
 import {SavedVehicleDialog} from './saved-vehicle-dialog/saved-vehicle-dialog';
-import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
-import {Subscription} from 'rxjs';
-import {RouteModel, TIPO_TRANSPORTE} from '../../data/RouteModel';
-import {geohashForLocation} from 'geofire-common';
 import {SavedRouteDialog} from './saved-route-dialog/saved-route-dialog';
-import {RouteFlowService} from '../../services/map/route-flow-service';
 import {SpinnerSnackComponent} from '../../utils/map-widgets';
-import {FlowPoint, RouteFlowConfig} from '../../services/map/route-flow-state';
+import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
+
+// PATRÓN ITERATOR
+import {IterableCollection, PagedIterator} from '../../utils/paginator/iterator.interface';
+import {ConcretePagedCollection} from '../../utils/paginator/concrete-collections';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -53,7 +57,7 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
     ],
     providers: [
         SavedPOIStrategy,
-        SavedVehiclesStrategy,
+        SavedVehicleStrategy,
         SavedRouteStrategy
     ],
     templateUrl: './saved.html',
@@ -67,76 +71,100 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     private route = inject(ActivatedRoute);
     private dialog = inject(MatDialog);
     private breakpointObserver = inject(BreakpointObserver);
-    private location = inject(Location)
+    private location = inject(Location);
     private activeDialogRef: MatDialogRef<any> | null = null;
     private breakpointSubscription: Subscription | null = null;
     private queryParamsSubscription: Subscription | null = null;
     private routeFlowService = inject(RouteFlowService);
     private vehicleRepo = inject(VEHICLE_REPOSITORY);
+    private dialogActionSubscription: Subscription | null = null;
 
+    // Estado de la vista
     isDesktop = signal(false);
 
+    // Estrategias
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
-        'vehiculos': inject(SavedVehiclesStrategy),
+        'vehiculos': inject(SavedVehicleStrategy),
         'rutas': inject(SavedRouteStrategy)
     };
-
-    // ESTADO
-    selectedType = signal<ItemType>('lugares');
-    items = signal<any[]>([]); // Lista genérica
-
-    selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
-
-    // Paginación
-    currentPage = signal(1);
-    itemsPerPage = signal(4);
-    totalPages = computed(() => {
-        let itemSnap = this.items();
-        if (!itemSnap) return 1;
-        const total = Math.ceil(itemSnap.length / this.itemsPerPage());
-        return total === 0 ? 1 : total;
-    });
-
     currentStrategy = computed(() => this.strategies[this.selectedType()]);
 
+    // ESTADO PRINCIPAL
+    selectedType = signal<ItemType>('lugares');
+    items = signal<any[]>([]); // Mantenemos la lista completa para comprobaciones de longitud
+    selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
     vehicleMap = signal<Map<string, string>>(new Map());
 
+    // --- PATRÓN ITERATOR ---
+    // Instancia del iterador
+    private iterator: PagedIterator<any> | null = null;
+
+    // Signals sincronizados con el iterador para la Vista
+    readonly itemsPerPage = signal(5);
+    currentPage = signal(1);
+    totalPages = signal(1);
+    paginatedItems = signal<any[]>([]); // Ahora es un signal de escritura, no computed
+
+    // Transformación para mostrar nombres (Computed sobre los items paginados actuales)
+    paginatedItemsWithNames = computed(() => {
+        const items = this.paginatedItems();
+        return items.map(item => ({
+            item,
+            displayName: this.currentStrategy().getDisplayName(item)
+        }));
+    });
+
+    selectedItemDisplayName = computed(() => {
+        if (!this.selectedItem) return '';
+        return this.currentStrategy().getDisplayName(this.selectedItem);
+    });
+
+    emptyMessage = computed(() => this.currentStrategy().getEmptyMessage());
+
+    allMatriculas = computed<string[]>(() => {
+        if (this.selectedType() === 'vehiculos') {
+            // Asegúrate de que items() tenga objetos VehicleModel válidos
+            return this.items().map((v: any) => v.matricula);
+        }
+        return [];
+    });
+
+    private isUpdating = false;
+
     constructor() {
+        // Recuperar preferencias
         const savedType = localStorage.getItem('user_preference_saved_tab');
         if (savedType) {
             this.selectedType.set(savedType as ItemType);
         }
 
-        const savedPage = localStorage.getItem('user_preference_saved_page');
-        if (savedPage) {
-            this.currentPage.set(parseInt(savedPage, 10));
-        }
-
-        // Guardar la pestaña actual
+        // Efecto para guardar la pestaña actual
         effect(() => {
             const currentType = this.selectedType();
             localStorage.setItem('user_preference_saved_tab', currentType);
         });
 
+        // Responsive Observer
         this.breakpointSubscription = this.breakpointObserver
             .observe('(min-width: 1025px)')
             .subscribe(result => {
-                const isDesktopNow = result.matches
+                const isDesktopNow = result.matches;
                 this.isDesktop.set(isDesktopNow);
 
                 if (!isDesktopNow && this.selectedItem) {
-                    // Si pasamos a móvil y hay algo seleccionado, abrir diálogo
-                    this.openDialogForItem(this.selectedItem);
+                    setTimeout(() => {
+                        if (this.selectedItem) {
+                            this.openDialogForItem(this.selectedItem);
+                        }
+                    }, 0);
                 } else if (isDesktopNow) {
-                    // Si pasamos a desktop, cerrar diálogos (se verá en el panel lateral)
                     this.dialog.closeAll();
                 }
             });
     }
 
     ngOnInit(): void {
-        // Reaccionar a cambios en la URL
         this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
             const typeParam = params['type'];
             const idParam = params['id'];
@@ -150,18 +178,17 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 }
             }
 
-            // Determinar si permitimos el fallback a localStorage
-            //   Si la URL trae parámetros (type o id), la navegación es explícita y NO debemos usar el histórico.
-            //   Si la URL está limpia, permitimos recuperar la última selección.
             const allowStorageFallback = !idParam && !typeParam;
-
-            // Cargar datos
             this.fetchDataWithLoading(allowStorageFallback, idParam).then();
         });
     }
 
     ngOnDestroy(): void {
-        this.clearLoadingState()
+        this.clearLoadingState();
+
+        if (this.dialogActionSubscription) {
+            this.dialogActionSubscription.unsubscribe();
+        }
 
         if (this.breakpointSubscription) {
             this.breakpointSubscription.unsubscribe();
@@ -178,7 +205,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             this.activeDialogRef = null;
         }
 
-        localStorage.setItem('user_preference_saved_page', this.currentPage().toString());
+        // Guardar página actual
+        localStorage.setItem(`user_preference_page_${this.selectedType()}`, this.currentPage().toString());
 
         if (this.selectedItem) {
             const id = this.getItemId(this.selectedItem);
@@ -203,29 +231,58 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     // --- CARGA DE DATOS ---
 
     async loadItems(allowStorageFallback: boolean, specificId?: string): Promise<void> {
-        const items = await this.currentStrategy().loadItems();
-        this.items.set(items);
+        // 1. Cargar datos crudos
+        const data = await this.currentStrategy().loadItems();
+        this.items.set(data);
+
+        // 2. Crear la Colección y el Iterador (Patrón Iterator)
+        const collection: IterableCollection<any> = new ConcretePagedCollection(data, this.itemsPerPage());
+        this.iterator = collection.createIterator();
+
+        // 3. Restaurar página guardada si aplica
+        const storageKey = `user_preference_page_${this.selectedType()}`;
+        const savedPage = localStorage.getItem(storageKey);
+        if (savedPage) {
+            // Usamos el método jumpToPage del iterador concreto
+            // Necesitamos hacer casting o asumir que es ConcretePagedIterator si la interfaz no tiene jumpToPage,
+            // pero tu clase concreta sí lo tiene.
+            if (this.iterator && 'jumpToPage' in this.iterator) {
+                (this.iterator as any).jumpToPage(parseInt(savedPage, 10));
+            }
+        }
+
+        // 4. Sincronizar estado inicial del iterador con la vista
+        this.syncIteratorState();
 
         if (this.selectedType() === 'rutas') {
             await this.loadVehicleAliases();
         }
 
-        // Validación de página
-        const realTotalPages = Math.ceil(items.length / this.itemsPerPage()) || 1;
-        if (this.currentPage() > realTotalPages) {
-            this.currentPage.set(realTotalPages);
-        }
+        await this.checkAndSelectFromParams(data, specificId, allowStorageFallback);
+    }
 
-        // Llamamos a la selección pasándole explícitamente si puede usar storage
-        await this.checkAndSelectFromParams(items, specificId, allowStorageFallback);
+    /**
+     * Sincroniza los signals de la UI con el estado actual del iterador.
+     */
+    private syncIteratorState(): void {
+        if (this.iterator) {
+            this.paginatedItems.set(this.iterator.getCurrent());
+            this.currentPage.set(this.iterator.getCurrentPageNumber());
+            this.totalPages.set(this.iterator.getTotalPages());
+        } else {
+            this.paginatedItems.set([]);
+            this.currentPage.set(1);
+            this.totalPages.set(1);
+        }
     }
 
     private async checkAndSelectFromParams(items: any[], urlId: string | undefined, allowStorageFallback: boolean): Promise<void> {
+        if (this.isUpdating) return;
+
         let targetId = urlId;
 
-        // SOLO miramos en localStorage si no hay ID de URL y tenemos permiso explícito (navegación limpia)
         if (!targetId && allowStorageFallback) {
-            targetId = localStorage.getItem('user_preference_saved_item_id')?.toString();
+            targetId = localStorage.getItem('user_preference_save   d_item_id')?.toString();
         }
 
         if (targetId && items.length > 0) {
@@ -234,22 +291,22 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             if (foundItem) {
                 this.selectItem(foundItem);
 
+                // Calcular página para el salto (necesitamos saber el índice global)
                 const index = items.indexOf(foundItem);
                 const page = Math.floor(index / this.itemsPerPage()) + 1;
-                this.currentPage.set(page);
 
-                // Limpiar URL solo si venía con parámetros para dejarla limpia
+                // Usar el iterador para saltar
+                if (this.iterator && 'jumpToPage' in this.iterator) {
+                    (this.iterator as any).jumpToPage(page);
+                    this.syncIteratorState();
+                }
+
+                // Limpiar URL
                 if (urlId || this.route.snapshot.queryParams['type']) {
-                    const urlTree = this.router.createUrlTree([], {
-                        relativeTo: this.route,
-                        queryParams: {}
-                    });
+                    const urlTree = this.router.createUrlTree([], {relativeTo: this.route, queryParams: {}});
                     this.location.replaceState(urlTree.toString());
                 }
-            } else {
-                // Caso importante: Si venía un ID en la URL, pero no se encontró (ej. retardo en BD),
-                // NO seleccionamos nada. No hacemos fallback a localStorage para evitar confusión.
-                console.warn(`Item con id ${targetId} no encontrado en la lista cargada.`);
+            } else if (urlId) {
                 this.snackBar.open('Elemento no encontrado o aún no disponible.', 'Ok', {duration: 3000});
             }
         }
@@ -259,13 +316,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         try {
             const vehicles = await this.vehicleRepo.getVehicleList();
             const map = new Map<string, string>();
-
-            vehicles.forEach(v => {
-                // Mapeamos matrícula -> alias
-                const displayName = v.alias;
-                map.set(v.matricula, displayName);
-            });
-
+            vehicles.forEach(v => map.set(v.matricula, v.alias));
             this.vehicleMap.set(map);
         } catch (error) {
             console.error('Error cargando alias de vehículos', error);
@@ -273,20 +324,13 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     getRouteTransportLabel(item: any): string {
-        // Validación de seguridad
         if (this.selectedType() !== 'rutas' || !item) return '';
-
         const route = item as RouteModel;
 
-        // Si es vehículo y tiene matrícula
         if (route.transporte === TIPO_TRANSPORTE.VEHICULO && route.matricula) {
             const alias = this.vehicleMap().get(route.matricula);
-            if (alias) {
-                return `En ${alias}`;
-            }
+            if (alias) return `En ${alias}`;
         }
-
-        // Fallback al texto por defecto ("En coche", "A pie", etc.)
         return route.transportLabel();
     }
 
@@ -298,7 +342,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             case 'vehiculos':
                 return (item as VehicleModel).matricula;
             case 'rutas':
-                return (item as any).id(); // RouteModel.id()
+                return (item as any).id();
             default:
                 return null;
         }
@@ -308,15 +352,14 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         if (this.selectedType() === type) return;
 
         this.selectedType.set(type);
+        // Reset manual
         this.currentPage.set(1);
-
-        // Cambio manual: limpiar selección y no permitir fallback a storage
         this.deselectItem();
         void this.fetchDataWithLoading(false);
     }
 
     private async fetchDataWithLoading(allowStorageFallback: boolean, specificId?: string): Promise<void> {
-        this.items.set([]);
+        this.items.set([]); // Limpiar lista visualmente mientras carga
         if (this.activeSnackRef) this.activeSnackRef.dismiss();
 
         this.loadingTimeout = setTimeout(() => {
@@ -336,6 +379,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             }
             console.error('Error loading items:', error);
             this.items.set([]);
+            this.paginatedItems.set([]); // Asegurar limpieza del iterador visual
         } finally {
             this.clearLoadingState();
         }
@@ -345,22 +389,26 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
     selectItem(item: any): void {
         this.selectedItem = item;
-
         const id = this.getItemId(item);
         if (id) localStorage.setItem('user_preference_saved_item_id', id);
 
-        // Si es móvil, abrimos diálogo. Si es Desktop, se muestra incrustado
         if (!this.isDesktop()) {
+            this.dialog.closeAll();
             this.openDialogForItem(item);
         }
     }
 
     private openDialogForItem(item: any): void {
         if (this.activeDialogRef) return;
+        if (this.dialog.openDialogs.length > 0) this.dialog.closeAll();
 
-        // Si hay otros diálogos, forzamos su cierre para limpiar la pantalla.
-        if (this.dialog.openDialogs.length > 0) {
-            this.dialog.closeAll();
+        const currentId = this.getItemId(item);
+        // Buscar en la lista completa (this.items) no solo en la página actual
+        const freshItem = this.items().find(i => this.getItemId(i) === currentId) || item;
+
+        let existingMatriculas: string[] = [];
+        if (this.selectedType() === 'vehiculos') {
+            existingMatriculas = this.items().map((v: VehicleModel) => v.matricula);
         }
 
         const dialogConfig = {
@@ -370,11 +418,12 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             maxWidth: '90vw',
             data: {
                 item: item,
-                displayName: this.getDisplayName(item)
+                displayName: this.currentStrategy().getDisplayName(freshItem),
+                displayTransport: this.getRouteTransportLabel(freshItem),
+                existingMatriculas: existingMatriculas,
             }
         };
 
-        // Aquí usamos el switch type, es más limpio que instanceof para decidir el componente
         switch (this.selectedType()) {
             case 'lugares':
                 this.activeDialogRef = this.dialog.open(SavedPoiDialog, dialogConfig);
@@ -387,65 +436,141 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 break;
         }
 
-        // Suscribirse siempre al resultado, sea cual sea el tipo
         if (this.activeDialogRef) {
+            const componentInstance = this.activeDialogRef.componentInstance;
+
+            if (componentInstance && 'actionEvent' in componentInstance) {
+                this.dialogActionSubscription = (componentInstance as any).actionEvent.subscribe((result: any) => {
+                    // Normalizamos el resultado que viene del EventEmitter
+                    const action = result.action || result;
+                    const payload = result.payload;
+
+                    if (action === 'update') {
+                        // Pasamos el payload (item nuevo) al manejador
+                        void this.handleDialogActions('update', payload);
+                    } else {
+                        this.activeDialogRef?.close(result);
+                    }
+                });
+            }
+
             this.activeDialogRef.afterClosed().subscribe((result) => {
-                this.processDialogResult(result)
+                if (this.dialogActionSubscription) {
+                    this.dialogActionSubscription.unsubscribe();
+                    this.dialogActionSubscription = null;
+                }
+
+                void this.processDialogResult(result);
                 this.activeDialogRef = null;
             });
         }
     }
 
-    private processDialogResult(result: any) {
-        if (result && !result.ignore) {
-            this.handleDialogActions(result);
-            this.deselectItem();
-        } else if (!result?.ignore) {
-            this.deselectItem(); // Cerrado sin acción (clic fuera o X)
+    private async processDialogResult(result: any) {
+        if (!result || result.ignore) {
+            if (!this.isDesktop()) this.deselectItem();
+            return;
         }
+
+        const actionString = (typeof result === 'string') ? result : result.action;
+        const payload = (typeof result === 'object') ? result.payload : undefined;
+
+        await this.handleDialogActions(actionString, payload);
+
+        if (actionString !== 'update') this.deselectItem();
     }
 
-    handleDialogActions(action: string | undefined): void {
+    async handleDialogActions(arg1: string | any, arg2?: any): Promise<void> {
+        let action: string | undefined;
+        let payload: any;
+
+        if (typeof arg1 === 'object' && arg1 !== null && 'action' in arg1) {
+            action = arg1.action;
+            payload = arg1.payload;
+        } else {
+            // Es la llamada estándar (string, payload)
+            action = arg1;
+            payload = arg2;
+        }
+
         switch (action) {
             case 'delete':
                 this.deselectItem();
-                void this.loadItems(false); // Recargar lista
+                await this.loadItems(false); // Recargará y creará nuevo iterador
                 break;
             case 'update':
-                void this.loadItems(false); // Recargar lista para reflejar cambios (ej. alias)
-                break;
-            case 'showOnMap':
-                if (this.selectedItem && this.selectedType() === 'lugares') {
-                    const poi = this.selectedItem as POIModel;
-                    void this.router.navigate(['/map'], {
-                        queryParams: {lat: poi.lat, lon: poi.lon, name: poi.alias}
-                    });
-                } else if (this.selectedType() === 'rutas') {
-                    const route = this.selectedItem as RouteModel;
-                    // Navegamos al mapa reconstruyendo los parámetros de la ruta
-                    void this.router.navigate(['/map'], {
-                        queryParams: {
-                            mode: 'route',
-                            start: route.geohash_origen,
-                            end: route.geohash_destino,
-                            startName: route.nombre_origen,
-                            endName: route.nombre_destino,
-                            transport: route.transporte,
-                            preference: route.preferencia,
-                            matricula: route.matricula
-                        }
-                    });
+                this.isUpdating = true;
+                try {
+                    await this.loadItems(false);
+                    let targetItem = null;
+
+                    if (payload) {
+                        const newId = this.getItemId(payload);
+                        targetItem = this.items().find(i => this.getItemId(i) === newId);
+                    } else if (this.selectedItem) {
+                        const oldId = this.getItemId(this.selectedItem);
+                        targetItem = this.items().find(i => this.getItemId(i) === oldId);
+                    }
+
+                    if (targetItem) {
+                        this.selectedItem = targetItem;
+                        const finalId = this.getItemId(targetItem);
+                        if (finalId) localStorage.setItem('user_preference_saved_item_id', finalId);
+                    } else {
+                        this.deselectItem();
+                    }
+                } finally {
+                    this.isUpdating = false;
                 }
                 break;
-            case 'route-from': // Origen fijado (Lugar)
-                void this.initRouteFlow({fixedOrigin: this.selectedItem});
+            case 'showOnMap':
+                void this.handleShowOnMap();
                 break;
-            case 'route-to': // Destino fijado (Lugar)
-                void this.initRouteFlow({fixedDest: this.selectedItem});
+            case 'route-from':
+                await this.initRouteFlow({fixedOrigin: arg2 || this.selectedItem});
                 break;
-            case 'route-vehicle': // Vehículo fijado
-                void this.initRouteFlow({fixedVehicle: this.selectedItem});
+            case 'route-to':
+                await this.initRouteFlow({fixedDest: arg2 || this.selectedItem});
                 break;
+            case 'route-vehicle':
+                await this.initRouteFlow({fixedVehicle: payload || this.selectedItem});
+                break;
+        }
+    }
+
+    private async handleShowOnMap(): Promise<void> {
+        if (this.selectedType() === 'lugares') {
+            const poi = this.selectedItem as POIModel;
+            void this.router.navigate(['/map'], {
+                queryParams: {lat: poi.lat, lon: poi.lon, name: poi.alias}
+            });
+        } else if (this.selectedType() === 'rutas') {
+            const route = this.selectedItem as RouteModel;
+            let startName = route.nombre_origen;
+            let endName = route.nombre_destino;
+
+            try {
+                const savedPois = await this.strategies['lugares'].loadItems() as POIModel[];
+                const originPoi = savedPois.find(p => p.geohash === route.geohash_origen);
+                if (originPoi?.alias) startName = originPoi.alias;
+                const destPoi = savedPois.find(p => p.geohash === route.geohash_destino);
+                if (destPoi?.alias) endName = destPoi.alias;
+            } catch (e) {
+                console.warn("Error al resolver alias en ruta: ", e);
+            }
+
+            void this.router.navigate(['/map'], {
+                queryParams: {
+                    mode: 'route',
+                    start: route.geohash_origen,
+                    end: route.geohash_destino,
+                    startName: startName,
+                    endName: endName,
+                    transport: route.transporte,
+                    preference: route.preferencia,
+                    matricula: route.matricula
+                }
+            });
         }
     }
 
@@ -454,38 +579,34 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         localStorage.removeItem('user_preference_saved_item_id');
     }
 
-    getDisplayName(item: any): string {
-        return this.currentStrategy().getDisplayName(item);
-    }
-
-    // --- UTILIDADES ---
-
-    paginatedItems = computed(() => {
-        const start = (this.currentPage() - 1) * this.itemsPerPage();
-        const end = start + this.itemsPerPage();
-        const itemSnap = this.items();
-        if (!itemSnap) return [];
-        return itemSnap.slice(start, end);
-    });
+    // --- PAGINACIÓN (Delegada al Iterador) ---
 
     previousPage(): void {
-        if (this.currentPage() > 1) this.currentPage.set(this.currentPage() - 1);
+        if (this.iterator && this.iterator.hasPrevious()) {
+            // El iterador actualiza su estado interno
+            this.iterator.getPrevious();
+            // Nosotros actualizamos la vista consultando al iterador
+            this.syncIteratorState();
+        }
     }
 
     nextPage(): void {
-        if (this.currentPage() < this.totalPages()) this.currentPage.set(this.currentPage() + 1);
+        if (this.iterator && this.iterator.hasMore()) {
+            this.iterator.getNext();
+            this.syncIteratorState();
+        }
     }
-
-    emptyMessage = computed(() => this.currentStrategy().getEmptyMessage());
 
     async toggleFavorite(item: any, event: Event): Promise<void> {
         event.stopPropagation();
         const success = await this.currentStrategy().toggleFavorite(item);
         if (success) {
+            const itemName = this.currentStrategy().getDisplayName(item);
             const message = item.pinned
-                ? `Se ha fijado ${this.getDisplayName(item)}.`
-                : `${this.getDisplayName(item)} ya no está fijado.`;
+                ? `Se ha fijado ${itemName}.`
+                : `${itemName} ya no está fijado.`;
             this.showSnackbar(message);
+            // Recargar items para refrescar orden y estado (recreará el iterador)
             await this.loadItems(false);
         }
     }
@@ -494,25 +615,17 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         this.snackBar.open(msg, 'Ok', {duration: 5000, horizontalPosition: 'left', verticalPosition: 'bottom'});
     }
 
-    // LÓGICA DE RUTA ---------------------
+    // LÓGICA DE RUTA (Route Flow)
 
-    /**
-     * Inicia el flujo de cálculo de ruta saltando pasos si hay datos fijos.
-     */
-    async initRouteFlow(prefilled: { fixedOrigin?: any, fixedDest?: any, fixedVehicle?: any }) {
-
-        // Configurar
+    async initRouteFlow(prefilled: { fixedOrigin?: POIModel, fixedDest?: POIModel, fixedVehicle?: VehicleModel }) {
         const config: RouteFlowConfig = {
             fixedOrigin: prefilled.fixedOrigin ? this.mapToFlowPoint(prefilled.fixedOrigin) : undefined,
             fixedDest: prefilled.fixedDest ? this.mapToFlowPoint(prefilled.fixedDest) : undefined,
-            fixedVehicle: prefilled.fixedVehicle
+            fixedVehicle: prefilled.fixedVehicle ? this.mapToFlowVehicle(prefilled.fixedVehicle) : undefined
         };
 
-        //
-        // ¡Ejecutar una sola línea de lógica!
         const result = await this.routeFlowService.startRouteFlow(config);
 
-        // Navegar
         if (result) {
             const startHash = result.origin!.hash || geohashForLocation([result.origin!.lat, result.origin!.lon], 7);
             const endHash = result.destination!.hash || geohashForLocation([result.destination!.lat, result.destination!.lon], 7);
@@ -532,19 +645,23 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         }
     }
 
-    /**
-     * Convierte un ítem guardado (POI, Vehículo, etc.) al formato FlowPoint
-     * que necesita el servicio de rutas.
-     */
     private mapToFlowPoint(item: any): FlowPoint {
-        // Usamos tu estrategia existente para obtener el nombre correcto (alias o placeName)
-        const name = this.getDisplayName(item);
-
+        const name = this.strategies['lugares'].getDisplayName(item);
         return {
             name: name,
             lat: item.lat,
             lon: item.lon,
-            hash: item.geohash // Algunos ítems como vehículos pueden no tener geohash, será undefined
+            hash: item.geohash
         };
     }
+
+    private mapToFlowVehicle(item: any): FlowVehicle {
+        const name = this.strategies['vehiculos'].getDisplayName(item);
+        return {
+            matricula: item.matricula,
+            alias: name,
+        }
+    }
+
+    protected readonly Math = Math;
 }

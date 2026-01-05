@@ -458,7 +458,7 @@ body {
     }
 }
 
-// ===== DIALOGOS =====
+// ===== DIÁLOGOS =====
 
 .dialog-container {
     padding: 2rem;
@@ -696,6 +696,23 @@ body {
             }
         }
     }
+
+    .mat-mdc-form-field-icon-suffix {
+        .mat-icon-button, .mat-icon {
+            color: var(--color-purple-dark) !important;
+            opacity: 1 !important;
+        }
+    }
+
+    .password-hint,
+    .mat-mdc-form-field-hint,
+    .mat-mdc-form-field-error {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    .mat-mdc-form-field-hint {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
 }
 
 // Animaciones
@@ -710,7 +727,7 @@ body {
     }
 }
 
-.dialog-container {
+.mdc-dialog__surface {
     animation: fadeIn 0.3s ease-out;
 }
 
@@ -843,7 +860,7 @@ input:-webkit-autofill:active {
 }
 
 /* =========================================
-   GLOBAL ERROR TEXTFIELDS OVERRIDE
+   GLOBAL ERROR TEXT FIELDS OVERRIDE
    ========================================= */
 
 mat-error,
@@ -996,4 +1013,208 @@ mat-error,
 
 .cdk-global-scrollblock {
     overflow: hidden !important; /* Fuerza a que no haya scroll en el body */
+}
+
+
+/* === FORZAR Z-INDEX DEL SNACKBAR === */
+/* Importante: Esto debe estar en un archivo global y FUERA de cualquier selector .class { ... } */
+
+/* Solo afectar a SNACKBARS, no a menús ni diálogos */
+.mat-mdc-snack-bar-container {
+    z-index: 10000 !important;
+}
+
+/* Contenedor específico de snackbars */
+.cdk-overlay-pane:has(.mat-mdc-snack-bar-container) {
+    z-index: 10000 !important;
+    // NO usar position: static, mantener el default (absolute/fixed)
+}
+
+/* Si usas una clase personalizada para tus toasts */
+.cdk-overlay-pane.high-z-index-toast {
+    z-index: 10000 !important;
+}
+
+/* Backdrop de snackbars (si existe) */
+.cdk-overlay-backdrop.mat-snack-bar-backdrop {
+    z-index: 9999 !important;
+}
+
+/* === FIX Z-INDEX PARA MAT-SELECT DENTRO DE DIÁLOGOS === */
+
+// Seleccionar SOLO overlays que están dentro o relacionados con un diálogo
+.cdk-overlay-container {
+    // Solo afectar a overlays de mat-select cuando hay un diálogo activo
+    .cdk-overlay-pane.mat-mdc-dialog-panel ~ .cdk-overlay-connected-position-bounding-box {
+        .cdk-overlay-pane:has(.mat-mdc-select-panel) {
+            z-index: 30000 !important;
+        }
+        z-index: 30000 !important;
+    }
+}
+.cdk-overlay-connected-position-bounding-box {
+    z-index: 10000 !important;
+}
+
+// Alternativa más robusta: usar un selector de hermanos
+.cdk-overlay-container:has(.mat-mdc-dialog-panel) {
+    .cdk-overlay-pane:has(.mat-mdc-select-panel) {
+        z-index: 2000 !important;
+    }
+}
+
+// Backdrop específico para selects en diálogos
+.cdk-overlay-container:has(.mat-mdc-dialog-panel) {
+    .cdk-overlay-backdrop.cdk-overlay-transparent-backdrop {
+        z-index: 1999 !important;
+    }
+}
+
+/* Contenedor específico de login */
+.cdk-overlay-pane:has(.mat-mdc-dialog-panel) {
+
+    z-index: 99999 !important;
+    // NO usar position: static, mantener el default (absolute/fixed)
+}
+
+/* 1. El panel con las opciones (Más Rápida, Más Corta...) */
+.cdk-overlay-pane:has(.mat-mdc-select-panel) {
+    z-index: 100001 !important; /* Por encima del diálogo (99999) */
+}
+
+
+// SELECTS
+
+/* =========================
+   APP SELECT (SIN mat-form-field)
+   ========================= */
+
+.app-select {
+    background-color: var(--color-lavender);
+    border: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    height: 50px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+
+    &:hover {
+        background-color: #fafafa;
+    }
+
+    &:focus-within {
+        border-color: var(--color-mint-green);
+        box-shadow: 0 0 0 3px rgba(161, 231, 197, 0.2);
+        background-color: var(--color-white);
+    }
+
+    &.error {
+        border-color: var(--color-orange);
+        background-color: rgba(255, 149, 57, 0.1);
+    }
+}
+
+.app-select {
+
+    /* Ocultamos flecha Material */
+    ::ng-deep .mat-mdc-select-arrow-wrapper {
+        display: none !important;
+    }
+
+    /* Trigger sin alturas raras */
+    ::ng-deep .mat-mdc-select-trigger {
+        height: auto !important;
+        padding: 0;
+    }
+
+    /* Texto del valor */
+    ::ng-deep .mat-mdc-select-value {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--color-teal-dark);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+:host-context(.dark-theme) .app-select {
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--color-gray-blue);
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    &:focus-within {
+        background-color: rgba(0, 0, 0, 0.4);
+        border-color: var(--color-mint-green);
+    }
+
+    ::ng-deep .mat-mdc-select-value {
+        color: var(--color-white) !important;
+    }
+}
+
+::ng-deep .app-select-panel {
+    border-radius: 12px;
+    padding: 4px 0;
+
+    .mat-mdc-option {
+        height: 44px;
+        font-size: 0.9rem;
+    }
+}
+
+/* =========================================
+   FIX: INPUTS READONLY Y DISABLED EN MODO OSCURO
+   ========================================= */
+.dark-theme {
+    // Afecta a cualquier input dentro de un form-field de Material
+    .mat-mdc-form-field {
+
+        // 1. Para inputs marcados como READONLY
+        input[readonly],
+        .mat-mdc-input-element[readonly],
+            // 2. Para inputs marcados como DISABLED (Lo que se ve en tu imagen)
+        input:disabled,
+        .mat-mdc-input-element:disabled {
+
+            // Forzamos el color morado oscuro
+            color: var(--color-purple-dark) !important;
+
+            // Webkit (Chrome/Safari) a veces fuerza el color gris en disabled
+            // Esto lo sobrescribe:
+            -webkit-text-fill-color: var(--color-purple-dark) !important;
+
+            // Evitamos que se vea transparente/borroso
+            opacity: 0.6 !important;
+
+            // Mantenemos el cursor normal para readonly y prohibido para disabled
+            &[readonly] { cursor: default; }
+            &:disabled { cursor: not-allowed; }
+        }
+    }
+    .mdc-text-field--disabled {
+        // El label flotante o en reposo
+        .mdc-floating-label {
+            color: var(--color-purple-dark) !important;
+            opacity: 0.6 !important;
+            -webkit-text-fill-color: var(--color-purple-dark) !important;
+        }
+    }
+
+    // 2. Sobrescribimos las variables de Material para campos "filled" deshabilitados
+    .mat-mdc-form-field.mat-form-field-disabled {
+        --mdc-filled-disabled-label-text-color: var(--color-purple-dark);
+        --mat-form-field-filled-disabled-label-text-color: var(--color-purple-dark);
+
+        // Esto asegura que si el label está "arriba" (floating), también se vea
+        .mat-mdc-floating-label {
+            color: var(--color-purple-dark) !important;
+        }
+    }
 }

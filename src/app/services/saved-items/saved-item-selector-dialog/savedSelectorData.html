@@ -25,10 +25,10 @@
         } @else if (items().length > 0) {
             <div class="items-list">
                 @if (data.type === 'lugares') {
-                    @for (item of items(); track item.geohash) {
+                    @for (item of paginatedItems(); track item.geohash) {
                         <div class="item-card" (click)="selectItem(item)">
                             <div class="item-icon">
-                                <img ngSrc="assets/images/poi_active.png" height="44" width="33" priority class="poi-icon-img" alt="POI">
+                                <img ngSrc="assets/images/poi/poi_active.png" height="44" width="33" priority class="poi-icon-img" alt="POI">
                             </div>
                             <div class="item-info">
                                 <h3 class="item-name">{{ getDisplayName(item) }}</h3>
@@ -41,7 +41,7 @@
                     }
                 }
                 @if (data.type === 'vehiculos') {
-                    @for (item of items(); track item.matricula) {
+                    @for (item of paginatedItems(); track item.matricula) {
                         <div class="item-card" (click)="selectItem(item)">
                             <div class="item-icon">
                                 <img ngSrc="assets/images/vehicle/vehicle_on.png" height="50" width="50" priority class="poi-icon-img" alt="Vehicle">
@@ -55,7 +55,7 @@
                     }
                 }
                 @if (data.type === 'search-results') {
-                    @for (item of items(); track item) {
+                    @for (item of paginatedItems(); track item) {
                         <div class="item-card" (click)="selectItem(item)">
                             <div class="item-icon">
                                 <mat-icon style="color: var(--color-orange);">location_on</mat-icon>
@@ -71,6 +71,19 @@
                     }
                 }
             </div>
+
+            <div class="pagination">
+                <span class="page-info">{{ currentPage() }} / {{ totalPages() }}</span>
+                <div class="pagination-buttons">
+                    <button mat-icon-button (click)="previousPage()" [disabled]="currentPage() === 1">
+                        <mat-icon>chevron_left</mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="nextPage()" [disabled]="currentPage() === totalPages()">
+                        <mat-icon>chevron_right</mat-icon>
+                    </button>
+                </div>
+            </div>
+
         } @else {
             <div class="empty-state">
                 <mat-icon>bookmark_border</mat-icon>

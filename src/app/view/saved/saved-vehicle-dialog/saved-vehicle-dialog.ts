@@ -3,7 +3,7 @@ import {
     EventEmitter,
     Inject,
     inject,
-    Input,
+    Input, OnChanges,
     OnInit,
     Optional,
     Output,
@@ -23,6 +23,7 @@ import {EditVehicleComponent} from '../../editVehicle/editVehicle';
 export interface SavedVehicleDialogData {
     item: VehicleModel;
     displayName: string;
+    existingMatriculas?: string[];
 }
 
 @Component({
@@ -40,15 +41,18 @@ export interface SavedVehicleDialogData {
     templateUrl: './saved-vehicle-dialog.html',
     styleUrls: ['./saved-vehicle-dialog.scss']
 })
-export class SavedVehicleDialog implements OnInit {
+export class SavedVehicleDialog implements OnInit, OnChanges {
     @Input() item?: VehicleModel;
     @Input() displayName?: string;
+    @Input() existingMatriculas?: string[];
 
     @Output() closeEvent = new EventEmitter<void>();
-    @Output() actionEvent = new EventEmitter<string>();
+    @Output() actionEvent = new EventEmitter<any>();
 
     public displayData!: SavedVehicleDialogData;
     public snackBar = inject(MatSnackBar);
+
+    private hasChanges = false;
 
     isEditing: WritableSignal<Boolean> = signal(false);
     isDeleting: WritableSignal<Boolean> = signal(false);
@@ -76,25 +80,42 @@ export class SavedVehicleDialog implements OnInit {
         } else if (this.item) {
             this.displayData = {
                 item: this.item,
-                displayName: this.item.alias || `${this.item.marca} ${this.item.modelo}`
+                displayName: this.item.alias || `${this.item.marca} ${this.item.modelo}`,
+                existingMatriculas: this.existingMatriculas,
             };
         }
     }
 
     close(): void {
-        if (this.dialogRef) this.dialogRef.close();
-        else this.closeEvent.emit();
+        if (this.dialogRef) {
+            const result = this.hasChanges ? 'update' : undefined;
+            this.dialogRef.close(result);
+        } else this.closeEvent.emit();
     }
 
-    handleAction(action: string): void {
-        if (this.dialogRef && action !== 'edit') this.dialogRef.close(action);
-        else this.actionEvent.emit(action);
+    handleAction(action: string, payload?: any): void {
+        // Para 'update', NO cerramos el diálogo en móvil
+        if (action === 'update') {
+            this.hasChanges = true;
+            // CORRECCIÓN: Emitimos un objeto con el payload (el ítem actualizado)
+            this.actionEvent.emit({ action: 'update', payload: this.displayData.item });
+            return;
+        }
+
+        const result = payload ? { action, payload } : action;
+
+        // Para otras acciones, cerramos o emitimos
+        if (this.dialogRef) {
+            this.dialogRef.close(result);
+        } else {
+            this.actionEvent.emit(result);
+        }
     }
 
     // --- ACCIONES VISTA ---
 
     onNewRoute(): void {
-        this.handleAction('route-vehicle');
+        this.handleAction('route-vehicle', this.displayData.item);
     }
 
     onEdit(): void {

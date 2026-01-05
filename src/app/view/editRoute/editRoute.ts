@@ -76,7 +76,6 @@ export class EditRouteComponent implements OnInit, OnChanges, OnDestroy {
             const vehicles = await this.vehicleRepo.getVehicleList();
             this.savedVehicles.set(vehicles);
         } catch (e) {
-            console.error('Error cargando vehículos', e);
             this.savedVehicles.set([]);
         }
     }
@@ -179,7 +178,6 @@ export class EditRouteComponent implements OnInit, OnChanges, OnDestroy {
                     verticalPosition: 'bottom'
                 });
             } else {
-                console.error(error);
                 this.update.emit(null);
             }
         } finally {

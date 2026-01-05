@@ -97,9 +97,7 @@
                     (click)="hidePassword = !hidePassword">
                     <mat-icon>visibility</mat-icon>
                 </button>
-                <mat-hint class="password-hint">
-                    al menos 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo
-                </mat-hint>
+                <mat-hint class="password-hint">Debe contener mayúsculas, minúsculas, números y símbolos</mat-hint>
                 @if (registerForm.get('password')?.hasError('required')) {
                     <mat-error>Requerido</mat-error>
                 }

@@ -409,21 +409,30 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     private async processDialogResult(result: any) {
-        if (!result || result.ignore) {
+        if (!result || (typeof result === 'object' && result.ignore)) {
             if (!this.isDesktop()) {
                 this.deselectItem();
             }
             return;
         }
 
-        await this.handleDialogActions(result);
+        // Normalizamos la entrada: puede ser string 'delete' u objeto {action: 'route', payload: {...}}
+        let action = result;
+        let payload = null;
 
-        if (result !== 'update') {
+        if (typeof result === 'object' && result.action) {
+            action = result.action;
+            payload = result.payload;
+        }
+
+        await this.handleDialogActions(action, payload);
+
+        if (action !== 'update') {
             this.deselectItem();
         }
     }
 
-    async handleDialogActions(action: string | undefined): Promise<void> {
+    async handleDialogActions(action: string | undefined, payload?: string): Promise<void> {
         switch (action) {
             case 'delete':
                 this.deselectItem();
@@ -455,7 +464,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 await this.initRouteFlow({fixedDest: this.selectedItem});
                 break;
             case 'route-vehicle':
-                await this.initRouteFlow({fixedVehicle: this.selectedItem});
+                const vehicleToUse = payload || this.selectedItem;
+                await this.initRouteFlow({fixedVehicle: vehicleToUse});
                 break;
         }
     }

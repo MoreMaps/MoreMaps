@@ -45,7 +45,7 @@ export class SavedVehicleDialog implements OnInit, OnChanges {
     @Input() displayName?: string;
 
     @Output() closeEvent = new EventEmitter<void>();
-    @Output() actionEvent = new EventEmitter<string>();
+    @Output() actionEvent = new EventEmitter<any>();
 
     public displayData!: SavedVehicleDialogData;
     public snackBar = inject(MatSnackBar);
@@ -90,7 +90,7 @@ export class SavedVehicleDialog implements OnInit, OnChanges {
         } else this.closeEvent.emit();
     }
 
-    handleAction(action: string): void {
+    handleAction(action: string, payload?: any): void {
         // Para 'update', NO cerramos el diálogo en móvil
         if (action === 'update') {
             this.hasChanges = true;
@@ -99,18 +99,20 @@ export class SavedVehicleDialog implements OnInit, OnChanges {
             return;
         }
 
-        // Para otras acciones (delete, showOnMap), cerramos el diálogo
+        const result = payload ? { action, payload } : action;
+
+        // Para otras acciones, cerramos o emitimos
         if (this.dialogRef) {
-            this.dialogRef.close(action);
+            this.dialogRef.close(result);
         } else {
-            this.actionEvent.emit(action);
+            this.actionEvent.emit(result);
         }
     }
 
     // --- ACCIONES VISTA ---
 
     onNewRoute(): void {
-        this.handleAction('route-vehicle');
+        this.handleAction('route-vehicle', this.displayData.item);
     }
 
     onEdit(): void {

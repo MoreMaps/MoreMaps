@@ -1,15 +1,15 @@
 /// <reference types="jasmine"/>
-import {UserRepository} from '../../services/User/UserRepository';
-import {POIRepository} from '../../services/POI/POIRepository';
-import {VehicleRepository} from '../../services/Vehicle/VehicleRepository';
-import {RouteRepository} from '../../services/Route/RouteRepository';
-import {MapSearchRepository} from '../../services/map/map-search-service/MapSearchRepository';
-import {FuelPriceRepository} from '../../services/fuel-price-service/FuelPriceRepository';
-import {ElectricityPriceRepository} from '../../services/electricity-price-service/ElectricityPriceRepository';
-import {FuelPriceService} from '../../services/fuel-price-service/fuel-price-service';
-import {ElectricityPriceService} from '../../services/electricity-price-service/electricity-price-service';
-import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
-import {PreferenceRepository} from '../../services/Preferences/PreferenceRepository';
+import {UserRepository} from '../services/User/UserRepository';
+import {POIRepository} from '../services/POI/POIRepository';
+import {VehicleRepository} from '../services/Vehicle/VehicleRepository';
+import {RouteRepository} from '../services/Route/RouteRepository';
+import {MapSearchRepository} from '../services/map/map-search-service/MapSearchRepository';
+import {FuelPriceRepository} from '../services/fuel-price-service/FuelPriceRepository';
+import {ElectricityPriceRepository} from '../services/electricity-price-service/ElectricityPriceRepository';
+import {FuelPriceService} from '../services/fuel-price-service/fuel-price-service';
+import {ElectricityPriceService} from '../services/electricity-price-service/electricity-price-service';
+import {MapSearchService} from '../services/map/map-search-service/map-search.service';
+import {PreferenceRepository} from '../services/Preferences/PreferenceRepository';
 
 /**
  * Clase para crear objetos espía sobre los repositorios.

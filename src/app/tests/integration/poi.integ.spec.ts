@@ -10,7 +10,7 @@ import {DescriptionLengthError} from '../../errors/POI/DescriptionLengthError';
 import {MapSearchService} from '../../services/map/map-search-service/map-search.service';
 import {MAP_SEARCH_REPOSITORY, MapSearchRepository} from '../../services/map/map-search-service/MapSearchRepository';
 import {POISearchModel} from '../../data/POISearchModel';
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {USER_REPOSITORY, UserRepository} from '../../services/User/UserRepository';
 
 

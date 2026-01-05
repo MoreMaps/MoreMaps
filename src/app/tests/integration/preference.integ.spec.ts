@@ -1,5 +1,5 @@
 import {TestBed} from '@angular/core/testing';
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {PreferenceService} from '../../services/Preferences/preference.service';
 import {PREFERENCE_REPOSITORY, PreferenceRepository} from '../../services/Preferences/PreferenceRepository';
 import {PREFERENCIA, TIPO_TRANSPORTE} from '../../data/RouteModel';

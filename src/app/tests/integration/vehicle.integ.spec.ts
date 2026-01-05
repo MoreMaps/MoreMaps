@@ -6,7 +6,7 @@ import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExis
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 import {USER_REPOSITORY, UserRepository} from '../../services/User/UserRepository';
 import {VEHICLE_REPOSITORY, VehicleRepository} from '../../services/Vehicle/VehicleRepository';
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 
 
 // Pruebas de integración sobre vehículos

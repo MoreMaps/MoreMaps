@@ -6,7 +6,7 @@ import {UserService} from '../../services/User/user.service';
 import {UserNotFoundError} from '../../errors/User/UserNotFoundError';
 import {WrongPasswordFormatError} from '../../errors/User/WrongPasswordFormatError';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {WrongParamsError} from '../../errors/WrongParamsError';
 import {InvalidCredentialError} from '../../errors/User/InvalidCredentialError';
 import {UserAlreadyExistsError} from '../../errors/User/UserAlreadyExistsError';

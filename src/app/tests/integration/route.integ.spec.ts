@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing'
 import {ROUTE_TEST_DATA, VEHICLE_TEST_DATA} from '../test-data';
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {USER_REPOSITORY, UserRepository} from '../../services/User/UserRepository';
 import {RouteService} from '../../services/Route/route.service';
 import {ROUTE_REPOSITORY, RouteRepository} from '../../services/Route/RouteRepository';

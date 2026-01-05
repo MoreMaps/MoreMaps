@@ -1,5 +1,5 @@
 import {TestBed} from '@angular/core/testing'
-import {createMockRepository} from '../helpers/test-helpers';
+import {createMockRepository} from '../test-helpers';
 import {
     ELECTRICITY_PRICE_REPOSITORY,
     ElectricityPriceRepository

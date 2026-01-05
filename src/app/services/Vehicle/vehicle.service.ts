@@ -8,6 +8,7 @@ import {InvalidDataError} from '../../errors/InvalidDataError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
 import {PREFERENCE_REPOSITORY, PreferenceRepository} from '../Preferences/PreferenceRepository';
 import {PreferenceModel} from '../../data/PreferenceModel';
+import {TIPO_TRANSPORTE} from '../../data/RouteModel';
 
 
 @Injectable({providedIn: 'root'})
@@ -110,6 +111,11 @@ export class VehicleService {
             throw new InvalidDataError();
         }
 
+        // Actualizar preferencias si el vehículo está fijado como transporte por defecto
+        if(update.matricula) {
+            await this.updatePreferencesIfVehicleRegisteredAsDefaultTransportMethod(matricula, update.matricula);
+        }
+
         // Actualizar vehículo
         return this.vehicleDb.updateVehicle(matricula, update);
     }
@@ -133,25 +139,37 @@ export class VehicleService {
             throw new MissingVehicleError();
         }
 
-        // Comprobar si el vehículo está fijado como transporte por defecto
+        // Actualizar preferencias si el vehículo está fijado como transporte por defecto
+        await this.updatePreferencesIfVehicleRegisteredAsDefaultTransportMethod(matricula, undefined);
+
+        // Eliminar vehículo
+        return this.vehicleDb.deleteVehicle(matricula);
+    }
+
+    /**
+     * Actualiza la matrícula si el vehículo está registrado como vehículo por defecto.
+     * @param matricula La matrícula antigua del vehículo
+     * @param update La nueva matrícula del vehículo, o undefined si no hay (borrado)
+     * @returns Promise con true si se actualiza el vehículo, false si no
+     * @private
+     */
+    private async updatePreferencesIfVehicleRegisteredAsDefaultTransportMethod(matricula: string, update: string | undefined): Promise<boolean> {
         const listaPreferencias = await this.preferenceDb.getPreferenceList();
         if (listaPreferencias.matricula && listaPreferencias.matricula === matricula) {
             const preferencia = new PreferenceModel({
                 tipoRuta: listaPreferencias.tipoRuta,
                 costeCalorias: listaPreferencias.costeCalorias,
                 costeCombustible: listaPreferencias.costeCombustible,
-                matricula: undefined,
-                tipoTransporte: undefined,
+                matricula: update,
+                tipoTransporte: update ? TIPO_TRANSPORTE.VEHICULO : undefined,
             });
             try{
-                await this.preferenceDb.updatePreferences(preferencia);
+                return await this.preferenceDb.updatePreferences(preferencia);
             } catch(error) {
                 return false;
             }
         }
-
-        // Eliminar vehículo
-        return this.vehicleDb.deleteVehicle(matricula);
+        return true;
     }
 
     /**

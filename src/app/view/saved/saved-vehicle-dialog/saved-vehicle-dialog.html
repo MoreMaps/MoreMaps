@@ -59,6 +59,7 @@
         @else {
             <app-edit-vehicle
                 [vehicle]="displayData.item"
+                [existingMatriculas]="displayData.existingMatriculas || []"
                 (close)="onCancelEdit()"
                 (update)="onUpdateSuccess($event)">
             </app-edit-vehicle>

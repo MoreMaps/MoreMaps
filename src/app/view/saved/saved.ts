@@ -398,6 +398,11 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         // Buscar en la lista completa (this.items) no solo en la página actual
         const freshItem = this.items().find(i => this.getItemId(i) === currentId) || item;
 
+        let existingMatriculas: string[] = [];
+        if (this.selectedType() === 'vehiculos') {
+            existingMatriculas = this.items().map((v: VehicleModel) => v.matricula);
+        }
+
         const dialogConfig = {
             panelClass: 'saved-item-dialog-panel',
             autoFocus: false,
@@ -407,6 +412,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 item: item,
                 displayName: this.currentStrategy().getDisplayName(freshItem),
                 displayTransport: this.getRouteTransportLabel(freshItem),
+                existingMatriculas: existingMatriculas,
             }
         };
 

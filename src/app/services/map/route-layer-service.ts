@@ -11,7 +11,7 @@ const START_ICON = L.icon({
 });
 
 const DESTINATION_ICON = L.icon({
-    iconUrl: 'assets/images/poi_destination.png',
+    iconUrl: 'assets/images/poi/poi_destination.png',
     iconSize: [27, 35],
     iconAnchor: [16, 32],
     popupAnchor: [0, -32]

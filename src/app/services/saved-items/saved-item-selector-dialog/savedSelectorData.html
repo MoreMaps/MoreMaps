@@ -28,7 +28,7 @@
                     @for (item of paginatedItems(); track item.geohash) {
                         <div class="item-card" (click)="selectItem(item)">
                             <div class="item-icon">
-                                <img ngSrc="assets/images/poi_active.png" height="44" width="33" priority class="poi-icon-img" alt="POI">
+                                <img ngSrc="assets/images/poi/poi_active.png" height="44" width="33" priority class="poi-icon-img" alt="POI">
                             </div>
                             <div class="item-info">
                                 <h3 class="item-name">{{ getDisplayName(item) }}</h3>

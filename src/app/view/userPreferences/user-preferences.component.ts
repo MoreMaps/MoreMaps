@@ -110,7 +110,7 @@ export class UserPreferencesComponent implements OnInit, OnDestroy {
                 }
             }
         });
-        
+
         const updateTodoState = () => {
             // Leemos directamente el valor de los controles para asegurar el dato más fresco
             const valComb = this.prefForm.get('costeCombustible')?.value;

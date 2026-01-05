@@ -11,7 +11,7 @@ const CUSTOM_ICON = L.icon({
 });
 
 const SELECTED_ICON = L.icon({
-    iconUrl: 'assets/images/poi_active.png',
+    iconUrl: 'assets/images/poi/poi_active.png',
     iconSize: [27, 35],
     iconAnchor: [16, 32],
     popupAnchor: [0, -32]

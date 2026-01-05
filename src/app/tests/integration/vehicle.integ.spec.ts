@@ -156,18 +156,21 @@ describe('Pruebas de integración sobre vehículos', () => {
         it('HU303-EV01: Modificar datos de un vehículo registrado', async () => {
             // GIVEN
             // Lista de vehículos registrados → ["Ford Fiesta"] (con matrícula "1234XYZ")
+            const nuevaMatricula = "1235ZYX";
             const mockVehicle: VehicleModel = new VehicleModel(ford.alias, ford.matricula, ford.marca,
                 ford.modelo, ford.anyo, ford.tipoCombustible, ford.consumoMedio, ford.pinned);
+            const mockPreferences: PreferenceModel = PreferenceModel.fromJSON({matricula: nuevaMatricula});
 
             mockVehicleRepository.vehicleExists.and.returnValues(
                 Promise.resolve(true),
                 Promise.resolve(false)
             );
             mockVehicleRepository.updateVehicle.and.resolveTo(true);
+            mockPreferenceRepository.getPreferenceList.and.resolveTo(mockPreferences);
+            mockPreferenceRepository.updatePreferences.and.resolveTo(true);
 
             // WHEN
             // El usuario trata de modificar la matrícula del vehículo "Ford Fiesta" a "1235ZYX".
-            const nuevaMatricula = "1235ZYX";
 
             const vehiculoModificado = await vehicleService
                 .updateVehicle(mockVehicle.matricula, {matricula: nuevaMatricula});

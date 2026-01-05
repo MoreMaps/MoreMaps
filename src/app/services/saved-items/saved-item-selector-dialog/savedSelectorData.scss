@@ -5,7 +5,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-height: 80vh; /* Límite de altura */
+    max-height: 80vh;
     overflow: hidden;
 }
 
@@ -14,6 +14,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    flex-shrink: 0; /* Evitar que el header se encoja */
 
     .dialog-title {
         margin: 0;
@@ -25,11 +26,13 @@
 
 .list-container {
     flex: 1;
-    overflow-y: auto; /* Scroll vertical */
-    padding-right: 4px; /* Espacio para scrollbar */
+    overflow: hidden;
+    display: flex; /* Para empujar la paginación al final si hºay pocos items */
+    flex-direction: column;
 }
 
 .loading-state, .empty-state {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -40,11 +43,57 @@
     gap: 1rem;
 }
 
-/* Reutilización de estilos de tarjeta */
 .items-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    overflow: hidden;
+    flex: 1; /* Ocupa el espacio disponible antes de la paginación */
+    min-height: 0; /* Importante para scrolling en flex items */
+}
+
+/* Paginación */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* A la derecha */
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+
+.page-info {
+    font-size: 0.875rem;
+    color: var(--color-purple-dark);
+    font-weight: 500;
+}
+
+.pagination-buttons {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+
+    button {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        mat-icon {
+            font-size: 1.25rem;
+            width: 1.25rem;
+            height: 1.25rem;
+            color: var(--color-purple-dark);
+        }
+
+        &:disabled {
+            opacity: 0.3;
+        }
+    }
 }
 
 .item-card {
@@ -119,4 +168,11 @@
     .item-name { color: var(--color-white); }
     .item-subtext { color: var(--color-lavender); }
     .empty-state { color: var(--color-lavender); }
+
+    .page-info { color: var(--color-white); }
+    .pagination-buttons button mat-icon { color: var(--color-mint-green); }
+
+    .pagination {
+        border-top-color: rgba(255,255,255,0.1);
+    }
 }

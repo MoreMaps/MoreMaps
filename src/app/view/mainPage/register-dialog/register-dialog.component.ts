@@ -109,16 +109,14 @@ export class RegisterDialogComponent {
                 this.registerForm.value.password,
             );
 
-            const userModel = await this.userService.signUp(registerData);
-
             // Registrar usuario en Firebase
             try {
+                const userModel = await this.userService.signUp(registerData);
                 this.loading = false;
                 this.dialogRef.close();
                 if (userModel && userModel.uid !== '') {
                     // Cerrar diálogo y devolver success
                     this.dialogRef.close({success: true});
-                } else {
                 }
             } catch (error: any) {
                 this.loading = false;

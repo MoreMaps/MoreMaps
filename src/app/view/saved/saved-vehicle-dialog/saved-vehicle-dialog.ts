@@ -94,8 +94,8 @@ export class SavedVehicleDialog implements OnInit, OnChanges {
         // Para 'update', NO cerramos el diálogo en móvil
         if (action === 'update') {
             this.hasChanges = true;
-            // Solo emitimos el evento para que el padre actualice la lista
-            this.actionEvent.emit(action);
+            // CORRECCIÓN: Emitimos un objeto con el payload (el ítem actualizado)
+            this.actionEvent.emit({ action: 'update', payload: this.displayData.item });
             return;
         }
 

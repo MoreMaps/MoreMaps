@@ -34,7 +34,6 @@ import {SpinnerSnackComponent} from '../../utils/map-widgets';
 import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 
 // PATRÓN ITERATOR
-
 import {IterableCollection, PagedIterator} from '../../utils/paginator/iterator.interface';
 import {ConcretePagedCollection} from '../../utils/paginator/concrete-collections';
 
@@ -78,6 +77,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     private queryParamsSubscription: Subscription | null = null;
     private routeFlowService = inject(RouteFlowService);
     private vehicleRepo = inject(VEHICLE_REPOSITORY);
+    private dialogActionSubscription: Subscription | null = null;
 
     // Estado de la vista
     isDesktop = signal(false);
@@ -178,6 +178,10 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         this.clearLoadingState();
 
+        if (this.dialogActionSubscription) {
+            this.dialogActionSubscription.unsubscribe();
+        }
+
         if (this.breakpointSubscription) {
             this.breakpointSubscription.unsubscribe();
             this.breakpointSubscription = null;
@@ -194,7 +198,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         }
 
         // Guardar página actual
-        localStorage.setItem('user_preference_saved_page', this.currentPage().toString());
+        localStorage.setItem(`user_preference_page_${this.selectedType()}`, this.currentPage().toString());
 
         if (this.selectedItem) {
             const id = this.getItemId(this.selectedItem);
@@ -228,7 +232,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         this.iterator = collection.createIterator();
 
         // 3. Restaurar página guardada si aplica
-        const savedPage = localStorage.getItem('user_preference_saved_page');
+        const storageKey = `user_preference_page_${this.selectedType()}`;
+        const savedPage = localStorage.getItem(storageKey);
         if (savedPage) {
             // Usamos el método jumpToPage del iterador concreto
             // Necesitamos hacer casting o asumir que es ConcretePagedIterator si la interfaz no tiene jumpToPage,
@@ -269,7 +274,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         let targetId = urlId;
 
         if (!targetId && allowStorageFallback) {
-            targetId = localStorage.getItem('user_preference_saved_item_id')?.toString();
+            targetId = localStorage.getItem('user_preference_save   d_item_id')?.toString();
         }
 
         if (targetId && items.length > 0) {
@@ -290,7 +295,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
                 // Limpiar URL
                 if (urlId || this.route.snapshot.queryParams['type']) {
-                    const urlTree = this.router.createUrlTree([], { relativeTo: this.route, queryParams: {} });
+                    const urlTree = this.router.createUrlTree([], {relativeTo: this.route, queryParams: {}});
                     this.location.replaceState(urlTree.toString());
                 }
             } else if (urlId) {
@@ -324,10 +329,14 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     private getItemId(item: any): string | null {
         if (!item) return null;
         switch (this.selectedType()) {
-            case 'lugares': return (item as POIModel).geohash;
-            case 'vehiculos': return (item as VehicleModel).matricula;
-            case 'rutas': return (item as any).id();
-            default: return null;
+            case 'lugares':
+                return (item as POIModel).geohash;
+            case 'vehiculos':
+                return (item as VehicleModel).matricula;
+            case 'rutas':
+                return (item as any).id();
+            default:
+                return null;
         }
     }
 
@@ -414,7 +423,29 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         }
 
         if (this.activeDialogRef) {
+            const componentInstance = this.activeDialogRef.componentInstance;
+
+            if (componentInstance && 'actionEvent' in componentInstance) {
+                this.dialogActionSubscription = (componentInstance as any).actionEvent.subscribe((result: any) => {
+                    // Normalizamos el resultado que viene del EventEmitter
+                    const action = result.action || result;
+                    const payload = result.payload;
+
+                    if (action === 'update') {
+                        // Pasamos el payload (item nuevo) al manejador
+                        void this.handleDialogActions('update', payload);
+                    } else {
+                        this.activeDialogRef?.close(result);
+                    }
+                });
+            }
+
             this.activeDialogRef.afterClosed().subscribe((result) => {
+                if (this.dialogActionSubscription) {
+                    this.dialogActionSubscription.unsubscribe();
+                    this.dialogActionSubscription = null;
+                }
+
                 void this.processDialogResult(result);
                 this.activeDialogRef = null;
             });
@@ -426,11 +457,16 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             if (!this.isDesktop()) this.deselectItem();
             return;
         }
-        await this.handleDialogActions(result);
-        if (result !== 'update') this.deselectItem();
+
+        const actionString = (typeof result === 'string') ? result : result.action;
+        const payload = (typeof result === 'object') ? result.payload : undefined;
+
+        await this.handleDialogActions(actionString, payload);
+
+        if (actionString !== 'update') this.deselectItem();
     }
 
-    async handleDialogActions(action: string | undefined): Promise<void> {
+    async handleDialogActions(action: string | undefined, payload?: any): Promise<void> {
         switch (action) {
             case 'delete':
                 this.deselectItem();
@@ -440,13 +476,22 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 this.isUpdating = true;
                 try {
                     await this.loadItems(false);
-                    if (this.selectedItem) {
-                        const currentId = this.getItemId(this.selectedItem);
-                        const updatedItem = this.items().find(item => this.getItemId(item) === currentId);
-                        if (updatedItem) {
-                            this.selectedItem = updatedItem;
-                            if (currentId) localStorage.setItem('user_preference_saved_item_id', currentId);
-                        }
+                    let targetItem = null;
+
+                    if (payload) {
+                        const newId = this.getItemId(payload);
+                        targetItem = this.items().find(i => this.getItemId(i) === newId);
+                    } else if (this.selectedItem) {
+                        const oldId = this.getItemId(this.selectedItem);
+                        targetItem = this.items().find(i => this.getItemId(i) === oldId);
+                    }
+
+                    if (targetItem) {
+                        this.selectedItem = targetItem;
+                        const finalId = this.getItemId(targetItem);
+                        if (finalId) localStorage.setItem('user_preference_saved_item_id', finalId);
+                    } else {
+                        this.deselectItem();
                     }
                 } finally {
                     this.isUpdating = false;
@@ -456,13 +501,13 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 void this.handleShowOnMap();
                 break;
             case 'route-from':
-                await this.initRouteFlow({fixedOrigin: this.selectedItem});
+                await this.initRouteFlow({fixedOrigin: payload || this.selectedItem});
                 break;
             case 'route-to':
-                await this.initRouteFlow({fixedDest: this.selectedItem});
+                await this.initRouteFlow({fixedDest: payload || this.selectedItem});
                 break;
             case 'route-vehicle':
-                await this.initRouteFlow({fixedVehicle: this.selectedItem});
+                await this.initRouteFlow({fixedVehicle: payload || this.selectedItem});
                 break;
         }
     }

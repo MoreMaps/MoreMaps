@@ -165,6 +165,7 @@ export class PreferenceState implements FlowState {
             if (ctx.preferences?.tipoTransporte && !ctx.data.ignorePreferences) {
                 ctx.data.transport = undefined;
                 ctx.data.matricula = undefined;
+                ctx.data.ignorePreferences = true;
                 return new DestinationState();
             }
 

@@ -6,12 +6,15 @@ import {USER_REPOSITORY, UserRepository} from '../User/UserRepository';
 import {VehicleAlreadyExistsError} from '../../errors/Vehicle/VehicleAlreadyExistsError';
 import {InvalidDataError} from '../../errors/InvalidDataError';
 import {MissingVehicleError} from '../../errors/Vehicle/MissingVehicleError';
+import {PREFERENCE_REPOSITORY, PreferenceRepository} from '../Preferences/PreferenceRepository';
+import {PreferenceModel} from '../../data/PreferenceModel';
 
 
 @Injectable({providedIn: 'root'})
 export class VehicleService {
     private userDb: UserRepository = inject(USER_REPOSITORY);
     private vehicleDb: VehicleRepository = inject(VEHICLE_REPOSITORY);
+    private preferenceDb: PreferenceRepository = inject(PREFERENCE_REPOSITORY)
 
     // HU301 Crear vehículo
     /**
@@ -46,6 +49,11 @@ export class VehicleService {
     }
 
     // HU302 Consultar lista de vehículos
+    /**
+     * Devuelve la lista de vehículos del usuario actual (vacia si no tiene ninguno registrado).
+     * @returns Promise con lista de VehicleModel.
+     * @throws SessionNotActiveError si la sesión no está activa.
+     */
     async getVehicleList(): Promise<VehicleModel[]> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
@@ -69,6 +77,15 @@ export class VehicleService {
     }
 
     // HU303 Modificar información de un vehículo
+    /**
+     * Actualiza un vehículo concreto.
+     * @param matricula matricula del vehículo a actualizar.
+     * @param update nuevos datos del vehículo.
+     * @returns Promise con true si se han actualizado, o false si no se han actualizado.
+     * @throws SessionNotActiveError si la sesión no está activa.
+     * @throws MissingVehicleError si el vehículo no existe.
+     * @throws VehicleAlreadyExistsError si se cambia la matrícula y existe otro vehículo con la misma matrícula.
+     */
     async updateVehicle(matricula: string, update: Partial<VehicleModel>): Promise<boolean> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
@@ -98,6 +115,13 @@ export class VehicleService {
     }
 
     // HU304 Eliminar vehículo
+    /**
+     * Elimina un vehículo.
+     * @param matricula matricula del vehículo a eliminar.
+     * @returns Promise con true si se han actualizado, o false si no se han actualizado.
+     * @throws SessionNotActiveError si la sesión no está activa.
+     * @throws MissingVehicleError si el vehículo no existe.
+     */
     async deleteVehicle(matricula: string): Promise<boolean> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
@@ -107,6 +131,23 @@ export class VehicleService {
         // Comprueba que el vehículo exista
         if (!await this.vehicleDb.vehicleExists(matricula)) {
             throw new MissingVehicleError();
+        }
+
+        // Comprobar si el vehículo está fijado como transporte por defecto
+        const listaPreferencias = await this.preferenceDb.getPreferenceList();
+        if (listaPreferencias.matricula && listaPreferencias.matricula === matricula) {
+            const preferencia = new PreferenceModel({
+                tipoRuta: listaPreferencias.tipoRuta,
+                costeCalorias: listaPreferencias.costeCalorias,
+                costeCombustible: listaPreferencias.costeCombustible,
+                matricula: undefined,
+                tipoTransporte: undefined,
+            });
+            try{
+                await this.preferenceDb.updatePreferences(preferencia);
+            } catch(error) {
+                return false;
+            }
         }
 
         // Eliminar vehículo
@@ -122,6 +163,13 @@ export class VehicleService {
     }
 
     // HU305 Consultar vehículo
+    /**
+     * Devuelve los datos de un vehículo concreta.
+     * @param matricula La matrícula del vehículo
+     * @returns VehicleModel con los datos del vehículo.
+     * @throws SessionNotActiveError si la sesión no está activa.
+     * @throws MissingVehicleError si el vehículo no existe.
+     */
     async readVehicle(matricula: string): Promise<VehicleModel> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
@@ -138,6 +186,13 @@ export class VehicleService {
     }
 
     // HU502 Fijar vehículo
+    /**
+     * Fija / desfija el fijado de un vehículo.
+     * @param matricula matrícula del vehículo a fijar/desfijar.
+     * @returns Promise con true si ha funcionado correctamente, o false en caso contrario.
+     * @throws SessionNotActiveError si la sesión no está activa.
+     * @throws MissingVehicleError si el vehículo no existe.
+     */
     async pinVehicle(matricula: string): Promise<boolean> {
         // Comprueba que la sesión está activa
         if (!await this.userDb.sessionActive()) {
@@ -157,6 +212,7 @@ export class VehicleService {
      * Comprueba que los datos recibidos siguen las reglas de negocio.
      * @param vehiculo Partial con los datos a consultar
      * @param creating true si se crea el vehículo, false si no (antes "strictMode")
+     * @throws Error si falla algún validador
      * @private
      */
     private validateVehicle(vehiculo: Partial<VehicleModel>, creating: boolean) {

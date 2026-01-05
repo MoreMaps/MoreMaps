@@ -180,15 +180,69 @@
 }
 
 .select-box {
+    // Estilos base de la caja (ya los tenías, pero añadimos flex y posición)
     background-color: var(--color-white);
     border: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    padding: 0 12px; // Padding interno
+    height: 50px;    // Altura fija para consistencia
+    border-radius: 16px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background-color: #fafafa;
+    }
 
     .pref-icon {
         color: #888;
-        font-size: 20px;
-        margin-right: 8px;
+        margin-right: 12px;
+    }
+
+    // Wrapper para apilar Label y Select
+    .select-wrapper {
+        display: flex;
+        flex-direction: column;
+        flex: 1; // Ocupa el espacio central
+        overflow: hidden;
+        justify-content: center;
+
+        .select-label {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: -2px; // Ajuste fino para pegar el label al texto
+        }
+    }
+
+    // Flecha personalizada a la derecha
+    .chevron-down {
+        color: #888;
+        opacity: 0.7;
+    }
+
+    // --- OVERRIDES DE MATERIAL (La magia) ---
+
+    // 1. Texto del valor seleccionado
+    ::ng-deep .mat-mdc-select-value {
+        color: var(--color-teal-dark) !important;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    // 2. Ocultar la flecha por defecto de Material (porque usamos nuestro icono chevron)
+    ::ng-deep .mat-mdc-select-arrow-wrapper {
+        display: none !important;
+    }
+
+    // 3. Ajustar el disparador para que ocupe el espacio correcto sin margins extraños
+    ::ng-deep .mat-mdc-select-trigger {
+        height: auto !important;
     }
 }
+
+
 
 /* --- FOOTER --- */
 .divider {
@@ -375,9 +429,23 @@
         background-color: rgba(255, 255, 255, 0.15);
         border: 1px solid var(--color-gray-blue);
 
-        .pref-icon {
+        .pref-icon, .select-wrapper .select-label, .chevron-down {
             color: var(--color-gray-blue);
         }
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        // Texto blanco en modo oscuro
+        ::ng-deep .mat-mdc-select-value {
+            color: var(--color-white) !important;
+        }
+    }
+
+    ::ng-deep .custom-select-panel {
+        max-height: 300px;
+        background: white;
     }
 
     .divider {

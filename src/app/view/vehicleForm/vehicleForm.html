@@ -14,100 +14,106 @@
             <h3 class="section-title">Identificar el vehículo</h3>
 
             <div class="form-grid">
+
                 <div class="form-group item-matricula">
                     <label>Matrícula *</label>
-                    <div class="input-wrapper">
-                        <input
-                            [class.ng-invalid]="vehicleForm.get('matricula')?.invalid && vehicleForm.get('matricula')?.touched"
-                            autocomplete="off" formControlName="matricula" placeholder="1234BCD"
-                            type="text">
+                    <mat-form-field appearance="outline" class="w-full custom-field">
+                        <input matInput formControlName="matricula" placeholder="1234BCD" autocomplete="off">
+
                         @if (vehicleForm.get('matricula')?.value && !isLoading()) {
-                            <button (click)="clearField('matricula')" class="clear-btn" type="button">⊗</button>
+                            <button mat-icon-button matSuffix type="button" (click)="clearField('matricula')">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
                         }
-                    </div>
-                    @if (vehicleForm.get('matricula')?.touched) {
+
                         @if (vehicleForm.get('matricula')?.hasError('required')) {
-                            <span class="error-msg">Requerido</span>
+                            <mat-error>Requerido</mat-error>
                         } @else if (vehicleForm.get('matricula')?.hasError('pattern')) {
-                            <span class="error-msg">Formato inválido (Ej: 1234BCD)</span>
+                            <mat-error>Formato inválido (Ej: 1234BCD)</mat-error>
                         } @else if (vehicleForm.get('matricula')?.hasError('hasVowels')) {
-                            <span class="error-msg">No se permiten vocales</span>
+                            <mat-error>No se permiten vocales</mat-error>
                         } @else if (vehicleForm.get('matricula')?.hasError('alreadyExists')) {
-                            <span class="error-msg">Matrícula ya registrada</span>
+                            <mat-error>Matrícula ya registrada</mat-error>
                         }
-                    }
+                    </mat-form-field>
                 </div>
 
                 <div class="form-group">
                     <label>Alias *</label>
-                    <div class="input-wrapper">
-                        <input formControlName="alias" placeholder="Mi coche rojo" type="text">
-                        @if (vehicleForm.get('alias')?.value && !isLoading()) {
-                            <button (click)="clearField('alias')" class="clear-btn" type="button">⊗</button>
-                        }
-                    </div>
+                    <mat-form-field appearance="outline" class="w-full custom-field">
+                        <input matInput formControlName="alias" placeholder="Mi coche rojo">
 
-                    @if (vehicleForm.get('alias')?.touched) {
+                        @if (vehicleForm.get('alias')?.value && !isLoading()) {
+                            <button mat-icon-button matSuffix type="button" (click)="clearField('alias')">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        }
 
                         @if (vehicleForm.get('alias')?.hasError('required')) {
-                            <span class="error-msg">Requerido</span>
+                            <mat-error>Requerido</mat-error>
                         } @else if (vehicleForm.get('alias')?.hasError('maxlength')) {
-                            <span class="error-msg">
-                                Máximo 50 caracteres (actual: {{ vehicleForm.get('alias')?.errors?.['maxlength']?.actualLength }})
-                            </span>
+                            <mat-error>Máximo 50 caracteres</mat-error>
                         } @else if (vehicleForm.get('alias')?.hasError('onlyWhitespace')) {
-                            <span class="error-msg">El campo no puede estar vacío</span>
+                            <mat-error>El campo no puede estar vacío</mat-error>
                         }
-
-                    } </div>
+                    </mat-form-field>
+                </div>
 
                 <div class="form-group">
                     <label>Marca *</label>
-                    <div class="input-wrapper">
-                        <input formControlName="marca" placeholder="Toyota" type="text">
+                    <mat-form-field appearance="outline" class="w-full custom-field">
+                        <input matInput formControlName="marca" placeholder="Toyota">
+
                         @if (vehicleForm.get('marca')?.value && !isLoading()) {
-                            <button (click)="clearField('marca')" class="clear-btn" type="button">⊗</button>
+                            <button mat-icon-button matSuffix type="button" (click)="clearField('marca')">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
                         }
-                    </div>
-                    @if (vehicleForm.get('marca')?.hasError('required') && vehicleForm.get('marca')?.touched) {
-                        <span class="error-msg">Requerido</span>
-                    }
-                    @if (vehicleForm.get('marca')?.hasError('hasVowels') && vehicleForm.get('marca')?.touched) {
-                        <span>El campo no puede estar vacío</span>
-                    }
+
+                        @if (vehicleForm.get('marca')?.hasError('required')) {
+                            <mat-error>Requerido</mat-error>
+                        } @else if (vehicleForm.get('marca')?.hasError('hasVowels')) {
+                            <mat-error>Campo inválido</mat-error>
+                        }
+                    </mat-form-field>
                 </div>
 
                 <div class="form-group">
                     <label>Modelo *</label>
-                    <div class="input-wrapper">
-                        <input formControlName="modelo" placeholder="Corolla" type="text">
+                    <mat-form-field appearance="outline" class="w-full custom-field">
+                        <input matInput formControlName="modelo" placeholder="Corolla">
+
                         @if (vehicleForm.get('modelo')?.value && !isLoading()) {
-                            <button (click)="clearField('modelo')" class="clear-btn" type="button">⊗</button>
+                            <button mat-icon-button matSuffix type="button" (click)="clearField('modelo')">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
                         }
-                    </div>
-                    @if (vehicleForm.get('modelo')?.hasError('required') && vehicleForm.get('modelo')?.touched) {
-                        <span class="error-msg">Requerido</span>
-                    }
-                    @if (vehicleForm.get('modelo')?.hasError('onlyWhitespace') && vehicleForm.get('modelo')?.touched) {
-                        <span>El campo no puede estar vacío</span>
-                    }
+
+                        @if (vehicleForm.get('modelo')?.hasError('required')) {
+                            <mat-error>Requerido</mat-error>
+                        } @else if (vehicleForm.get('modelo')?.hasError('onlyWhitespace')) {
+                            <mat-error>Campo inválido</mat-error>
+                        }
+                    </mat-form-field>
                 </div>
 
                 <div class="form-group">
                     <label>Año *</label>
-                    <div class="input-wrapper">
-                        <input [max]="currentYear + 1" formControlName="anyo" min="1900" type="number">
+                    <mat-form-field appearance="outline" class="w-full custom-field">
+                        <input matInput type="number" formControlName="anyo" min="1900" [max]="currentYear + 1">
+
                         @if (vehicleForm.get('anyo')?.value && !isLoading()) {
-                            <button (click)="clearField('anyo')" class="clear-btn" type="button">⊗</button>
+                            <button mat-icon-button matSuffix type="button" (click)="clearField('anyo')">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
                         }
-                    </div>
-                    @if (vehicleForm.get('anyo')?.touched) {
+
                         @if (vehicleForm.get('anyo')?.hasError('required')) {
-                            <span class="error-msg">Requerido</span>
+                            <mat-error>Requerido</mat-error>
                         } @else if (vehicleForm.get('anyo')?.hasError('min') || vehicleForm.get('anyo')?.hasError('max')) {
-                            <span class="error-msg">Año inválido</span>
+                            <mat-error>Año inválido</mat-error>
                         }
-                    }
+                    </mat-form-field>
                 </div>
             </div>
         </section>
@@ -121,46 +127,56 @@
             <div class="form-grid fuel-grid">
                 <div class="form-group">
                     <label>Tipo de combustible *</label>
-                    <select class="form-select" formControlName="tipoCombustible">
-                        <option disabled selected value="">Selecciona una opción</option>
-                        @for (fuel of Object.values(FUEL_TYPE); track fuel) {
-                            <option [value]="fuel">{{ fuel }}</option>
+                    <mat-form-field appearance="outline" class="w-full custom-field">
+                        <mat-select formControlName="tipoCombustible" placeholder="Selecciona una opción">
+                            @for (fuel of Object.values(FUEL_TYPE); track fuel) {
+                                <mat-option [value]="fuel">{{ fuel }}</mat-option>
+                            }
+                        </mat-select>
+
+                        @if (vehicleForm.get('tipoCombustible')?.value) {
+                            <button mat-icon-button matSuffix type="button"
+                                    (click)="$event.stopPropagation(); vehicleForm.get('tipoCombustible')?.setValue(null)">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
                         }
-                    </select>
-                    @if (vehicleForm.get('tipoCombustible')?.hasError('required') && vehicleForm.get('tipoCombustible')?.touched) {
-                        <span class="error-msg">Requerido</span>
-                    }
+
+                        @if (vehicleForm.get('tipoCombustible')?.hasError('required')) {
+                            <mat-error>Requerido</mat-error>
+                        }
+                    </mat-form-field>
                 </div>
 
                 <div class="form-group">
                     <label>
                         Consumo medio *
                         @if (consumptionUnit()) {
-                            <span style="font-weight: 400; font-size: 0.85em; opacity: 0.8">({{ consumptionUnit() }}
-                                )</span>
+                            <span style="font-weight: 400; font-size: 0.85em; opacity: 0.8">({{ consumptionUnit() }})</span>
                         }
                     </label>
-                    <div class="input-wrapper">
-                        <input formControlName="consumoMedio" min="0.1" placeholder="0.0" step="0.1" type="number">
+                    <mat-form-field appearance="outline" class="w-full custom-field">
+                        <input matInput type="number" formControlName="consumoMedio" placeholder="0.0" step="0.1" min="0.1">
+
                         @if (vehicleForm.get('consumoMedio')?.value && !isLoading()) {
-                            <button (click)="clearField('consumoMedio')" class="clear-btn" type="button">⊗</button>
+                            <button mat-icon-button matSuffix type="button" (click)="clearField('consumoMedio')">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
                         }
-                    </div>
-                    @if (vehicleForm.get('consumoMedio')?.touched) {
+
                         @if (vehicleForm.get('consumoMedio')?.hasError('required')) {
-                            <span class="error-msg">Requerido</span>
+                            <mat-error>Requerido</mat-error>
                         } @else if (vehicleForm.get('consumoMedio')?.hasError('min')) {
-                            <span class="error-msg">Mínimo 0.1</span>
+                            <mat-error>Mínimo 0.1</mat-error>
                         }
-                    }
+                    </mat-form-field>
                 </div>
             </div>
         </section>
 
         <div class="actions-container">
-            <button [disabled]="vehicleForm.invalid || isLoading()" class="save-button" type="submit">
+            <button class="save-button" type="submit" [disabled]="vehicleForm.invalid || isLoading()">
                 @if (isLoading()) {
-                    <mat-spinner color="accent" diameter="20"></mat-spinner>
+                    <mat-spinner diameter="20" color="accent"></mat-spinner>
                 } @else {
                     GUARDAR
                 }

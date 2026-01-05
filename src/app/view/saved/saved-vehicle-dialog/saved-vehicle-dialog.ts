@@ -3,7 +3,7 @@ import {
     EventEmitter,
     Inject,
     inject,
-    Input,
+    Input, OnChanges,
     OnInit,
     Optional,
     Output,
@@ -40,7 +40,7 @@ export interface SavedVehicleDialogData {
     templateUrl: './saved-vehicle-dialog.html',
     styleUrls: ['./saved-vehicle-dialog.scss']
 })
-export class SavedVehicleDialog implements OnInit {
+export class SavedVehicleDialog implements OnInit, OnChanges {
     @Input() item?: VehicleModel;
     @Input() displayName?: string;
 

@@ -64,7 +64,7 @@ export class AccountSettingsComponent {
             width: '60vw',
             maxWidth: '90vw',
             maxHeight: '90vh',
-            panelClass: 'custom-dialog-container',
+            panelClass: 'login-dialog-container',
             disableClose: false,
             autoFocus: true,
             restoreFocus: true,

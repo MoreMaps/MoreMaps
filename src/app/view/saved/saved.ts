@@ -13,7 +13,7 @@ import {VehicleModel} from '../../data/VehicleModel';
 
 // Servicios y Estrategias
 import {SavedPOIStrategy} from '../../services/saved-items/savedPOIStrategy';
-import {SavedVehiclesStrategy} from '../../services/saved-items/savedVehiclesStrategy';
+import {SavedVehicleStrategy} from '../../services/saved-items/saved-vehicle-strategy.service';
 import {SavedRouteStrategy} from '../../services/saved-items/savedRoutesStrategy';
 import {SavedItemsStrategy} from '../../services/saved-items/savedItemsStrategy';
 import {VEHICLE_REPOSITORY} from '../../services/Vehicle/VehicleRepository';
@@ -31,7 +31,7 @@ import {geohashForLocation} from 'geofire-common';
 import {SavedRouteDialog} from './saved-route-dialog/saved-route-dialog';
 import {RouteFlowService} from '../../services/map/route-flow-service';
 import {SpinnerSnackComponent} from '../../utils/map-widgets';
-import {FlowPoint, RouteFlowConfig} from '../../services/map/route-flow-state';
+import {FlowPoint, FlowVehicle, RouteFlowConfig} from '../../services/map/route-flow-state';
 
 type ItemType = 'lugares' | 'vehiculos' | 'rutas';
 
@@ -53,7 +53,7 @@ type ItemType = 'lugares' | 'vehiculos' | 'rutas';
     ],
     providers: [
         SavedPOIStrategy,
-        SavedVehiclesStrategy,
+        SavedVehicleStrategy,
         SavedRouteStrategy
     ],
     templateUrl: './saved.html',
@@ -78,13 +78,13 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
-        'vehiculos': inject(SavedVehiclesStrategy),
+        'vehiculos': inject(SavedVehicleStrategy),
         'rutas': inject(SavedRouteStrategy)
     };
 
     // ESTADO
     selectedType = signal<ItemType>('lugares');
-    items = signal<any[]>([]); // Lista genérica
+    items = signal<any[]>([]);
 
     selectedItem: POIModel | VehicleModel | RouteModel | any | null = null;
 
@@ -101,6 +101,21 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     currentStrategy = computed(() => this.strategies[this.selectedType()]);
 
     vehicleMap = signal<Map<string, string>>(new Map());
+
+    private isUpdating = false;
+
+    selectedItemDisplayName = computed(() => {
+        if (!this.selectedItem) return '';
+        return this.currentStrategy().getDisplayName(this.selectedItem);
+    });
+
+    paginatedItemsWithNames = computed(() => {
+        const items = this.paginatedItems();
+        return items.map(item => ({
+            item,
+            displayName: this.currentStrategy().getDisplayName(item)
+        }));
+    });
 
     constructor() {
         const savedType = localStorage.getItem('user_preference_saved_tab');
@@ -131,7 +146,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                         if (this.selectedItem) {
                             this.openDialogForItem(this.selectedItem);
                         }
-                    }, 0); // timeout a 0 lo mueve al final de la cola
+                    }, 0);
                 } else if (isDesktopNow) {
                     // Si pasamos a desktop, cerrar diálogos (se verá en el panel lateral)
                     this.dialog.closeAll();
@@ -226,6 +241,10 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     private async checkAndSelectFromParams(items: any[], urlId: string | undefined, allowStorageFallback: boolean): Promise<void> {
+        if (this.isUpdating) {
+            return;
+        }
+
         let targetId = urlId;
 
         // SOLO miramos en localStorage si no hay ID de URL y tenemos permiso explícito (navegación limpia)
@@ -303,7 +322,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             case 'vehiculos':
                 return (item as VehicleModel).matricula;
             case 'rutas':
-                return (item as any).id(); // RouteModel.id()
+                return (item as any).id();
             default:
                 return null;
         }
@@ -356,7 +375,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
 
         // Si es móvil, abrimos diálogo. Si es Desktop, se muestra incrustado
         if (!this.isDesktop()) {
-            this.dialog.closeAll(); // cerramos cualquier diálogo previo
+            this.dialog.closeAll();
             this.openDialogForItem(item);
         }
     }
@@ -379,7 +398,7 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
             maxWidth: '90vw',
             data: {
                 item: item,
-                displayName: this.getDisplayName(freshItem),
+                displayName: this.currentStrategy().getDisplayName(freshItem),
                 displayTransport: this.getRouteTransportLabel(freshItem),
             }
         };
@@ -397,36 +416,31 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                 break;
         }
 
-        // Suscribirse siempre al resultado, sea cual sea el tipo
-        if (this.activeDialogRef?.componentInstance) {
-            const instance = this.activeDialogRef?.componentInstance as any;
-
-            if (instance.actionEvent) {
-                instance.actionEvent.subscribe(async (action: string) => {
-                   if (action === 'update') {
-                       await this.handleDialogActions('update');
-                   }
-                });
-            }
-            if (this.activeDialogRef) {
-                this.activeDialogRef.afterClosed().subscribe((result) => {
-                    this.processDialogResult(result)
-                    this.activeDialogRef = null;
-                });
-            }
+        if (this.activeDialogRef) {
+            this.activeDialogRef.afterClosed().subscribe((result) => {
+                void this.processDialogResult(result);
+                this.activeDialogRef = null;
+            });
         }
     }
 
     private async processDialogResult(result: any) {
-        if (result && !result.ignore) {
-            await this.handleDialogActions(result);
-
-            if(result !== 'update') this.deselectItem();
-
-        } else if (!result?.ignore) {
+        // Caso 1: Usuario cerró el diálogo sin acción (clic fuera, ESC, etc.)
+        if (!result || result.ignore) {
+            // Solo deseleccionar en móvil
             if (!this.isDesktop()) {
                 this.deselectItem();
             }
+            return;
+        }
+
+        // Caso 2: Hay una acción que procesar
+        await this.handleDialogActions(result);
+
+        // Caso 3: Después de procesar, decidir si deseleccionar
+        // NO deseleccionar si es 'update' (el item sigue seleccionado con datos actualizados)
+        if (result !== 'update') {
+            this.deselectItem();
         }
     }
 
@@ -434,24 +448,28 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         switch (action) {
             case 'delete':
                 this.deselectItem();
-                await this.loadItems(false); // Recargar lista
+                await this.loadItems(false);
                 break;
             case 'update':
-                // Recargar lista para reflejar cambios (ej. alias)
-                await this.loadItems(false);
+                this.isUpdating = true;
 
-                // Actualizar la referencia del item seleccionado con los nuevos datos
-                if (this.selectedItem) {
-                    const currentId = this.getItemId(this.selectedItem);
-                    const updatedItem = this.items().find(item => this.getItemId(item) === currentId);
+                try {
+                    await this.loadItems(false);
 
-                    if (updatedItem) {
-                        // Actualizamos la referencia del item seleccionado
-                        this.selectedItem = updatedItem;
-                        // Si estamos en desktop, Angular detectará el cambio y actualizará la vista
-                        // Si estamos en móvil, el diálogo YA tiene los datos actualizados internamente
-                        // y NO lo cerramos (el diálogo maneja su propia actualización)
+                    if (this.selectedItem) {
+                        const currentId = this.getItemId(this.selectedItem);
+                        const updatedItem = this.items().find(item => this.getItemId(item) === currentId);
+
+                        if (updatedItem) {
+                            this.selectedItem = updatedItem;
+
+                            if (currentId) {
+                                localStorage.setItem('user_preference_saved_item_id', currentId);
+                            }
+                        }
                     }
+                } finally {
+                    this.isUpdating = false;
                 }
                 break;
             case 'showOnMap':
@@ -462,14 +480,37 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                     });
                 } else if (this.selectedType() === 'rutas') {
                     const route = this.selectedItem as RouteModel;
+
+                    // resolver alias
+                    let startName = route.nombre_origen;
+                    let endName = route.nombre_destino;
+
+                    try {
+                        const savedPois = await this.strategies['lugares'].loadItems() as POIModel[];
+
+                        const originPoi = savedPois.find(p => p.geohash === route.geohash_origen);
+                        if (originPoi?.alias) {
+                            startName = originPoi.alias;
+                        }
+
+                        const destPoi = savedPois.find(p => p.geohash === route.geohash_destino);
+                        if (destPoi?.alias) {
+                            endName = destPoi.alias;
+                        }
+
+                    } catch (e) {
+                        console.warn("Error al resolver los alias de los POIs: ", e);
+                    }
+
+
                     // Navegamos al mapa reconstruyendo los parámetros de la ruta
                     void this.router.navigate(['/map'], {
                         queryParams: {
                             mode: 'route',
                             start: route.geohash_origen,
                             end: route.geohash_destino,
-                            startName: route.nombre_origen,
-                            endName: route.nombre_destino,
+                            startName: startName,
+                            endName: endName,
                             transport: route.transporte,
                             preference: route.preferencia,
                             matricula: route.matricula
@@ -477,13 +518,13 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
                     });
                 }
                 break;
-            case 'route-from': // Origen fijado (Lugar)
+            case 'route-from':
                 await this.initRouteFlow({fixedOrigin: this.selectedItem});
                 break;
-            case 'route-to': // Destino fijado (Lugar)
+            case 'route-to':
                 await this.initRouteFlow({fixedDest: this.selectedItem});
                 break;
-            case 'route-vehicle': // Vehículo fijado
+            case 'route-vehicle':
                 await this.initRouteFlow({fixedVehicle: this.selectedItem});
                 break;
         }
@@ -492,12 +533,6 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     deselectItem(): void {
         this.selectedItem = null;
         localStorage.removeItem('user_preference_saved_item_id');
-    }
-
-    getDisplayName(item: any): string {
-        console.log(this.currentStrategy());
-        console.log(this.currentStrategy().getDisplayName(item));
-        return this.currentStrategy().getDisplayName(item);
     }
 
     // --- UTILIDADES ---
@@ -524,9 +559,10 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         event.stopPropagation();
         const success = await this.currentStrategy().toggleFavorite(item);
         if (success) {
+            const itemName = this.currentStrategy().getDisplayName(item);
             const message = item.pinned
-                ? `Se ha fijado ${this.getDisplayName(item)}.`
-                : `${this.getDisplayName(item)} ya no está fijado.`;
+                ? `Se ha fijado ${itemName}.`
+                : `${itemName} ya no está fijado.`;
             this.showSnackbar(message);
             await this.loadItems(false);
         }
@@ -541,16 +577,16 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     /**
      * Inicia el flujo de cálculo de ruta saltando pasos si hay datos fijos.
      */
-    async initRouteFlow(prefilled: { fixedOrigin?: any, fixedDest?: any, fixedVehicle?: any }) {
+    async initRouteFlow(prefilled: { fixedOrigin?: POIModel, fixedDest?: POIModel, fixedVehicle?: VehicleModel }) {
 
         // Configurar
         const config: RouteFlowConfig = {
             fixedOrigin: prefilled.fixedOrigin ? this.mapToFlowPoint(prefilled.fixedOrigin) : undefined,
             fixedDest: prefilled.fixedDest ? this.mapToFlowPoint(prefilled.fixedDest) : undefined,
-            fixedVehicle: prefilled.fixedVehicle
+            fixedVehicle: prefilled.fixedVehicle ? this.mapToFlowVehicle(prefilled.fixedVehicle) : undefined
         };
 
-        //
+
         // ¡Ejecutar una sola línea de lógica!
         const result = await this.routeFlowService.startRouteFlow(config);
 
@@ -558,6 +594,8 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
         if (result) {
             const startHash = result.origin!.hash || geohashForLocation([result.origin!.lat, result.origin!.lon], 7);
             const endHash = result.destination!.hash || geohashForLocation([result.destination!.lat, result.destination!.lon], 7);
+
+            console.log('matricula', result.matricula);
 
             const routeParams = {
                 mode: 'route',
@@ -575,19 +613,31 @@ export class SavedItemsComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Convierte un ítem guardado (POI, Vehículo, etc.) al formato FlowPoint
+     * Convierte un POI guardado al formato FlowPoint
      * que necesita el servicio de rutas.
      */
     private mapToFlowPoint(item: any): FlowPoint {
-        // Usamos tu estrategia existente para obtener el nombre correcto (alias o placeName)
-        const name = this.getDisplayName(item);
+        const name = this.strategies['lugares'].getDisplayName(item);
 
         return {
             name: name,
             lat: item.lat,
             lon: item.lon,
-            hash: item.geohash // Algunos ítems como vehículos pueden no tener geohash, será undefined
+            hash: item.geohash
         };
+    }
+
+    /**
+     * Convierte un Vehículo guardado al formato FlowVehicle
+     * que necesita el servicio de rutas.
+     */
+    private mapToFlowVehicle(item: any): FlowVehicle {
+        const name = this.strategies['vehiculos'].getDisplayName(item);
+
+        return {
+            matricula: item.matricula,
+            alias: name,
+        }
     }
 
     protected readonly Math = Math;

@@ -186,7 +186,7 @@ describe('Pruebas de aceptación sobre POI', () => {
         it('HU203-EV01 Consultar el listado vacío de POI', async () => {
             // GIVEN
             // El usuario maria se ha registrado y ha iniciado sesión
-            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            await userService.signUp(maria);
             try {
                 // WHEN
                 // El usuario maria consulta su lista de POI registrados

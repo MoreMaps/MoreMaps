@@ -14,6 +14,11 @@ import {NavbarComponent} from '../navbar/navbar.component';
 import {ProfileButtonComponent} from '../profileButton/profileButton';
 import {ThemeToggleComponent} from '../themeToggle/themeToggle';
 import {notOnlyWhitespaceValidator, noVowelsValidator} from '../../utils/validators';
+import {MatError, MatFormField} from '@angular/material/form-field';
+import {MatOption, MatSelect} from '@angular/material/select';
+import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
+import {MatInput} from '@angular/material/input';
 
 
 @Component({
@@ -23,7 +28,14 @@ import {notOnlyWhitespaceValidator, noVowelsValidator} from '../../utils/validat
         MatProgressSpinner,
         NavbarComponent,
         ProfileButtonComponent,
-        ThemeToggleComponent
+        ThemeToggleComponent,
+        MatFormField,
+        MatSelect,
+        MatOption,
+        MatIcon,
+        MatError,
+        MatIconButton,
+        MatInput
     ],
     templateUrl: './vehicleForm.html',
     styleUrl: './vehicleForm.scss',

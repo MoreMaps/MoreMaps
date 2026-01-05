@@ -14,7 +14,7 @@ import {VEHICLE_REPOSITORY} from '../../Vehicle/VehicleRepository';
 import {VehicleDB} from '../../Vehicle/VehicleDB';
 import {VehicleService} from '../../Vehicle/vehicle.service';
 import {SavedPOIStrategy} from '../savedPOIStrategy';
-import {SavedVehiclesStrategy} from '../savedVehiclesStrategy';
+import {SavedVehicleStrategy} from '../saved-vehicle-strategy.service';
 import {SavedItemsStrategy} from '../savedItemsStrategy';
 
 export interface SavedSelectorData {
@@ -45,7 +45,7 @@ export interface SavedSelectorData {
         {provide: POI_REPOSITORY, useClass: POIDB},
         {provide: VEHICLE_REPOSITORY, useClass: VehicleDB},
         SavedPOIStrategy,
-        SavedVehiclesStrategy
+        SavedVehicleStrategy
     ]
 })
 export class SavedItemSelector implements OnInit {
@@ -55,7 +55,7 @@ export class SavedItemSelector implements OnInit {
     // Estrategias inyectadas
     private strategies: Record<string, SavedItemsStrategy> = {
         'lugares': inject(SavedPOIStrategy),
-        'vehiculos': inject(SavedVehiclesStrategy)
+        'vehiculos': inject(SavedVehicleStrategy)
     };
 
     // Estado
@@ -72,7 +72,7 @@ export class SavedItemSelector implements OnInit {
             // Lógica para cargar de BD
             if (this.strategies[this.data.type]) {
                 this.currentStrategy = this.strategies[this.data.type];
-                this.loadItems();
+                void this.loadItems();
             }
         }
     }

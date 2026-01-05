@@ -5,7 +5,7 @@ export const PREFERENCE_REPOSITORY = new InjectionToken<PreferenceRepository>('P
 
 export interface PreferenceRepository {
     // Modificar preferencias
-    updatePreferences(update: Partial<PreferenceModel>): Promise<PreferenceModel>;
+    updatePreferences(update: PreferenceModel): Promise<boolean>;
 
     // Enumerar preferencias
     getPreferenceList(): Promise<PreferenceModel>;

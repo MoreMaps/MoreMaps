@@ -14,7 +14,7 @@ import {SessionNotActiveError} from '../../errors/User/SessionNotActiveError';
 // Pruebas de aceptación sobre preferencias
 // HU504A, HU504B, HU504C, HU602
 // Todos los tests dentro de este bloque usan un mayor timeout, pues son llamadas API más pesadas
-fdescribe('Pruebas de aceptación sobre preferencias', () => {
+describe('Pruebas de aceptación sobre preferencias', () => {
 
     // Servicios
     let userService: UserService;
@@ -207,8 +207,7 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
             // “ramon” tiene las preferencias por defecto, salvo por el tipo de ruta, que es “recommended”
             let preferencias = new PreferenceModel();
             preferencias.tipoRuta = PREFERENCIA.RECOMENDADA;
-            let isUpdated = await preferenceService.updatePreferences(preferencias);
-            //if (!isUpdated) pending('Fallo al actualizar preferencias, abortando...');
+            await preferenceService.updatePreferences(preferencias);
 
             // WHEN
             // "ramon" reinicia sus preferencias
@@ -230,8 +229,7 @@ fdescribe('Pruebas de aceptación sobre preferencias', () => {
             // “ramon” tiene las preferencias por defecto, salvo por el tipo de ruta, que es “recommended”
             let preferenciasAntesDelCierre = new PreferenceModel();
             preferenciasAntesDelCierre.tipoRuta = PREFERENCIA.RECOMENDADA;
-            let isUpdated = await preferenceService.updatePreferences(preferenciasAntesDelCierre);
-            //if (!isUpdated) pending('Fallo al actualizar preferencias, abortando...');
+            await preferenceService.updatePreferences(preferenciasAntesDelCierre);
 
             // WHEN
             // El usuario “ramon” cierra sesión...

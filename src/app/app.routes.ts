@@ -1,10 +1,10 @@
-import { Routes } from '@angular/router';
+import {Routes} from '@angular/router';
 import {MainPageComponent} from './view/mainPage/mainPage';
 import {MapPageComponent} from './view/map/map-page.component';
-import {AccountSettingsComponent} from './view/deleteUser/deleteUser';
 import {SavedItemsComponent} from './view/saved/saved';
 import {AuthGuard} from '@angular/fire/auth-guard';
 import {VehicleForm} from './view/vehicleForm/vehicleForm';
+import {UserPreferencesComponent} from './view/userPreferences/user-preferences.component';
 
 export const routes: Routes = [
     {
@@ -17,8 +17,8 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
     },
     {
-        path: 'deleteUser',
-        component: AccountSettingsComponent,
+        path: 'preferences',
+        component: UserPreferencesComponent,
         canActivate: [AuthGuard],
     },
     {

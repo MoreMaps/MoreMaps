@@ -129,7 +129,7 @@ describe('Pruebas de aceptación sobre vehículos', () => {
         it('HU302-EV01: Consultar el listado vacío de vehículos', async () => {
             // GIVEN
             // El usuario maria se ha registrado y ha iniciado sesión
-            await userService.signUp(maria.email, maria.pwd, maria.nombre, maria.apellidos);
+            await userService.signUp(maria);
 
             try {
                 // WHEN

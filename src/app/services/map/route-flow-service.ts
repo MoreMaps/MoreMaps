@@ -16,17 +16,28 @@ import {RouteOptionsDialogComponent} from '../../view/route/route-options-dialog
 // Modelos y Servicios necesarios para la búsqueda interna del flujo
 import {MapSearchService} from './map-search-service/map-search.service';
 import {POISearchModel} from '../../data/POISearchModel';
-import {FlowPoint, FlowState, RouteFlowConfig, RouteFlowContext, RouteFlowData} from './route-flow-state';
+import {
+    FlowPoint,
+    FlowState,
+    IRouteFlowService,
+    RouteFlowConfig,
+    RouteFlowContext,
+    RouteFlowData
+} from './route-flow-state';
 import {OriginState} from './route-flow-steps';
+import {PreferenceService} from '../Preferences/preference.service';
+import {PreferenceModel} from '../../data/PreferenceModel';
+import {TIPO_TRANSPORTE} from '../../data/RouteModel';
 
 
 @Injectable({
     providedIn: 'root'
 })
-export class RouteFlowService {
+export class RouteFlowService implements IRouteFlowService {
     private dialog = inject(MatDialog);
     private snackBar = inject(MatSnackBar);
     private mapSearchService = inject(MapSearchService);
+    private preferenceService = inject(PreferenceService);
 
     /**
      * Orquesta el flujo completo para obtener un punto (Origen o Destino).
@@ -225,32 +236,54 @@ export class RouteFlowService {
     /** Inicia el Wizard completo del flujo de rutas
      *  */
     async startRouteFlow(config: RouteFlowConfig = {}): Promise<RouteFlowData | null> {
-        // 1. Crear contexto
-        const context = new RouteFlowContext(config, this);
-
-        // 2. Definir estado inicial
-        let currentState: FlowState | null = new OriginState();
-
-        // 3. Bucle de la Máquina de Estados
-        while (currentState !== null) {
-            // Delegamos la lógica al estado actual
-            currentState = await currentState.execute(context);
-
-            // Si el estado actual se vuelve null, significa que:
-            // a) Terminó con éxito (verificamos si tenemos datos completos)
-            // b) Canceló el usuario
+        // 1. Cargar preferencias (LocalStorage o Firestore)
+        let loadedPrefs: PreferenceModel | undefined;
+        try {
+            const localStr = localStorage.getItem('user_preferences');
+            if (localStr) {
+                loadedPrefs = PreferenceModel.fromJSON(JSON.parse(localStr));
+            } else {
+                loadedPrefs = await this.preferenceService.readPreferences();
+                if (loadedPrefs) {
+                    localStorage.setItem('user_preferences', JSON.stringify(loadedPrefs.toJSON()));
+                }
+            }
+        } catch (e) {
+            console.warn('No se pudieron cargar preferencias:', e);
         }
 
-        // 4. Verificación final
+        // Pasamos loadedPrefs al contexto
+        const context = new RouteFlowContext(config, this, loadedPrefs);
+
+        // 2. Máquina de estados
+        let currentState: FlowState | null = new OriginState();
+
+        while (currentState !== null) {
+            currentState = await currentState.execute(context);
+        }
+
         if (this.isDataComplete(context.data)) {
             return context.data;
         }
 
-        return null; // Cancelado o incompleto
+        return null;
     }
 
     private isDataComplete(data: RouteFlowData): boolean {
-        return !!(data.origin && data.destination && data.transport && data.preference);
+        // La matrícula es obligatoria solo si el transporte es VEHICULO
+        const needsVehicle = data.transport === TIPO_TRANSPORTE.VEHICULO;
+        const hasVehicle = !!data.matricula;
+
+        return !!(data.origin && data.destination && data.transport && (!needsVehicle || hasVehicle));
+    }
+
+    showFeedback(message: string): void {
+        this.snackBar.open(message, 'Cerrar', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'bottom',
+            panelClass: ['high-z-index-toast']
+        });
     }
 }
 

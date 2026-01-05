@@ -1,0 +1,452 @@
+:host {
+    display: block;
+    width: 100%;
+    min-height: 100vh;
+}
+
+// === FONDO DE LA PÁGINA ===
+.page-background {
+    background-color: var(--color-lavender);
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; // Centrado Vertical
+    padding: 1rem; // Padding reducido para móviles pequeños
+    box-sizing: border-box;
+    transition: background-color 0.3s ease;
+}
+
+// === TARJETA CENTRAL (Estilo Dialog) ===
+.preference-card {
+    background-color: var(--color-white);
+    border-radius: var(--radius-lg, 20px);
+    box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    @media (max-width: 600px) {
+        max-width: 100%;
+        padding: 1.25rem;
+    }
+}
+
+// === HEADER ===
+.card-header {
+    h2 {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--color-teal-dark);
+        margin: 0;
+        text-align: left;
+    }
+    p {
+        margin: 0.25rem 0 0 0;
+        font-size: 0.9rem;
+        opacity: 0.8;
+        color: var(--color-teal-dark);
+    }
+}
+
+// === FORMULARIO (Layout Vertical) ===
+.vertical-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+// === GRUPOS DE INPUTS ===
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-teal-dark);
+        margin-left: 4px;
+    }
+}
+
+// === INPUTS MATERIAL (Overrides) ===
+::ng-deep .custom-field {
+    .mat-mdc-text-field-wrapper {
+        background-color: var(--color-lavender) !important;
+        border-radius: 8px !important;
+        // Ajustado a 0.1 para coincidir exactamente con vehicleForm
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 0 12px !important;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .mdc-line-ripple, .mat-mdc-form-field-subscript-wrapper {
+        display: none !important;
+    }
+
+    .mat-mdc-select-value, .mat-mdc-input-element {
+        color: var(--color-teal-dark) !important;
+        font-size: 14px;
+    }
+
+    .mat-mdc-select-placeholder {
+        color: var(--color-teal-dark);
+        opacity: 0.6;
+    }
+
+    // Estado Focus Normal
+    &.mat-focused .mat-mdc-text-field-wrapper {
+        background-color: var(--color-white) !important;
+        border-color: var(--color-mint-green) !important;
+        // Sombra suave mint al hacer foco, igual que vehicleForm
+        box-shadow: 0 0 0 3px rgba(161, 231, 197, 0.2);
+    }
+
+    // === ESTADO DE ERROR (Nuevo) ===
+    // Replica el estilo .ng-invalid.ng-touched de vehicleForm.scss
+    &.mat-form-field-invalid {
+        .mat-mdc-text-field-wrapper {
+            border-color: var(--color-orange) !important;
+            background-color: rgba(255, 149, 57, 0.1) !important;
+        }
+
+        // Placeholder más visible en estado de error
+        .mat-mdc-select-placeholder,
+        .mat-mdc-input-element::placeholder {
+            color: var(--color-orange) !important;
+            opacity: 0.9 !important;
+        }
+
+        .mdc-notched-outline__leading,
+        .mdc-notched-outline__notch,
+        .mdc-notched-outline__trailing {
+            border-color: var(--color-orange) !important;
+        }
+    }
+
+    &.cursor-pointer {
+        cursor: pointer;
+        input, .mat-mdc-text-field-wrapper { cursor: pointer; }
+    }
+}
+
+// Iconos dentro de inputs
+::ng-deep .mat-mdc-form-field-icon-prefix,
+::ng-deep .mat-mdc-form-field-icon-suffix {
+    padding: 0 4px;
+    .mat-icon {
+        color: var(--color-teal-dark);
+        opacity: 0.5;
+    }
+}
+
+// === CHECKBOXES ===
+.info-group {
+    background-color: var(--color-lavender);
+    padding: 1rem;
+    border-radius: 12px;
+    margin-top: 0.5rem;
+}
+
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+::ng-deep .mat-mdc-checkbox {
+    label { color: var(--color-teal-dark) !important; font-size: 0.9rem; }
+    .mdc-checkbox__background { border-color: var(--color-teal-dark) !important; }
+    &.mat-mdc-checkbox-checked .mdc-checkbox__background {
+        background-color: var(--color-teal-dark) !important;
+        border-color: var(--color-teal-dark) !important;
+    }
+}
+
+// === DIVISOR ===
+.divider {
+    height: 1px;
+    background-color: var(--color-gray-blue);
+    width: 100%;
+    margin: 0.5rem 0;
+    opacity: 0.3;
+}
+
+// === BOTONES DE ACCIÓN ===
+.actions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.btn-custom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+// Guardar
+.btn-save {
+    background-color: var(--color-mint-green);
+    color: var(--color-teal-dark);
+    margin-top: 1rem;
+
+    &:hover:not(:disabled) {
+        filter: brightness(0.95);
+    }
+}
+
+// Borrar Cuenta
+.btn-delete {
+    background-color: var(--color-orange);
+    color: var(--color-white);
+    border-radius: 24px;
+
+    mat-icon { color: var(--color-white); }
+
+    &:hover {
+        background-color: #e67e22;
+    }
+}
+
+/* ========================================= */
+/* ESTILOS DEL MODAL DE BORRADO              */
+/* ========================================= */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Fondo semitransparente oscuro */
+    backdrop-filter: blur(4px); /* Efecto borroso */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Por encima */
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+    background-color: var(--color-white);
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    animation: scaleIn 0.2s ease-out;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-purple-dark, #333);
+    margin: 0 0 10px 0;
+    line-height: 1.3;
+}
+
+.modal-subtitle {
+    font-size: 15px;
+    color: #666;
+    margin: 0 0 25px 0;
+}
+
+/* Botones del modal */
+.modal-btn {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.modal-btn:last-child {
+    margin-bottom: 0;
+}
+
+/* Confirmar (Rojo/Naranja fuerte para peligro) */
+.confirm-btn {
+    background-color: var(--color-orange, #ff8c42);
+    color: white;
+    box-shadow: 0 4px 10px rgba(255, 140, 66, 0.3);
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+        background-color: #ff7a2e;
+        transform: translateY(-2px);
+    }
+
+    /* CAMBIO: Reducimos la opacidad significativamente mientras hay cuenta atrás */
+    &.disabled-state, &:disabled {
+        /* Usamos la variable naranja pero con 0.4 de opacidad */
+        background-color: color-mix(in srgb, var(--color-orange), transparent 60%) !important;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+
+        /* Opcional: reducir también la opacidad de los iconos dentro */
+        mat-icon, svg {
+            opacity: 0.5;
+        }
+    }
+
+    .trash-icon-modal {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Cancelar (Gris/Neutro) */
+.cancel-btn {
+    background-color: #f0f0f0;
+    color: #555;
+
+    &:hover {
+        background-color: #e0e0e0;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+
+// === DARK THEME OVERRIDES ===
+:host-context(.dark-theme) {
+
+    .page-background {
+        background-color: var(--color-gray-blue) !important;
+    }
+
+    .preference-card {
+        background-color: var(--color-teal-dark) !important;
+        color: var(--color-white);
+    }
+
+    .card-header h2 { color: var(--color-white); }
+    .card-header p { color: var(--color-lavender); }
+
+    .form-group label { color: var(--color-lavender); }
+
+    // Inputs Dark
+    ::ng-deep .custom-field {
+        .mat-mdc-text-field-wrapper {
+            background-color: rgba(0, 0, 0, 0.3) !important;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .mat-mdc-select-value, .mat-mdc-input-element {
+            color: var(--color-white) !important;
+        }
+        .mat-mdc-select-placeholder { color: rgba(255, 255, 255, 0.5); }
+        .mat-icon { color: var(--color-lavender) !important; }
+
+        // Estado Focus Dark
+        &.mat-focused .mat-mdc-text-field-wrapper {
+            border-color: var(--color-mint-green) !important;
+            background-color: rgba(0, 0, 0, 0.5) !important;
+        }
+
+        // Estado Error Dark (Consistente con vehicleForm.scss dark theme)
+        &.mat-form-field-invalid {
+            .mat-mdc-text-field-wrapper {
+                border-color: var(--color-orange) !important;
+                background-color: rgba(255, 140, 66, 0.1) !important;
+            }
+            .mdc-notched-outline__leading,
+            .mdc-notched-outline__notch,
+            .mdc-notched-outline__trailing {
+                border-color: var(--color-orange) !important;
+            }
+        }
+    }
+
+    // Panel del Select (Desplegable) en Dark Mode
+    ::ng-deep .mat-mdc-select-panel {
+        background-color: var(--color-gray-blue) !important;
+
+        .mat-mdc-option {
+            color: var(--color-teal-dark) !important;
+
+            &.mat-mdc-option-active {
+                background-color: rgba(27, 65, 65, 0.1) !important;
+            }
+
+            &.mat-mdc-option-selected {
+                background-color: rgba(27, 65, 65, 0.2) !important;
+                font-weight: 600;
+            }
+        }
+    }
+
+    // Checkboxes Dark
+    .info-group { background-color: rgba(0, 0, 0, 0.2); }
+    ::ng-deep .mat-mdc-checkbox {
+        label { color: var(--color-white) !important; }
+        .mdc-checkbox__background { border-color: var(--color-lavender) !important; }
+        &.mat-mdc-checkbox-checked .mdc-checkbox__background {
+            background-color: var(--color-mint-green) !important;
+            border-color: var(--color-mint-green) !important;
+            .mdc-checkbox__checkmark-path { stroke: var(--color-teal-dark) !important; }
+        }
+    }
+
+    .divider {
+        background-color: var(--color-gray-blue);
+        opacity: 0.5;
+    }
+
+    .modal-container {
+        background-color: var(--color-teal-dark);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .modal-title { color: var(--color-white); }
+    .modal-subtitle { color: var(--color-lavender); }
+
+    .cancel-btn {
+        background-color: rgba(255,255,255,0.1);
+        color: var(--color-white);
+        &:hover { background-color: rgba(255,255,255,0.2); }
+    }
+}

@@ -193,8 +193,7 @@ describe('Pruebas de integración sobre rutas', () => {
             expect(rutaGuardada).toEqual(mockRouteModel);
 
             // Se llama a la función "createRoute" con los parámetros pertinentes.
-            expect(mockRouteRepository.createRoute).toHaveBeenCalledWith(rutaC.geohash_origen, rutaC.geohash_destino,
-                rutaC.alias, rutaC.transporte, rutaC.nombre_origen, rutaC.nombre_destino, rutaC.preferencia, mockRoute, rutaC.matricula);
+            expect(mockRouteRepository.createRoute).toHaveBeenCalledWith(mockRouteModel);
         });
 
         it('HU407-EI08. Guardar una ruta idéntica a una ya guardada.', async () => {

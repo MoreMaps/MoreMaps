@@ -1,11 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatIconModule } from '@angular/material/icon';
-import { UserService } from '../../../services/User/user.service';
-import { USER_REPOSITORY } from '../../../services/User/UserRepository';
-import { UserDB } from '../../../services/User/UserDB';
+import {Component, inject, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {Router} from '@angular/router';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MatIconModule} from '@angular/material/icon';
+import {UserService} from '../../../services/User/user.service';
+import {USER_REPOSITORY} from '../../../services/User/UserRepository';
+import {UserDB} from '../../../services/User/UserDB';
 
 interface UserData {
     fullName: string;
@@ -17,7 +17,7 @@ interface UserData {
     selector: 'app-profile-menu',
     templateUrl: './profile-menu.component.html',
     styleUrl: './profile-menu.component.css',
-    providers: [UserService, { provide: USER_REPOSITORY, useClass: UserDB }],
+    providers: [UserService, {provide: USER_REPOSITORY, useClass: UserDB}],
     imports: [CommonModule, MatIconModule]
 })
 export class ProfileMenuComponent {
@@ -32,15 +32,10 @@ export class ProfileMenuComponent {
     profileImage = signal(this.data.profileImage);
     showLogoutConfirmation = signal(false);
 
-    // Close the menu
-    closeMenu(): void {
-        this.dialogRef.close();
-    }
-
     // Navigate to delete account page (settings)
     goToSettings(): void {
         this.dialogRef.close();
-        void this.router.navigate(['/deleteUser']);
+        void this.router.navigate(['/preferences']);
     }
 
     // Open logout confirmation popup
